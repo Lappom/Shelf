@@ -6,9 +6,12 @@ import { Button } from "@/components/ui/button";
 function AdminNav() {
   const items = [
     { href: "/admin/books", label: "Livres" },
+    { href: "/admin/users", label: "Utilisateurs" },
     { href: "/admin/duplicates", label: "Doublons" },
     { href: "/admin/tags", label: "Tags" },
     { href: "/admin/import-calibre", label: "Import Calibre" },
+    { href: "/admin/storage", label: "Stockage" },
+    { href: "/admin/settings", label: "Paramètres" },
   ] as const;
 
   return (
@@ -25,7 +28,7 @@ function AdminNav() {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireAdmin();
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-8">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">Admin</div>

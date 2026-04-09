@@ -424,7 +424,7 @@ export function LibraryPageClient({
           ) : null}
 
           {view === "grid" ? (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
               {items.map((b) => (
                 <Link key={b.id} href={`/book/${b.id}`} className="group">
                   <Card className="shadow-eleven-card hover:shadow-eleven-button-white overflow-hidden transition">
@@ -438,7 +438,7 @@ export function LibraryPageClient({
                           alt=""
                           fill
                           unoptimized={!b.coverToken}
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 20vw, 12vw"
+                          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 16vw"
                           className="object-cover"
                         />
                       ) : (

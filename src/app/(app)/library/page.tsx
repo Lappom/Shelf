@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { UploadEpubDialog } from "@/components/book/UploadEpubDialog";
 import { AddPhysicalBookDialog } from "@/components/book/AddPhysicalBookDialog";
+import { LibraryAdminFab } from "@/components/library/LibraryAdminFab";
 import { LibraryPageClient } from "@/components/library/LibraryPageClient";
 import { loadRecommendationsPage } from "@/lib/recommendations/loadRecommendationsPage";
 
@@ -49,7 +50,8 @@ export default async function LibraryPage() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-6 py-10">
+      {isAdmin ? <LibraryAdminFab /> : null}
       <LibraryPageClient
         initialRecommendations={initialRecommendations}
         initialTags={tags}

@@ -50,10 +50,22 @@ function splitAuthorsCsv(raw: string) {
 
 export function AddPhysicalBookDialog({
   triggerText = "Ajouter un livre physique",
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  hideTrigger = false,
 }: {
   triggerText?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined && controlledOnOpenChange !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (isControlled) controlledOnOpenChange(v);
+    else setInternalOpen(v);
+  };
   const [state, setState] = useState<UiState>({ type: "idle" });
 
   const [title, setTitle] = useState("");
@@ -219,9 +231,11 @@ export function AddPhysicalBookDialog({
         if (!v) reset();
       }}
     >
-      <Button variant="default" onClick={() => setOpen(true)}>
-        {triggerText}
-      </Button>
+      {hideTrigger ? null : (
+        <Button variant="default" onClick={() => setOpen(true)}>
+          {triggerText}
+        </Button>
+      )}
 
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>

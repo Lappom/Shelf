@@ -19,8 +19,26 @@ type UploadState =
   | { type: "done"; bookId: string; restored: boolean }
   | { type: "error"; message: string; existingBookId?: string };
 
-export function UploadEpubDialog({ triggerText = "Ajouter un EPUB" }: { triggerText?: string }) {
-  const [open, setOpen] = useState(false);
+export function UploadEpubDialog({
+  triggerText = "Ajouter un EPUB",
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  hideTrigger = false,
+}: {
+  triggerText?: string;
+  /** Controlled open state (use with onOpenChange, e.g. FAB menu). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** When true, no button is rendered; parent toggles `open`. */
+  hideTrigger?: boolean;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined && controlledOnOpenChange !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (isControlled) controlledOnOpenChange(v);
+    else setInternalOpen(v);
+  };
   const [file, setFile] = useState<File | null>(null);
   const [state, setState] = useState<UploadState>({ type: "idle" });
 
@@ -78,9 +96,11 @@ export function UploadEpubDialog({ triggerText = "Ajouter un EPUB" }: { triggerT
         if (!v) reset();
       }}
     >
-      <Button variant="default" onClick={() => setOpen(true)}>
-        {triggerText}
-      </Button>
+      {hideTrigger ? null : (
+        <Button variant="default" onClick={() => setOpen(true)}>
+          {triggerText}
+        </Button>
+      )}
 
       <DialogContent>
         <DialogHeader>

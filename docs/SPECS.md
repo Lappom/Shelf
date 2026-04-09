@@ -843,7 +843,7 @@ volumes:
 - **CSP** : en-tête `Content-Security-Policy` sur l’app (compatible reader EPUB / workers blob ; `script-src` inclut `unsafe-inline` et `unsafe-eval` tant qu’epub.js l’exige — durcissement futur possible via nonces).
 - **CORS** : restrictif, uniquement l'origine de l'app.
 - **Rate limiting** : sur les endpoints d'auth et d'upload.
-- **Storage** : les fichiers ne sont jamais servis directement depuis le stockage ; pas d’URL publique ni de présignage exposé au client (`getUrl` des adapters lève une erreur). Téléchargements et streams uniquement via endpoints authentifiés avec contrôles d’accès.
+- **Storage** : les fichiers ne sont jamais servis directement depuis le stockage ; pas d’URL publique ni de présignage exposé au client (`getUrl` des adapters lève une erreur). Téléchargements et streams uniquement via endpoints authentifiés avec contrôles d’accès. **Modèle V1** : catalogue partagé — tout utilisateur authentifié (`reader` ou `admin`) peut lire tout livre non supprimé via `GET /api/books/:id/file` et le reader (voir §4.2). Une évolution « collections par utilisateur » imposerait des jointures supplémentaires sur ces endpoints.
 - **Audit admin** : table `AdminAuditLog` — événements : ingestion EPUB, import Calibre, purge livre, ignore/merge doublons ; extension prévue pour les clés API (CRUD) et les appels MCP (`logMcpToolAudit`, action `mcp_tool_call`). Lecture via `GET /api/admin/audit-logs` (admin uniquement).
 
 ---

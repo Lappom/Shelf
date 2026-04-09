@@ -52,7 +52,7 @@ export default async function ShelfDetailPage({ params }: { params: Promise<{ id
   });
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
+    <div className="mx-auto w-full max-w-7xl space-y-6 px-6 py-10">
       <ShelfDetailClient shelf={shelfDto} initialBooks={books} initialNextCursor={nextCursor} />
     </div>
   );

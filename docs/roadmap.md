@@ -707,28 +707,28 @@
 ## Phase 26 — Critères de complétude V1 (check final)
 
 ### 26.1 Fonctionnel
-- [ ] Upload EPUB admin + extraction + OpenLibrary + search vector.
-- [ ] Création livre physique + cover.
+- [x] Upload EPUB admin + extraction + OpenLibrary + search vector.
+- [x] Création livre physique + cover.
 - [x] Création livre physique : scan ISBN (caméra BarcodeDetector / repli ZXing) + douchette USB (champ ISBN).
-- [ ] Library/search/shelves/reader/admin conformes aux specs UI.
-- [ ] Annotations + export Markdown.
-- [ ] PWA offline : cache EPUB + sync.
-- [ ] Recommandations : calcul, stockage, UI, dismiss.
-- [ ] MCP : endpoint, auth keys, tools/resources/prompts, rate limit, audit.
+- [x] Library/search/shelves/reader/admin conformes aux specs UI.
+- [x] Annotations + export Markdown.
+- [x] PWA offline : cache EPUB + sync.
+- [x] Recommandations : calcul, stockage, UI, dismiss.
+- [x] MCP : endpoint, auth keys, tools/resources/prompts, rate limit, audit.
 
 ### 26.2 Sécurité & conformité spec
-- [ ] RBAC complet admin/reader.
-- [ ] Fichiers servis uniquement via endpoints authentifiés.
-- [ ] Upload durci + reader sanitization XSS.
-- [ ] Rate limiting auth/upload/MCP.
+- [x] RBAC complet admin/reader.
+- [x] Fichiers servis uniquement via endpoints authentifiés.
+- [x] Upload durci + reader sanitization XSS.
+- [x] Rate limiting auth/upload/MCP.
 
 ### 26.3 Performance
-- [ ] Cursor pagination.
-- [ ] Indexes (search_vector/hashes/pivots).
-- [ ] Reader lazy load.
-- [ ] Streaming fichiers.
+- [x] Cursor pagination.
+- [x] Indexes (search_vector/hashes/pivots) — GIN `search_vector` + trigram titre dans migration initiale ; index Prisma sur `content_hash`, `isbn_13`, pivots `book_shelves` / `user_book_progress`.
+- [x] Reader lazy load.
+- [x] Streaming fichiers.
 
 ### 26.4 Qualité
-- [ ] Suite de tests (unit/integration/component/e2e) couvrant flux critiques.
-- [ ] CI verte (lint/tests/build/docker).
+- [x] Suite de tests (unit/integration/component/e2e) couvrant flux critiques (Phase 23 ; E2E avec skips optionnels pour fixtures lourdes).
+- [x] CI verte (lint/tests/build/docker) (Phase 24).
 
