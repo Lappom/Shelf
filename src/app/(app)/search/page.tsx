@@ -7,7 +7,10 @@ import { SearchPageClient } from "@/components/search/SearchPageClient";
 
 export default async function SearchPage() {
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
 
   const [tags, shelves, pref] = await Promise.all([
     prisma.tag.findMany({

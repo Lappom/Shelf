@@ -59,6 +59,11 @@ enum ReaderTheme {
   sepia
 }
 
+enum ReaderFlow {
+  paginated
+  scrolled
+}
+
 enum LibraryView {
   grid
   list
@@ -300,6 +305,7 @@ model UserPreference {
   readerLineHeight Float?          @map("reader_line_height")
   readerMargin     Int?            @map("reader_margin")
   readerTheme      ReaderTheme?    @map("reader_theme")
+  readerFlow       ReaderFlow?     @map("reader_flow")
   libraryView      LibraryView?    @map("library_view")
   booksPerPage     Int             @default(24) @map("books_per_page")
   libraryInfiniteScroll Boolean    @default(false) @map("library_infinite_scroll")

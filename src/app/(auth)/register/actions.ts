@@ -12,8 +12,12 @@ import { assertSameOriginFromHeaders } from "@/lib/security/origin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const RegisterSchema = z.object({
-  email: z.string().email(),
-  username: z.string().min(2).max(100),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((v) => v.toLowerCase()),
+  username: z.string().trim().min(2).max(100),
   password: z.string().min(8),
 });
 
@@ -48,7 +52,7 @@ export async function registerAction(formData: FormData) {
     redirect("/register?error=invalid");
   }
 
-  const email = parsed.data.email.toLowerCase();
+  const email = parsed.data.email;
 
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email }, { username: parsed.data.username }] },
@@ -81,7 +85,6 @@ export async function registerAction(formData: FormData) {
       redirectTo: "/library",
     });
   } catch {
-    // Silent: the UI will redirect on manual login.
+    redirect("/register?error=auth");
   }
-  redirect("/library");
 }

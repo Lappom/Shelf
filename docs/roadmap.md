@@ -321,36 +321,36 @@
 ## Phase 13 — Reader intégré (EPUB)
 
 ### 13.1 Rendu & navigation (docs/SPECS.md §8.1)
-- [ ] Intégrer epub.js (ou Foliate.js) dans une route `/reader/[id]`.
-- [ ] TOC (chapitres) + navigation page simulée.
-- [ ] Barre de progression globale.
-- [ ] Charger le reader en lazy import (docs/SPECS.md §15).
+- [x] Intégrer epub.js (ou Foliate.js) dans une route `/reader/[id]`.
+- [x] TOC (chapitres) + navigation page simulée.
+- [x] Barre de progression globale.
+- [x] Charger le reader en lazy import (docs/SPECS.md §15).
 
 ### 13.2 Sauvegarde progression (docs/SPECS.md §8.1)
-- [ ] Auto-save CFI côté serveur toutes les 30s.
-- [ ] Save à la fermeture (unload/route leave).
-- [ ] Table `UserBookProgress` (progress 0..1, status, timestamps).
+- [x] Auto-save CFI côté serveur toutes les 30s.
+- [x] Save à la fermeture (unload/route leave).
+- [x] Table `UserBookProgress` (progress 0..1, status, timestamps).
 
 ### 13.3 Personnalisation reader (docs/SPECS.md §8.2 + §3.2 UserPreference)
-- [ ] Police (system/serif/sans/dyslexic).
-- [ ] Taille 12–32px.
-- [ ] Interligne 1.0–2.5.
-- [ ] Marges (narrow/normal/wide) via px.
-- [ ] Thème (light/dark/sepia).
-- [ ] Mode paginé vs scroll continu.
-- [ ] Persist préférence en DB par user.
+- [x] Police (system/serif/sans/dyslexic).
+- [x] Taille 12–32px.
+- [x] Interligne 1.0–2.5.
+- [x] Marges (narrow/normal/wide) via px.
+- [x] Thème (light/dark/sepia).
+- [x] Mode paginé vs scroll continu.
+- [x] Persist préférence en DB par user.
 
 ### 13.4 Annotations (docs/SPECS.md §8.3)
-- [ ] Highlight : sélection + choix couleur (jaune/vert/bleu/rose/violet).
-- [ ] Notes attachées à highlight ou position.
-- [ ] Bookmark à position.
-- [ ] Panneau latéral : liste annotations du livre.
-- [ ] Export annotations en Markdown.
-- [ ] Sync serveur (multi-device).
+- [x] Highlight : sélection + choix couleur (jaune/vert/bleu/rose/violet).
+- [x] Notes attachées à highlight ou position.
+- [x] Bookmark à position.
+- [x] Panneau latéral : liste annotations du livre.
+- [x] Export annotations en Markdown.
+- [x] Sync serveur (multi-device).
 
 ### 13.5 Sanitization & sécurité reader (docs/SPECS.md §14)
-- [ ] Sanitizer du contenu rendu (protection XSS).
-- [ ] Stratégie CSS/iframe/DOM pour réduire surface d’attaque EPUB.
+- [x] Sanitizer du contenu rendu (protection XSS).
+- [x] Stratégie CSS/iframe/DOM pour réduire surface d’attaque EPUB.
 
 ---
 

@@ -9,7 +9,11 @@ import { assertSameOriginFromHeaders } from "@/lib/security/origin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const LoginSchema = z.object({
-  email: z.string().email(),
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((v) => v.toLowerCase()),
   password: z.string().min(8),
 });
 

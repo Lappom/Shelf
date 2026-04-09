@@ -20,7 +20,10 @@ function normalizeAuthors(authors: unknown): string[] {
 
 export default async function ShelfDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = ParamsSchema.safeParse(await params);
   if (!parsed.success) return <div className="p-6">Étagère invalide.</div>;
 

@@ -82,7 +82,10 @@ function assertNotSystemShelf(type: string) {
 export async function createShelfAction(input: unknown) {
   await assertActionSecurity("create");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = CreateShelfSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
@@ -114,7 +117,10 @@ export async function createShelfAction(input: unknown) {
 export async function updateShelfAction(input: unknown) {
   await assertActionSecurity("update");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = UpdateShelfSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
@@ -137,7 +143,10 @@ export async function updateShelfAction(input: unknown) {
 export async function deleteShelfAction(input: unknown) {
   await assertActionSecurity("delete");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = DeleteShelfSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
@@ -156,7 +165,10 @@ export async function deleteShelfAction(input: unknown) {
 export async function addBookToShelfAction(input: unknown) {
   await assertActionSecurity("add_book");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = AddRemoveBookSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
@@ -175,7 +187,10 @@ export async function addBookToShelfAction(input: unknown) {
 export async function removeBookFromShelfAction(input: unknown) {
   await assertActionSecurity("remove_book");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = AddRemoveBookSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
@@ -192,7 +207,10 @@ export async function removeBookFromShelfAction(input: unknown) {
 export async function reorderShelvesAction(input: unknown) {
   await assertActionSecurity("reorder_shelves");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = ReorderShelvesSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
@@ -225,7 +243,10 @@ export async function reorderShelvesAction(input: unknown) {
 export async function reorderShelfBooksAction(input: unknown) {
   await assertActionSecurity("reorder_books");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = ReorderShelfBooksSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
@@ -257,7 +278,10 @@ export async function reorderShelfBooksAction(input: unknown) {
 export async function updateShelfRuleAction(input: unknown) {
   await assertActionSecurity("update_rule");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = UpdateShelfRuleSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 

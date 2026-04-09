@@ -27,7 +27,10 @@ async function assertActionSecurity(suffix: string) {
 export async function updateSearchPreferencesAction(input: unknown) {
   await assertActionSecurity("update_search");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
   const parsed = UpdatePrefsSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 

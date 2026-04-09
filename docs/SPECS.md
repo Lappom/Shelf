@@ -692,8 +692,8 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | DELETE | `/api/shelves/:id/books/:bookId` | Retirer un livre |
 | GET | `/api/progress/:bookId` | Progression de lecture |
 | PUT | `/api/progress/:bookId` | Sauvegarder la progression |
-| GET | `/api/annotations/:bookId` | Annotations |
-| POST | `/api/annotations/:bookId` | Créer annotation |
+| GET | `/api/books/:id/annotations` | Annotations |
+| POST | `/api/books/:id/annotations` | Créer annotation |
 | PATCH | `/api/annotations/:id` | Modifier |
 | DELETE | `/api/annotations/:id` | Supprimer |
 | GET | `/api/search?q=...` | Recherche full-text |

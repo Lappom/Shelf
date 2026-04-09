@@ -9,6 +9,7 @@ const errorMessages = {
   disabled: "Les inscriptions sont désactivées.",
   invalid: "Formulaire invalide.",
   exists: "Email ou username déjà utilisé.",
+  auth: "Impossible de créer la session. Essayez de vous connecter.",
 } as const;
 
 export default async function RegisterPage({
