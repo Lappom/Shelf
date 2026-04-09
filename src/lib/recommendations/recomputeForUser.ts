@@ -299,7 +299,7 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
         ? collaborativeScoreForBook(c.id, targetPos, neighbors)
         : 0;
 
-    let reasons: Array<{ code: string; text: string }> = [];
+    const reasons: Array<{ code: string; text: string }> = [];
 
     if (!coldStart && seeds.length > 0) {
       const best = bestWeightedSeed(c, seeds, seedWeights, simFn);
