@@ -47,6 +47,30 @@ async function rateLimitOpenLibrary() {
   lastRequestAtMs = Date.now();
 }
 
+function isTransientHttpStatus(status: number) {
+  return status === 408 || status === 429 || (status >= 500 && status <= 599);
+}
+
+function getOpenLibraryTimeoutMs() {
+  const raw = process.env.OPENLIBRARY_TIMEOUT_MS?.trim();
+  const n = raw ? Number(raw) : NaN;
+  // Keep it short: Open Library is best-effort.
+  if (Number.isFinite(n) && n >= 1000 && n <= 60_000) return Math.trunc(n);
+  return 8000;
+}
+
+function getOpenLibraryRetries() {
+  const raw = process.env.OPENLIBRARY_RETRIES?.trim();
+  const n = raw ? Number(raw) : NaN;
+  if (Number.isFinite(n) && n >= 0 && n <= 5) return Math.trunc(n);
+  return 2;
+}
+
+function backoffMs(attempt: number) {
+  // attempt starts at 0; keep it small to avoid stalling ingestion/resync.
+  return Math.min(1500, 200 * 2 ** attempt);
+}
+
 function coerceText(v: unknown): string | null {
   if (!v) return null;
   if (typeof v === "string") return v.trim() || null;
@@ -58,15 +82,52 @@ function coerceText(v: unknown): string | null {
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
-  await rateLimitOpenLibrary();
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Shelf (self-hosted)",
-      Accept: "application/json",
-    },
-  });
-  if (!res.ok) throw new Error(`OpenLibrary error (${res.status})`);
-  return (await res.json()) as T;
+  const timeoutMs = getOpenLibraryTimeoutMs();
+  const maxRetries = getOpenLibraryRetries();
+
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    await rateLimitOpenLibrary();
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        signal: ctrl.signal,
+        headers: {
+          "User-Agent": "Shelf (self-hosted)",
+          Accept: "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        if (attempt < maxRetries && isTransientHttpStatus(res.status)) {
+          await sleep(backoffMs(attempt));
+          continue;
+        }
+        throw new Error(`OpenLibrary error (${res.status})`);
+      }
+
+      return (await res.json()) as T;
+    } catch (e) {
+      lastErr = e;
+      const aborted =
+        typeof e === "object" &&
+        e !== null &&
+        "name" in e &&
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (e as any).name === "AbortError";
+      if (attempt < maxRetries && (aborted || e instanceof TypeError)) {
+        await sleep(backoffMs(attempt));
+        continue;
+      }
+      throw e;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("OpenLibrary error");
 }
 
 function isbnKey(isbn: string) {

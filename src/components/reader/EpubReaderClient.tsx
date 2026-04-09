@@ -457,7 +457,14 @@ export function EpubReaderClient({
     if (res.queued) {
       setAnnotations((prev) => [
         ...prev,
-        { id: `local:${Date.now()}`, type: "bookmark", cfiRange: cfi, content: null, note: null, color: null },
+        {
+          id: `local:${Date.now()}`,
+          type: "bookmark",
+          cfiRange: cfi,
+          content: null,
+          note: null,
+          color: null,
+        },
       ]);
     }
   }, [bookId, location.cfi, refreshAnnotations]);
@@ -802,7 +809,8 @@ export function EpubReaderClient({
                                 url: `/api/annotations/${a.id}`,
                               });
                               if (!res.queued) await refreshAnnotations();
-                              if (res.queued) setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
+                              if (res.queued)
+                                setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
                             });
                           }}
                         >
@@ -937,7 +945,8 @@ export function EpubReaderClient({
                                 url: `/api/annotations/${a.id}`,
                               });
                               if (!res.queued) await refreshAnnotations();
-                              if (res.queued) setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
+                              if (res.queued)
+                                setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
                             });
                           }}
                         >

@@ -8,8 +8,8 @@ export default function OfflinePage() {
       <div className="rounded-2xl border p-6">
         <div className="text-sm font-medium">Vous êtes hors ligne</div>
         <p className="text-muted-foreground mt-2 text-sm">
-          Certaines fonctionnalités nécessitent une connexion. Si vous aviez déjà ouvert un livre, il peut être
-          disponible hors-ligne.
+          Certaines fonctionnalités nécessitent une connexion. Si vous aviez déjà ouvert un livre,
+          il peut être disponible hors-ligne.
         </p>
         <div className="mt-4 flex items-center gap-2">
           <Button asChild variant="outline">
@@ -23,4 +23,3 @@ export default function OfflinePage() {
     </div>
   );
 }
-

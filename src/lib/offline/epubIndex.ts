@@ -41,4 +41,3 @@ export async function purgeIndexedEpub(opts: { bookId: string; fileUrl: string }
   const db = await getOfflineDb();
   await db.delete("offlineEpubIndex", opts.bookId);
 }
-

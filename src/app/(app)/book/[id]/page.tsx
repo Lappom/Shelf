@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResyncMetadataPanel } from "@/components/book/ResyncMetadataPanel";
+import { OpenLibraryEnrichmentPanel } from "@/components/book/OpenLibraryEnrichmentPanel";
 import { BookTagsPanel, type BookTagItem } from "@/components/book/BookTagsPanel";
 import { AddToShelfMenu, type AddToShelfMenuShelf } from "@/components/shelf/AddToShelfMenu";
 
@@ -43,6 +44,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
       subjects: true,
       pageCount: true,
       openLibraryId: true,
+      coverUrl: true,
       format: true,
       tags: { select: { tag: { select: { id: true, name: true, color: true } } } },
     },
@@ -157,7 +159,16 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
         </CardContent>
       </Card>
 
-      {isAdmin && <ResyncMetadataPanel bookId={book.id} />}
+      {isAdmin && (
+        <>
+          <OpenLibraryEnrichmentPanel
+            bookId={book.id}
+            hasCover={Boolean(book.coverUrl)}
+            currentIsbn={(book.isbn13 ?? book.isbn10 ?? null) as string | null}
+          />
+          <ResyncMetadataPanel bookId={book.id} />
+        </>
+      )}
     </div>
   );
 }

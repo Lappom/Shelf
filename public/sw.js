@@ -139,4 +139,3 @@ self.addEventListener("message", (event) => {
     );
   }
 });
-

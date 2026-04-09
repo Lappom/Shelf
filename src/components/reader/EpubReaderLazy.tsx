@@ -40,4 +40,3 @@ const EpubReaderClient = dynamic(
 export function EpubReaderLazy(props: Props) {
   return <EpubReaderClient {...props} />;
 }
-

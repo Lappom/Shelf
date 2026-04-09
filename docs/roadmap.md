@@ -378,21 +378,21 @@
 ## Phase 15 — Enrichissement métadonnées (Open Library)
 
 ### 15.1 Client Open Library (docs/SPECS.md §9.1)
-- [ ] Endpoints : ISBN `/isbn/{isbn}.json`, search `/search.json`, covers `/b/isbn/{isbn}-L.jpg`.
-- [ ] Timeouts, retries prudents.
+- [x] Endpoints : ISBN `/isbn/{isbn}.json`, search `/search.json`, covers `/b/isbn/{isbn}-L.jpg`.
+- [x] Timeouts, retries prudents.
 
 ### 15.2 Stratégie d’enrichissement (docs/SPECS.md §9.3)
-- [ ] Extraction EPUB d’abord.
-- [ ] Si ISBN : enrichir direct.
-- [ ] Sinon : fuzzy titre+auteur + confirmation admin.
+- [x] Extraction EPUB d’abord.
+- [x] Si ISBN : enrichir direct.
+- [x] Sinon : fuzzy titre+auteur + confirmation admin.
 
 ### 15.3 Rate limit & cache (docs/SPECS.md §9.3)
-- [ ] Rate limit 1 req/s (config env).
-- [ ] Cache réponses 30 jours (DB ou Redis optionnel).
+- [x] Rate limit 1 req/s (config env).
+- [x] Cache réponses 30 jours (DB ou Redis optionnel).
 
 ### 15.4 Champs enrichis (docs/SPECS.md §9.2)
-- [ ] Appliquer règles champ par champ (priorité EPUB vs OpenLibrary).
-- [ ] Gestion cover hi-res (préférence hi-res si disponible).
+- [x] Appliquer règles champ par champ (priorité EPUB vs OpenLibrary).
+- [x] Gestion cover hi-res (préférence hi-res si disponible).
 
 ---
 

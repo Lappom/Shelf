@@ -46,6 +46,30 @@ describe("enrichFromOpenLibraryByIsbn", () => {
     expect(res.pageCount).toBe(123);
     expect(res.coverUrl).toMatch(/covers\.openlibrary\.org/);
   });
+
+  it("retries on transient errors", async () => {
+    let calls = 0;
+    // @ts-expect-error - test runtime
+    global.fetch = vi.fn(async () => {
+      calls += 1;
+      if (calls === 1) {
+        return { ok: false, status: 502, json: async () => ({}) };
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          key: "/books/OL1M",
+          number_of_pages: 123,
+          works: [{ key: "/works/OLW1W" }],
+        }),
+      };
+    });
+
+    const res = await enrichFromOpenLibraryByIsbn("9781234567890");
+    expect(res.pageCount).toBe(123);
+    expect(calls).toBeGreaterThanOrEqual(2);
+  });
 });
 
 describe("searchOpenLibraryByTitleAuthor", () => {

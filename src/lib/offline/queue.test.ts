@@ -12,7 +12,10 @@ function createMemoryDb() {
   return {
     get: vi.fn(async (store: StoreName, key: any) => stores[store].get(String(key))),
     put: vi.fn(async (store: StoreName, value: any) => {
-      const k = store === "offlineProgress" || store === "offlineEpubIndex" ? String(value.bookId) : String(value.id);
+      const k =
+        store === "offlineProgress" || store === "offlineEpubIndex"
+          ? String(value.bookId)
+          : String(value.id);
       stores[store].set(k, value);
     }),
     delete: vi.fn(async (store: StoreName, key: any) => {
@@ -97,4 +100,3 @@ describe("offline queue", () => {
     expect(out.sent).toBeGreaterThanOrEqual(1);
   });
 });
-

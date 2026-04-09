@@ -67,7 +67,11 @@ export async function queueProgressUpdate(opts: { bookId: string; url: string; b
   await db.put("offlineProgress", row);
 }
 
-export async function queueAnnotationCreate(opts: { bookId: string; url: string; body: JsonValue }) {
+export async function queueAnnotationCreate(opts: {
+  bookId: string;
+  url: string;
+  body: JsonValue;
+}) {
   await enqueue({
     id: uuid(),
     createdAt: Date.now(),
@@ -110,7 +114,11 @@ async function postJson(url: string, method: string, body: JsonValue | null) {
   return res;
 }
 
-export async function flushOfflineQueue(): Promise<{ ok: boolean; sent: number; remaining: number }> {
+export async function flushOfflineQueue(): Promise<{
+  ok: boolean;
+  sent: number;
+  remaining: number;
+}> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
     return { ok: false, sent: 0, remaining: 0 };
   }
@@ -136,7 +144,12 @@ export async function flushOfflineQueue(): Promise<{ ok: boolean; sent: number; 
       if (!isOfflineLikeError(e)) {
         // Unknown failure: keep for retry.
       }
-      return { ok: false, sent, remaining: (await db.getAll("offlineQueue")).length + (await db.getAll("offlineProgress")).length };
+      return {
+        ok: false,
+        sent,
+        remaining:
+          (await db.getAll("offlineQueue")).length + (await db.getAll("offlineProgress")).length,
+      };
     }
   }
 
@@ -172,11 +185,16 @@ export async function flushOfflineQueue(): Promise<{ ok: boolean; sent: number; 
     }
   }
 
-  const remaining = (await db.getAll("offlineQueue")).length + (await db.getAll("offlineProgress")).length;
+  const remaining =
+    (await db.getAll("offlineQueue")).length + (await db.getAll("offlineProgress")).length;
   return { ok: remaining === 0, sent, remaining };
 }
 
-export async function offlineOrQueueProgress(opts: { bookId: string; url: string; body: JsonValue }) {
+export async function offlineOrQueueProgress(opts: {
+  bookId: string;
+  url: string;
+  body: JsonValue;
+}) {
   try {
     const res = await postJson(opts.url, "PUT", opts.body);
     if (res.ok) return { queued: false };
@@ -189,7 +207,11 @@ export async function offlineOrQueueProgress(opts: { bookId: string; url: string
   }
 }
 
-export async function offlineOrQueueAnnotationCreate(opts: { bookId: string; url: string; body: JsonValue }) {
+export async function offlineOrQueueAnnotationCreate(opts: {
+  bookId: string;
+  url: string;
+  body: JsonValue;
+}) {
   try {
     const res = await postJson(opts.url, "POST", opts.body);
     if (res.ok) return { queued: false };
@@ -202,7 +224,11 @@ export async function offlineOrQueueAnnotationCreate(opts: { bookId: string; url
   }
 }
 
-export async function offlineOrQueueAnnotationPatch(opts: { bookId: string; url: string; body: JsonValue }) {
+export async function offlineOrQueueAnnotationPatch(opts: {
+  bookId: string;
+  url: string;
+  body: JsonValue;
+}) {
   try {
     const res = await postJson(opts.url, "PATCH", opts.body);
     if (res.ok) return { queued: false };
@@ -227,4 +253,3 @@ export async function offlineOrQueueAnnotationDelete(opts: { bookId: string; url
     return { queued: true };
   }
 }
-

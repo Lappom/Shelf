@@ -72,7 +72,10 @@ export async function getOfflineDb(): Promise<OfflineDb> {
     },
     async put(store, value, key) {
       const tx = db.transaction(store, "readwrite");
-      const req = key == null ? tx.objectStore(store).put(value as any) : tx.objectStore(store).put(value as any, key);
+      const req =
+        key == null
+          ? tx.objectStore(store).put(value as any)
+          : tx.objectStore(store).put(value as any, key);
       await new Promise<void>((resolve, reject) => {
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error ?? new Error("IDB_PUT_FAILED"));
@@ -111,4 +114,3 @@ export async function getOfflineDb(): Promise<OfflineDb> {
 
   return api;
 }
-

@@ -5,6 +5,7 @@ import { getStorageAdapter } from "@/lib/storage";
 import { buildBookFileStoragePath, buildCoverStoragePath } from "@/lib/storage/paths";
 import { extractEpubMetadata } from "@/lib/epub";
 import { enrichFromOpenLibraryByIsbn } from "@/lib/metadata/openlibrary";
+import { mergeOpenLibraryIntoBookMetadata } from "@/lib/metadata/openlibraryMerge";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
 
 export type IngestEpubResult =
@@ -66,10 +67,30 @@ export async function ingestEpub(args: {
     ? await enrichFromOpenLibraryByIsbn(isbnForEnrich).catch(() => null)
     : null;
 
-  const subjects = enrichment?.subjects?.length ? enrichment.subjects : [];
-  const pageCount = enrichment?.pageCount ?? null;
+  const merged = enrichment
+    ? mergeOpenLibraryIntoBookMetadata({
+        base: {
+          title,
+          authors,
+          language,
+          description: description ?? null,
+          isbn10: isbn10 ?? null,
+          isbn13: isbn13 ?? null,
+          publisher: null,
+          publishDate: null,
+          subjects: [],
+          pageCount: null,
+          openLibraryId: null,
+          coverUrl: null,
+        },
+        enrichment,
+        mode: "complement_only",
+      })
+    : null;
 
-  const mergedDescription = description ?? enrichment?.description ?? null;
+  const subjects = merged?.subjects ?? [];
+  const pageCount = merged?.pageCount ?? null;
+  const mergedDescription = merged?.description ?? description ?? null;
   const metadataSource = enrichment ? "openlibrary" : "epub";
 
   const mimeType = normalizeMime(args.mimeType);
@@ -108,7 +129,7 @@ export async function ingestEpub(args: {
       await adapter.upload(meta.cover.bytes, coverPath);
     }
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: typeof prisma) => {
       await tx.book.update({
         where: { id: bookId },
         data: {
@@ -217,7 +238,7 @@ export async function ingestEpub(args: {
     });
   }
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: typeof prisma) => {
     await tx.bookFile.create({
       data: {
         bookId,

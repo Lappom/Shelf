@@ -3,10 +3,20 @@
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { clearOfflineLocalState } from "@/lib/offline/cleanup";
-import { listIndexedEpubs, purgeIndexedEpub, type OfflineEpubIndexRow } from "@/lib/offline/epubIndex";
+import {
+  listIndexedEpubs,
+  purgeIndexedEpub,
+  type OfflineEpubIndexRow,
+} from "@/lib/offline/epubIndex";
 import { isEpubCached } from "@/lib/offline/pwaCache";
 
 type Props = {
@@ -78,7 +88,9 @@ export function OfflineManagerDialog({ open, onOpenChange, current }: Props) {
             </div>
             <div className="text-muted-foreground mt-2 text-sm">
               Limite locale (soft):{" "}
-              <span className={overLimit ? "text-destructive font-medium" : "text-foreground"}>{limitMb} MB</span>
+              <span className={overLimit ? "text-destructive font-medium" : "text-foreground"}>
+                {limitMb} MB
+              </span>
             </div>
             <div className="mt-2 flex items-center gap-2">
               <Input
@@ -136,7 +148,10 @@ export function OfflineManagerDialog({ open, onOpenChange, current }: Props) {
             {rows.length ? (
               <div className="mt-3 space-y-2">
                 {rows.slice(0, 50).map((r) => (
-                  <div key={r.bookId} className="flex items-center justify-between gap-2 rounded-xl border px-3 py-2">
+                  <div
+                    key={r.bookId}
+                    className="flex items-center justify-between gap-2 rounded-xl border px-3 py-2"
+                  >
                     <div className="min-w-0">
                       <div className="truncate text-sm font-medium">{r.bookId}</div>
                       <div className="text-muted-foreground text-xs">
@@ -163,7 +178,9 @@ export function OfflineManagerDialog({ open, onOpenChange, current }: Props) {
                 ))}
               </div>
             ) : (
-              <div className="text-muted-foreground mt-2 text-sm">Aucun livre indexé pour l’instant.</div>
+              <div className="text-muted-foreground mt-2 text-sm">
+                Aucun livre indexé pour l’instant.
+              </div>
             )}
           </div>
         </div>
@@ -190,4 +207,3 @@ export function OfflineManagerDialog({ open, onOpenChange, current }: Props) {
     </Dialog>
   );
 }
-

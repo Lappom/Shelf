@@ -34,4 +34,3 @@ export async function clearAllPwaCaches(): Promise<void> {
   if (!("caches" in window)) return;
   await Promise.all([caches.delete(APP_SHELL_CACHE), caches.delete(EPUB_CACHE)]);
 }
-
