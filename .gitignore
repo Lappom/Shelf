@@ -50,7 +50,7 @@ yarn-error.log*
 # prisma (local dev artifacts)
 prisma/*.db
 prisma/*.db-journal
-prisma/migrations
+# migrations/ must be committed — CI and deploy run `prisma migrate deploy`
 
 # typescript
 *.tsbuildinfo
