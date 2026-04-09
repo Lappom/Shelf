@@ -64,62 +64,84 @@ enum LibraryView {
   list
 }
 
-model User {
-  id            String   @id @default(uuid()) @db.Uuid
-  email         String   @unique @db.VarChar(255)
-  username      String   @unique @db.VarChar(100)
-  passwordHash  String?  @map("password_hash") @db.VarChar(255)
-  role          UserRole @default(reader)
-  avatarUrl     String?  @map("avatar_url")
-  oidcProvider  String?  @map("oidc_provider") @db.VarChar(100)
-  oidcSub       String?  @map("oidc_sub") @db.VarChar(255)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt     DateTime? @map("deleted_at") @db.Timestamptz(6)
+enum DuplicateKind {
+  hash
+  fuzzy
+}
 
-  booksAdded    Book[] @relation("BooksAdded")
-  shelves       Shelf[]
-  progress      UserBookProgress[]
-  annotations   UserAnnotation[]
-  preference    UserPreference?
+enum DuplicateStatus {
+  open
+  ignored
+  merged
+}
+
+enum DuplicateAuditAction {
+  ignored
+  merged
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique @db.VarChar(255)
+  username     String    @unique @db.VarChar(100)
+  passwordHash String?   @map("password_hash") @db.VarChar(255)
+  role         UserRole  @default(reader)
+  avatarUrl    String?   @map("avatar_url")
+  oidcProvider String?   @map("oidc_provider") @db.VarChar(100)
+  oidcSub      String?   @map("oidc_sub") @db.VarChar(255)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  booksAdded      Book[]                     @relation("BooksAdded")
+  shelves         Shelf[]
+  progress        UserBookProgress[]
+  annotations     UserAnnotation[]
+  preference      UserPreference?
   recommendations UserRecommendation[]
-  apiKeys       ApiKey[]
+  apiKeys         ApiKey[]
+  duplicateAudits DuplicateResolutionAudit[]
 
   @@map("users")
 }
 
 model Book {
-  id             String        @id @default(uuid()) @db.Uuid
-  title          String        @db.VarChar(500)
-  subtitle       String?       @db.VarChar(500)
-  authors        Json          @default("[]")
-  isbn10         String?       @map("isbn_10") @db.VarChar(10)
-  isbn13         String?       @map("isbn_13") @db.VarChar(13)
-  publisher      String?       @db.VarChar(255)
-  publishDate    String?       @map("publish_date") @db.VarChar(50)
-  language       String?       @db.VarChar(10)
+  id             String                   @id @default(uuid()) @db.Uuid
+  title          String                   @db.VarChar(500)
+  subtitle       String?                  @db.VarChar(500)
+  authors        Json                     @default("[]")
+  isbn10         String?                  @map("isbn_10") @db.VarChar(10)
+  isbn13         String?                  @map("isbn_13") @db.VarChar(13)
+  publisher      String?                  @db.VarChar(255)
+  publishDate    String?                  @map("publish_date") @db.VarChar(50)
+  language       String?                  @db.VarChar(10)
   description    String?
-  pageCount      Int?          @map("page_count")
-  subjects       Json          @default("[]")
-  coverUrl       String?       @map("cover_url")
+  pageCount      Int?                     @map("page_count")
+  subjects       Json                     @default("[]")
+  coverUrl       String?                  @map("cover_url")
   format         BookFormat
-  contentHash    String?       @map("content_hash") @db.VarChar(64)
-  openLibraryId  String?       @map("open_library_id") @db.VarChar(50)
-  metadataSource MetadataSource @map("metadata_source")
-  addedById      String        @map("added_by") @db.Uuid
-  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  deletedAt      DateTime?     @map("deleted_at") @db.Timestamptz(6)
+  contentHash    String?                  @map("content_hash") @db.VarChar(64)
+  openLibraryId  String?                  @map("open_library_id") @db.VarChar(50)
+  metadataSource MetadataSource           @map("metadata_source")
+  addedById      String                   @map("added_by") @db.Uuid
+  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?                @map("deleted_at") @db.Timestamptz(6)
   searchVector   Unsupported("tsvector")? @map("search_vector")
 
-  addedBy        User          @relation("BooksAdded", fields: [addedById], references: [id])
-  files          BookFile[]
-  snapshot       BookMetadataSnapshot?
-  shelves        BookShelf[]
-  tags           BookTag[]
-  progress       UserBookProgress[]
-  annotations    UserAnnotation[]
-  recommendations UserRecommendation[]
+  addedBy                  User                       @relation("BooksAdded", fields: [addedById], references: [id])
+  files                    BookFile[]
+  snapshot                 BookMetadataSnapshot?
+  shelves                  BookShelf[]
+  tags                     BookTag[]
+  progress                 UserBookProgress[]
+  annotations              UserAnnotation[]
+  recommendations          UserRecommendation[]
+  duplicatePairsAsA        DuplicatePair[]            @relation("DuplicatePairBookA")
+  duplicatePairsAsB        DuplicatePair[]            @relation("DuplicatePairBookB")
+  duplicatePairsMergedInto DuplicatePair[]            @relation("DuplicatePairMergedIntoBook")
+  duplicateAuditsPrimary   DuplicateResolutionAudit[] @relation("DuplicateAuditPrimaryBook")
+  duplicateAuditsAbsorbed  DuplicateResolutionAudit[] @relation("DuplicateAuditAbsorbedBook")
 
   @@index([contentHash])
   @@index([isbn13])
@@ -137,7 +159,7 @@ model BookFile {
   contentHash String   @map("content_hash") @db.VarChar(64)
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  book        Book     @relation(fields: [bookId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
 
   @@index([bookId])
   @@index([contentHash])
@@ -151,7 +173,7 @@ model BookMetadataSnapshot {
   dbMetadata   Json     @map("db_metadata")
   syncedAt     DateTime @map("synced_at") @db.Timestamptz(6)
 
-  book         Book     @relation(fields: [bookId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
 
   @@map("book_metadata_snapshots")
 }
@@ -168,9 +190,9 @@ model Shelf {
   createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  owner       User      @relation(fields: [ownerId], references: [id])
-  rule        ShelfRule?
-  books       BookShelf[]
+  owner User        @relation(fields: [ownerId], references: [id])
+  rule  ShelfRule?
+  books BookShelf[]
 
   @@unique([ownerId, type])
   @@index([ownerId])
@@ -182,7 +204,7 @@ model ShelfRule {
   shelfId String @unique @map("shelf_id") @db.Uuid
   rules   Json
 
-  shelf   Shelf  @relation(fields: [shelfId], references: [id])
+  shelf Shelf @relation(fields: [shelfId], references: [id])
 
   @@map("shelf_rules")
 }
@@ -193,8 +215,8 @@ model BookShelf {
   addedAt   DateTime @default(now()) @map("added_at") @db.Timestamptz(6)
   sortOrder Int      @default(0) @map("sort_order")
 
-  book      Book     @relation(fields: [bookId], references: [id])
-  shelf     Shelf    @relation(fields: [shelfId], references: [id])
+  book  Book  @relation(fields: [bookId], references: [id])
+  shelf Shelf @relation(fields: [shelfId], references: [id])
 
   @@id([bookId, shelfId])
   @@index([shelfId])
@@ -215,8 +237,8 @@ model BookTag {
   bookId String @map("book_id") @db.Uuid
   tagId  String @map("tag_id") @db.Uuid
 
-  book   Book   @relation(fields: [bookId], references: [id])
-  tag    Tag    @relation(fields: [tagId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
+  tag  Tag  @relation(fields: [tagId], references: [id])
 
   @@id([bookId, tagId])
   @@index([tagId])
@@ -235,8 +257,8 @@ model UserBookProgress {
   finishedAt  DateTime?      @map("finished_at") @db.Timestamptz(6)
   updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user        User           @relation(fields: [userId], references: [id])
-  book        Book           @relation(fields: [bookId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
 
   @@unique([userId, bookId])
   @@index([bookId])
@@ -255,26 +277,26 @@ model UserAnnotation {
   createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user      User           @relation(fields: [userId], references: [id])
-  book      Book           @relation(fields: [bookId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
 
   @@index([bookId])
   @@map("user_annotations")
 }
 
 model UserPreference {
-  id              String          @id @default(uuid()) @db.Uuid
-  userId          String          @unique @map("user_id") @db.Uuid
-  theme           ThemePreference @default(system)
-  readerFontFamily String?        @map("reader_font_family") @db.VarChar(100)
-  readerFontSize  Int?            @map("reader_font_size")
-  readerLineHeight Float?         @map("reader_line_height")
-  readerMargin    Int?            @map("reader_margin")
-  readerTheme     ReaderTheme?    @map("reader_theme")
-  libraryView     LibraryView?    @map("library_view")
-  booksPerPage    Int             @default(24) @map("books_per_page")
+  id               String          @id @default(uuid()) @db.Uuid
+  userId           String          @unique @map("user_id") @db.Uuid
+  theme            ThemePreference @default(system)
+  readerFontFamily String?         @map("reader_font_family") @db.VarChar(100)
+  readerFontSize   Int?            @map("reader_font_size")
+  readerLineHeight Float?          @map("reader_line_height")
+  readerMargin     Int?            @map("reader_margin")
+  readerTheme      ReaderTheme?    @map("reader_theme")
+  libraryView      LibraryView?    @map("library_view")
+  booksPerPage     Int             @default(24) @map("books_per_page")
 
-  user            User            @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@map("user_preferences")
 }
@@ -289,8 +311,8 @@ model UserRecommendation {
   dismissed  Boolean  @default(false)
   computedAt DateTime @map("computed_at") @db.Timestamptz(6)
 
-  user       User     @relation(fields: [userId], references: [id])
-  book       Book     @relation(fields: [bookId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  book Book @relation(fields: [bookId], references: [id])
 
   @@unique([userId, bookId])
   @@index([bookId])
@@ -298,19 +320,63 @@ model UserRecommendation {
 }
 
 model ApiKey {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  prefix    String   @db.VarChar(16)
-  hash      String   @db.VarChar(255)
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  prefix     String    @db.VarChar(16)
+  hash       String    @db.VarChar(255)
   lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(6)
-  expiresAt DateTime? @map("expires_at") @db.Timestamptz(6)
-  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  expiresAt  DateTime? @map("expires_at") @db.Timestamptz(6)
+  revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  user      User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@map("api_keys")
 }
 
+model DuplicatePair {
+  id               String          @id @default(uuid()) @db.Uuid
+  kind             DuplicateKind
+  status           DuplicateStatus @default(open)
+  bookIdA          String          @map("book_id_a") @db.Uuid
+  bookIdB          String          @map("book_id_b") @db.Uuid
+  score            Float?
+  lastScannedAt    DateTime        @map("last_scanned_at") @db.Timestamptz(6)
+  mergedIntoBookId String?         @map("merged_into_book_id") @db.Uuid
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  bookA          Book                       @relation("DuplicatePairBookA", fields: [bookIdA], references: [id])
+  bookB          Book                       @relation("DuplicatePairBookB", fields: [bookIdB], references: [id])
+  mergedIntoBook Book?                      @relation("DuplicatePairMergedIntoBook", fields: [mergedIntoBookId], references: [id])
+  audits         DuplicateResolutionAudit[]
+
+  @@unique([kind, bookIdA, bookIdB])
+  @@index([status])
+  @@index([kind])
+  @@index([lastScannedAt])
+  @@map("duplicate_pairs")
+}
+
+model DuplicateResolutionAudit {
+  id             String               @id @default(uuid()) @db.Uuid
+  pairId         String               @map("pair_id") @db.Uuid
+  actorId        String               @map("actor_id") @db.Uuid
+  action         DuplicateAuditAction
+  primaryBookId  String?              @map("primary_book_id") @db.Uuid
+  absorbedBookId String?              @map("absorbed_book_id") @db.Uuid
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  meta           Json                 @default("{}") @map("meta")
+
+  pair         DuplicatePair @relation(fields: [pairId], references: [id])
+  actor        User          @relation(fields: [actorId], references: [id])
+  primaryBook  Book?         @relation("DuplicateAuditPrimaryBook", fields: [primaryBookId], references: [id])
+  absorbedBook Book?         @relation("DuplicateAuditAbsorbedBook", fields: [absorbedBookId], references: [id])
+
+  @@index([pairId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("duplicate_resolution_audits")
+}

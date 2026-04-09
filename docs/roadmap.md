@@ -204,21 +204,21 @@
 ## Phase 8 — Déduplication (hash + fuzzy) & résolution admin
 
 ### 8.1 Scan automatique (docs/SPECS.md §5.5)
-- [ ] Comparer `BookFile.content_hash` sur actifs.
-- [ ] Sortie : clusters/paires.
+- [x] Comparer `BookFile.content_hash` sur actifs.
+- [x] Sortie : clusters/paires.
 
 ### 8.2 Scan fuzzy (docs/SPECS.md §5.5 + §7.1)
-- [ ] Similarité titre+auteurs via trigram/Levenshtein (Postgres `pg_trgm` recommandé).
-- [ ] Seuils configurables pour réduire faux positifs.
+- [x] Similarité titre+auteurs via trigram/Levenshtein (Postgres `pg_trgm` recommandé).
+- [x] Seuils configurables pour réduire faux positifs.
 
 ### 8.3 UI Admin doublons (docs/SPECS.md §5.5 + §11.2 Admin)
-- [ ] Liste des paires + vue diff côte à côte (métadonnées, cover, format, hash).
-- [ ] Actions : merge / ignore.
+- [x] Liste des paires + vue diff côte à côte (métadonnées, cover, format, hash).
+- [x] Actions : merge / ignore.
 
 ### 8.4 Merge (docs/SPECS.md §5.5)
-- [ ] Fusion : transfert shelves/annotations/progress/tags/recommendations si pertinent.
-- [ ] Gestion Book absorbé : soft delete ou purge selon choix.
-- [ ] Audit trail minimal (log admin).
+- [x] Fusion : transfert shelves/annotations/progress/tags/recommendations si pertinent.
+- [x] Gestion Book absorbé : soft delete ou purge selon choix.
+- [x] Audit trail minimal (log admin).
 
 ---
 
