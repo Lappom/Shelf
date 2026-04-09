@@ -6,6 +6,7 @@ import { corsPreflight, getClientIp, parseJsonBody } from "@/lib/api/http";
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { scheduleRecommendationsRecompute } from "@/lib/recommendations/trigger";
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
 const BodySchema = z.object({ bookId: z.string().uuid() });
@@ -60,6 +61,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         update: {},
         create: { bookId: parsedBody.data.bookId, shelfId: shelf.id },
       });
+
+      if (shelf.type === "favorites") {
+        scheduleRecommendationsRecompute(userId);
+      }
 
       return NextResponse.json({ ok: true }, { status: 200 });
     },

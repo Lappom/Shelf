@@ -1,10 +1,6 @@
 import { prisma } from "@/lib/db/prisma";
 import { requireAdmin } from "@/lib/auth/rbac";
-import {
-  ADMIN_BOOKS_PAGE,
-  encodeAdminBooksCursor,
-  toAdminBookRow,
-} from "./actions";
+import { ADMIN_BOOKS_PAGE, encodeAdminBooksCursor, toAdminBookRow } from "./actions";
 import { AdminBooksClient, type AdminBookRow } from "./ui";
 
 export default async function AdminBooksPage() {

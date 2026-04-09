@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { UploadEpubDialog } from "@/components/book/UploadEpubDialog";
 import { AddPhysicalBookDialog } from "@/components/book/AddPhysicalBookDialog";
 import { LibraryPageClient } from "@/components/library/LibraryPageClient";
+import { loadRecommendationsPage } from "@/lib/recommendations/loadRecommendationsPage";
 
 export default async function LibraryPage() {
   const user = await requireUser();
@@ -11,7 +12,7 @@ export default async function LibraryPage() {
   const role = (user as { role?: unknown }).role;
   const isAdmin = (typeof role === "string" ? role : undefined) === "admin";
 
-  const [tags, shelves, pref] = await Promise.all([
+  const [tags, shelves, pref, recoFirst] = await Promise.all([
     prisma.tag.findMany({
       select: { id: true, name: true, color: true },
       orderBy: [{ name: "asc" }],
@@ -35,11 +36,22 @@ export default async function LibraryPage() {
       },
       select: { booksPerPage: true, libraryInfiniteScroll: true, libraryView: true },
     }),
+    loadRecommendationsPage({ userId, limit: 10, cursor: null, reasonCode: null }),
   ]);
+
+  const initialRecommendations = recoFirst.rows.map((r) => ({
+    bookId: r.bookId,
+    title: r.title,
+    authors: r.authors,
+    coverUrl: r.coverUrl,
+    coverToken: r.coverToken,
+    reasons: r.reasons,
+  }));
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
       <LibraryPageClient
+        initialRecommendations={initialRecommendations}
         initialTags={tags}
         initialShelves={shelves}
         initialPrefs={{

@@ -8,7 +8,7 @@ export default function LibraryLoading() {
           <div className="bg-muted h-8 w-40 animate-pulse rounded-lg" />
           <div className="bg-muted h-4 w-64 max-w-full animate-pulse rounded-lg" />
         </div>
-        <div className="bg-muted h-10 w-full animate-pulse rounded-eleven-pill sm:w-72" />
+        <div className="bg-muted rounded-eleven-pill h-10 w-full animate-pulse sm:w-72" />
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {Array.from({ length: 10 }).map((_, i) => (

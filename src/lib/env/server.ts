@@ -29,6 +29,7 @@ export function pickServerEnvVars(env: NodeJS.ProcessEnv) {
     APP_NAME: trimmedOptionalString(env, "APP_NAME"),
     DEFAULT_LOCALE: trimmedOptionalString(env, "DEFAULT_LOCALE"),
     COVER_TOKEN_SECRET: trimmedOptionalString(env, "COVER_TOKEN_SECRET"),
+    SHELF_CRON_SECRET: trimmedOptionalString(env, "SHELF_CRON_SECRET"),
   };
 }
 
@@ -65,6 +66,7 @@ const serverEnvSchema = z
     APP_NAME: z.string().optional(),
     DEFAULT_LOCALE: z.string().optional(),
     COVER_TOKEN_SECRET: z.string().optional(),
+    SHELF_CRON_SECRET: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.STORAGE_TYPE !== "local" && data.STORAGE_TYPE !== "s3") {
@@ -199,4 +201,10 @@ export function getDefaultLocaleFromEnv(env: NodeJS.ProcessEnv = process.env): s
   const raw = env.DEFAULT_LOCALE?.trim();
   if (raw && /^[a-z]{2}(-[A-Z]{2})?$/.test(raw)) return raw;
   return "fr";
+}
+
+export function getShelfCronSecretFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
+  return pickServerEnvVars(env).SHELF_CRON_SECRET;
 }

@@ -268,16 +268,18 @@ model BookTag {
 }
 
 model UserBookProgress {
-  id          String         @id @default(uuid()) @db.Uuid
-  userId      String         @map("user_id") @db.Uuid
-  bookId      String         @map("book_id") @db.Uuid
-  progress    Float          @default(0)
-  currentCfi  String?        @map("current_cfi")
-  currentPage Int?           @map("current_page")
-  status      ProgressStatus @default(not_started)
-  startedAt   DateTime?      @map("started_at") @db.Timestamptz(6)
-  finishedAt  DateTime?      @map("finished_at") @db.Timestamptz(6)
-  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                   String         @id @default(uuid()) @db.Uuid
+  userId               String         @map("user_id") @db.Uuid
+  bookId               String         @map("book_id") @db.Uuid
+  progress             Float          @default(0)
+  currentCfi           String?        @map("current_cfi")
+  currentPage          Int?           @map("current_page")
+  status               ProgressStatus @default(not_started)
+  startedAt            DateTime?      @map("started_at") @db.Timestamptz(6)
+  finishedAt           DateTime?      @map("finished_at") @db.Timestamptz(6)
+  totalReadingSeconds  Int            @default(0) @map("total_reading_seconds")
+  lastProgressClientAt DateTime?      @map("last_progress_client_at") @db.Timestamptz(6)
+  updatedAt            DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id])
   book Book @relation(fields: [bookId], references: [id])
@@ -320,6 +322,7 @@ model UserPreference {
   libraryView      LibraryView?    @map("library_view")
   booksPerPage     Int             @default(24) @map("books_per_page")
   libraryInfiniteScroll Boolean    @default(false) @map("library_infinite_scroll")
+  recommendationsCollaborativeEnabled Boolean @default(true) @map("recommendations_collaborative_enabled")
 
   user User @relation(fields: [userId], references: [id])
 
@@ -341,6 +344,7 @@ model UserRecommendation {
 
   @@unique([userId, bookId])
   @@index([bookId])
+  @@index([userId, dismissed, score])
   @@map("user_recommendations")
 }
 

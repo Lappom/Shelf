@@ -7,6 +7,10 @@ import { LayoutGridIcon, ListIcon, SlidersHorizontalIcon, PlusIcon } from "lucid
 
 import { updateSearchPreferencesAction } from "@/app/(app)/search/actions";
 import { patchUserPreferencesAction } from "@/app/(app)/actions/userPreferences";
+import {
+  RecommendationsCarousel,
+  type CarouselRecoItem,
+} from "@/components/recommendations/RecommendationsCarousel";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -48,8 +52,7 @@ function normalizeWhitespace(s: string) {
 
 function coverImageSrc(bookId: string, coverUrl: string | null, coverToken: string | null) {
   if (!coverUrl) return null;
-  if (coverToken)
-    return `/api/books/${bookId}/cover?t=${encodeURIComponent(coverToken)}`;
+  if (coverToken) return `/api/books/${bookId}/cover?t=${encodeURIComponent(coverToken)}`;
   return `/api/books/${bookId}/cover`;
 }
 
@@ -74,12 +77,14 @@ function formatPercent(p: number | null) {
 }
 
 export function LibraryPageClient({
+  initialRecommendations,
   initialTags,
   initialShelves,
   initialPrefs,
   isAdmin,
   adminFab,
 }: {
+  initialRecommendations: CarouselRecoItem[];
   initialTags: LibraryTagOption[];
   initialShelves: LibraryShelfOption[];
   initialPrefs: LibraryPrefs;
@@ -337,6 +342,8 @@ export function LibraryPageClient({
 
   return (
     <div className="space-y-6">
+      <RecommendationsCarousel initialItems={initialRecommendations} />
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h1 className="eleven-display-section text-3xl">Bibliothèque</h1>
@@ -446,7 +453,10 @@ export function LibraryPageClient({
                     <div className="bg-muted relative aspect-2/3 w-full">
                       {b.coverUrl ? (
                         <Image
-                          src={coverImageSrc(b.id, b.coverUrl, b.coverToken) ?? `/api/books/${b.id}/cover`}
+                          src={
+                            coverImageSrc(b.id, b.coverUrl, b.coverToken) ??
+                            `/api/books/${b.id}/cover`
+                          }
                           alt=""
                           fill
                           unoptimized={!b.coverToken}

@@ -197,6 +197,7 @@ export function EpubReaderClient({
           body: {
             currentCfi: cfi,
             status: "reading",
+            clientNow: new Date().toISOString(),
             ...(typeof progress === "number" ? { progress: clampNumber(progress, 0, 1) } : {}),
           },
         });

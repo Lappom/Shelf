@@ -14,6 +14,10 @@ vi.mock("@/lib/db/prisma", () => ({
   },
 }));
 
+vi.mock("@/lib/recommendations/trigger", () => ({
+  scheduleRecommendationsRecompute: vi.fn(),
+}));
+
 vi.mock("@/lib/security/cors", () => ({
   handleCorsPreflight: vi.fn(() => null),
   addCorsHeaders: vi.fn((res: unknown) => res),
@@ -38,6 +42,7 @@ describe("GET /api/progress/[bookId]", () => {
     expect(json.progress).toBe(0);
     expect(json.currentCfi).toBe(null);
     expect(json.status).toBe("not_started");
+    expect(json.totalReadingSeconds).toBe(0);
   });
 });
 
@@ -65,6 +70,9 @@ describe("PUT /api/progress/[bookId]", () => {
       id: crypto.randomUUID(),
       format: "epub",
     });
+    (prisma.userBookProgress.findUnique as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      null,
+    );
     (prisma.userBookProgress.upsert as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       progress: 0.25,
       currentCfi: "epubcfi(/6/2[chapter]!/4/2/2)",
@@ -73,6 +81,8 @@ describe("PUT /api/progress/[bookId]", () => {
       startedAt: new Date().toISOString(),
       finishedAt: null,
       updatedAt: new Date().toISOString(),
+      totalReadingSeconds: 0,
+      lastProgressClientAt: new Date().toISOString(),
     });
 
     const { PUT } = await import("./route");

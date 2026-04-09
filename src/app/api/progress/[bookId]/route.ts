@@ -6,6 +6,8 @@ import { requireUser } from "@/lib/auth/rbac";
 import { runApiRoute } from "@/lib/api/route";
 import { corsPreflight, getClientIp, parseJsonBody } from "@/lib/api/http";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { PROGRESS_TIME_CAP_SECONDS } from "@/lib/recommendations/constants";
+import { scheduleRecommendationsRecompute } from "@/lib/recommendations/trigger";
 
 const ParamsSchema = z.object({
   bookId: z.string().uuid(),
@@ -16,6 +18,8 @@ const PutBodySchema = z.object({
   currentCfi: z.string().min(1).max(10_000).nullable().optional(),
   currentPage: z.number().int().positive().nullable().optional(),
   status: z.enum(["not_started", "reading", "finished", "abandoned"]).optional(),
+  /** Client clock for reading-time delta (ISO-8601). Optional; server time if omitted. */
+  clientNow: z.string().min(1).max(40).optional(),
 });
 
 export async function OPTIONS(req: Request) {
@@ -45,6 +49,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ bookId: string 
         startedAt: true,
         finishedAt: true,
         updatedAt: true,
+        totalReadingSeconds: true,
+        lastProgressClientAt: true,
       },
     });
 
@@ -57,6 +63,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ bookId: string 
         startedAt: null,
         finishedAt: null,
         updatedAt: null,
+        totalReadingSeconds: 0,
+        lastProgressClientAt: null,
       },
       { status: 200 },
     );
@@ -112,7 +120,58 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
         parsedBody.data.status ??
         (typeof nextProgress === "number" && nextProgress > 0 ? "reading" : undefined);
 
+      let refTime = new Date();
+      if (parsedBody.data.clientNow) {
+        const parsed = new Date(parsedBody.data.clientNow);
+        if (Number.isNaN(parsed.getTime())) {
+          return NextResponse.json({ error: "Invalid clientNow" }, { status: 400 });
+        }
+        refTime = parsed;
+      }
       const now = new Date();
+
+      const existing = await prisma.userBookProgress.findUnique({
+        where: { userId_bookId: { userId, bookId: parsedParams.data.bookId } },
+        select: {
+          status: true,
+          progress: true,
+          totalReadingSeconds: true,
+          lastProgressClientAt: true,
+        },
+      });
+
+      const effectiveStatus = nextStatus ?? existing?.status ?? "not_started";
+      const effectiveProgress =
+        typeof nextProgress === "number" ? nextProgress : (existing?.progress ?? 0);
+      const isReadingLike =
+        effectiveStatus === "reading" ||
+        (effectiveStatus !== "finished" &&
+          effectiveStatus !== "abandoned" &&
+          effectiveProgress > 0);
+
+      let totalReadingSeconds = existing?.totalReadingSeconds ?? 0;
+      let lastProgressClientAt = existing?.lastProgressClientAt ?? null;
+
+      const shouldCreditTime =
+        isReadingLike &&
+        (parsedBody.data.progress !== undefined ||
+          parsedBody.data.currentCfi !== undefined ||
+          parsedBody.data.currentPage !== undefined ||
+          nextStatus === "reading");
+
+      if (shouldCreditTime && lastProgressClientAt) {
+        const deltaMs = refTime.getTime() - lastProgressClientAt.getTime();
+        if (deltaMs > 0) {
+          const sec = Math.min(PROGRESS_TIME_CAP_SECONDS, Math.floor(deltaMs / 1000));
+          totalReadingSeconds += sec;
+        }
+      }
+      if (shouldCreditTime) {
+        lastProgressClientAt = refTime;
+      }
+
+      const becameFinished = nextStatus === "finished" && existing?.status !== "finished";
+
       const updated = await prisma.userBookProgress.upsert({
         where: {
           userId_bookId: { userId, bookId: parsedParams.data.bookId },
@@ -126,6 +185,8 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
           status: (nextStatus ?? "not_started") as never,
           startedAt: nextStatus === "reading" ? now : null,
           finishedAt: nextStatus === "finished" ? now : null,
+          totalReadingSeconds,
+          lastProgressClientAt,
         },
         update: {
           progress: typeof nextProgress === "number" ? nextProgress : undefined,
@@ -136,6 +197,8 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
           status: nextStatus ? (nextStatus as never) : undefined,
           startedAt: nextStatus === "reading" ? now : undefined,
           finishedAt: nextStatus === "finished" ? now : undefined,
+          totalReadingSeconds,
+          lastProgressClientAt,
         },
         select: {
           progress: true,
@@ -145,8 +208,14 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
           startedAt: true,
           finishedAt: true,
           updatedAt: true,
+          totalReadingSeconds: true,
+          lastProgressClientAt: true,
         },
       });
+
+      if (becameFinished) {
+        scheduleRecommendationsRecompute(userId);
+      }
 
       return NextResponse.json(updated, { status: 200 });
     },

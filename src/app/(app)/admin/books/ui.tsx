@@ -100,7 +100,9 @@ export function AdminBooksClient({
       setError(null);
       const res = await loadMoreAdminBooksAction({ cursor: nextCursor });
       if (!res.ok) {
-        setError(res.error === "INVALID_CURSOR" ? "Pagination invalide." : "Chargement impossible.");
+        setError(
+          res.error === "INVALID_CURSOR" ? "Pagination invalide." : "Chargement impossible.",
+        );
         return;
       }
       setRows((prev) => [...prev, ...res.rows]);

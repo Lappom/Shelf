@@ -230,6 +230,8 @@ Snapshot de la dernière synchronisation pour le three-way merge.
 | status | ENUM('not_started', 'reading', 'finished', 'abandoned') | |
 | started_at | TIMESTAMPTZ | Nullable |
 | finished_at | TIMESTAMPTZ | Nullable |
+| total_reading_seconds | INTEGER | Temps de lecture cumulé (secondes), estimé via les syncs progression |
+| last_progress_client_at | TIMESTAMPTZ | Nullable, horodatage client du dernier sync utile au calcul du delta |
 | updated_at | TIMESTAMPTZ | |
 
 Contrainte unique : `(user_id, book_id)`
@@ -263,6 +265,8 @@ Contrainte unique : `(user_id, book_id)`
 | reader_theme | ENUM('light', 'dark', 'sepia') | |
 | library_view | ENUM('grid', 'list') | |
 | books_per_page | INTEGER | Default 24 |
+| library_infinite_scroll | BOOLEAN | |
+| recommendations_collaborative_enabled | BOOLEAN | Opt-out du filtrage collaboratif (vie privée, §16.3) |
 
 ---
 
@@ -669,6 +673,7 @@ Les interactions UI passent principalement par des Server Actions Next.js. Les A
 - Le streaming des fichiers EPUB vers le reader.
 - Les webhooks (OIDC callback).
 - Les endpoints nécessitant un accès programmatique.
+- **Cron recommandations** : `POST` ou `GET` `/api/cron/recommendations` — recalcul par lots des suggestions (§16.5). Authentification : en-tête `Authorization: Bearer <SHELF_CRON_SECRET>` ou `x-shelf-cron-secret`. Query : `limit` (1–25, défaut 5), `after` (UUID utilisateur, curseur pour le lot suivant). Réponse JSON : `processed`, `nextAfter`. Sans `SHELF_CRON_SECRET` configuré : `503`.
 
 ### 12.2 Endpoints REST (futurs clients)
 
@@ -701,6 +706,7 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | POST | `/api/admin/import-calibre` | Import Calibre |
 | GET | `/api/admin/users` | Liste des utilisateurs |
 | GET | `/api/admin/audit-logs` | Journal d’audit admin (pagination `limit`, `before`, `beforeId`) |
+| POST / GET | `/api/cron/recommendations` | Recalcul batch des recommandations (secret `SHELF_CRON_SECRET`, voir §12.1) |
 
 ---
 
@@ -711,6 +717,8 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 Obligatoires en **production** (`NODE_ENV=production`) : `DATABASE_URL`, `NEXTAUTH_SECRET` (minimum 32 caractères), `NEXTAUTH_URL` (URL http(s) absolue).
 
 - **`COVER_TOKEN_SECRET`** (optionnel) : secret dédié aux jetons HMAC pour `GET /api/books/:id/cover?t=…` (optimisation d’images Next.js sans cookie sur le fetch interne). Si absent, la signature réutilise `NEXTAUTH_SECRET`. TTL des jetons : 5 minutes ; le jeton est lié à l’`id` du livre. Sans session ni jeton valide : accès refusé.
+
+- **`SHELF_CRON_SECRET`** (optionnel mais requis pour utiliser le cron) : secret partagé pour `/api/cron/recommendations` (en-tête Bearer ou `x-shelf-cron-secret`). Planifier un appel toutes les 6 h (ou chaîner les lots via `nextAfter` jusqu’à épuisement).
 
 Si `STORAGE_TYPE=s3`, toutes les variables `S3_*` listées ci-dessous sont obligatoires.
 
@@ -764,6 +772,9 @@ EPUB_ZIP_MAX_ENTRY_UNCOMPRESSED_BYTES=
 OPENLIBRARY_COVER_MAX_BYTES=
 OPENLIBRARY_TIMEOUT_MS=
 OPENLIBRARY_RETRIES=
+
+# Cron recommandations (optional)
+# SHELF_CRON_SECRET=<random-secret>
 
 # Build / CI only
 # SKIP_ENV_VALIDATION=1

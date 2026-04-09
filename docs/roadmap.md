@@ -543,40 +543,40 @@
 ## Phase 21 — Recommandations personnalisées
 
 ### 21.1 Signaux & collecte (docs/SPECS.md §16.2)
-- [ ] Capturer “finished” (très fort).
-- [ ] Estimer “temps de lecture” via updates progression (fort).
-- [ ] Favoris (fort).
-- [ ] Annotations count (moyen).
-- [ ] Ajout à étagère manuelle (faible).
-- [ ] Abandonné (négatif).
+- [x] Capturer “finished” (très fort).
+- [x] Estimer “temps de lecture” via updates progression (fort).
+- [x] Favoris (fort).
+- [x] Annotations count (moyen).
+- [x] Ajout à étagère manuelle (faible).
+- [x] Abandonné (négatif).
 
 ### 21.2 Content-based scoring (docs/SPECS.md §16.3)
-- [ ] Features : auteurs, sujets/tags (TF-IDF), langue, éditeur, pages.
-- [ ] Implémenter similarity \(0.35 author + 0.30 subject + 0.15 tag + 0.10 language + 0.05 publisher + 0.05 pages\).
+- [x] Features : auteurs, sujets/tags (TF-IDF), langue, éditeur, pages.
+- [x] Implémenter similarity \(0.35 author + 0.30 subject + 0.15 tag + 0.10 language + 0.05 publisher + 0.05 pages\).
 
 ### 21.3 Collaborative filtering (docs/SPECS.md §16.3)
-- [ ] Vecteur user `{book_id: score}`.
-- [ ] Cosine similarity users.
-- [ ] Seuil minimum 5 livres en commun.
-- [ ] Préférence user pour désactiver (privacy).
+- [x] Vecteur user `{book_id: score}`.
+- [x] Cosine similarity users.
+- [x] Seuil minimum 5 livres en commun.
+- [x] Préférence user pour désactiver (privacy).
 
 ### 21.4 Score final + diversité (docs/SPECS.md §16.4)
-- [ ] Combiner : 0.60 content + 0.25 collab + 0.10 popularity + 0.05 recency.
-- [ ] Pénalité diversité (éviter trop même auteur).
+- [x] Combiner : 0.60 content + 0.25 collab + 0.10 popularity + 0.05 recency.
+- [x] Pénalité diversité (éviter trop même auteur).
 
 ### 21.5 Calcul & stockage (docs/SPECS.md §16.5 + §16.6)
-- [ ] Job background toutes les 6h.
-- [ ] Recalcul à la demande.
-- [ ] Invalidation après “finished” ou “favori”.
-- [ ] Stocker top 50, servir par lots de 10.
-- [ ] Cold start : popularité globale.
-- [ ] `reasons` JSONB expliquant la reco.
+- [x] Job background toutes les 6h.
+- [x] Recalcul à la demande.
+- [x] Invalidation après “finished” ou “favori”.
+- [x] Stocker top 50, servir par lots de 10.
+- [x] Cold start : popularité globale.
+- [x] `reasons` JSONB expliquant la reco.
 
 ### 21.6 UI recommandations (docs/SPECS.md §16.7)
-- [ ] “Pour vous” sur Library (carrousel horizontal).
-- [ ] Afficher raison principale.
-- [ ] Bouton “Pas intéressé” (dismiss → améliore modèle).
-- [ ] Page `/recommendations` + filtres par raison.
+- [x] “Pour vous” sur Library (carrousel horizontal).
+- [x] Afficher raison principale.
+- [x] Bouton “Pas intéressé” (dismiss → améliore modèle).
+- [x] Page `/recommendations` + filtres par raison.
 
 ---
 

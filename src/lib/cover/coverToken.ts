@@ -20,7 +20,10 @@ export function getCoverTokenSecret(): string | null {
 /**
  * Creates a short-lived token so Next/Image optimizer can fetch /api/books/:id/cover without session cookies.
  */
-export function createCoverAccessToken(bookId: string, nowSec = Math.floor(Date.now() / 1000)): string | null {
+export function createCoverAccessToken(
+  bookId: string,
+  nowSec = Math.floor(Date.now() / 1000),
+): string | null {
   const secret = getCoverTokenSecret();
   if (!secret) return null;
   const payload: CoverTokenPayload = {

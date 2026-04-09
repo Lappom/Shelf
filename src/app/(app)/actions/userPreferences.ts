@@ -15,6 +15,7 @@ const PatchPrefsSchema = z
   .object({
     theme: ThemeSchema.optional(),
     libraryView: LibraryViewSchema.optional(),
+    recommendationsCollaborativeEnabled: z.boolean().optional(),
   })
   .strict();
 
@@ -41,7 +42,11 @@ export async function patchUserPreferencesAction(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
   const data = parsed.data;
 
-  if (data.theme == null && data.libraryView == null) {
+  if (
+    data.theme == null &&
+    data.libraryView == null &&
+    data.recommendationsCollaborativeEnabled == null
+  ) {
     return { ok: false as const, error: "INVALID_INPUT" as const };
   }
 
@@ -50,6 +55,9 @@ export async function patchUserPreferencesAction(input: unknown) {
     update: {
       ...(data.theme != null ? { theme: data.theme } : {}),
       ...(data.libraryView != null ? { libraryView: data.libraryView } : {}),
+      ...(data.recommendationsCollaborativeEnabled != null
+        ? { recommendationsCollaborativeEnabled: data.recommendationsCollaborativeEnabled }
+        : {}),
     },
     create: {
       userId,
@@ -57,8 +65,13 @@ export async function patchUserPreferencesAction(input: unknown) {
       libraryView: data.libraryView ?? "grid",
       booksPerPage: 24,
       libraryInfiniteScroll: false,
+      recommendationsCollaborativeEnabled: data.recommendationsCollaborativeEnabled ?? true,
     },
-    select: { theme: true, libraryView: true },
+    select: {
+      theme: true,
+      libraryView: true,
+      recommendationsCollaborativeEnabled: true,
+    },
   });
 
   return { ok: true as const, prefs: updated };

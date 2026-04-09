@@ -55,7 +55,12 @@ const DynamicCursorSchema = z.object({
   bid: z.string().uuid(),
 });
 
-function encodeShelfBooksCursor(payload: z.infer<typeof ManualCursorSchema> | z.infer<typeof ReadingCursorSchema> | z.infer<typeof DynamicCursorSchema>): string {
+function encodeShelfBooksCursor(
+  payload:
+    | z.infer<typeof ManualCursorSchema>
+    | z.infer<typeof ReadingCursorSchema>
+    | z.infer<typeof DynamicCursorSchema>,
+): string {
   return base64UrlEncodeJson(payload);
 }
 
