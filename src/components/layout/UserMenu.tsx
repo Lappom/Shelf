@@ -71,6 +71,9 @@ export function UserMenu({ email }: Props) {
         <DropdownMenuItem asChild>
           <Link href="/recommendations">Pour vous</Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/settings/api-keys">Clés API / MCP</Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled className="text-eleven-muted text-xs">
           {busy ? "Mise à jour…" : " "}

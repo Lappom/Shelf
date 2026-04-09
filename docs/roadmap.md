@@ -583,74 +583,74 @@
 ## Phase 22 — Serveur MCP (Model Context Protocol) (security-critical)
 
 ### 22.1 Transport & endpoint (docs/SPECS.md §17.2)
-- [ ] Exposer `/api/mcp`.
-- [ ] Support SSE (default) + Streamable HTTP.
+- [x] Exposer `/api/mcp`.
+- [x] Support SSE (default) + Streamable HTTP.
 
 ### 22.2 Auth API keys (docs/SPECS.md §17.3)
-- [ ] UI `/settings/api-keys` : créer/nommer/révoquer.
-- [ ] Génération token opaque `sk_shelf_` + 48 chars random.
-- [ ] Stocker uniquement hash SHA-256, jamais en clair.
-- [ ] Stocker prefix pour identification.
-- [ ] Champs : last_used_at, expires_at, revoked_at.
-- [ ] Permissions héritées du rôle user.
+- [x] UI `/settings/api-keys` : créer/nommer/révoquer.
+- [x] Génération token opaque `sk_shelf_` + 48 chars random.
+- [x] Stocker uniquement hash SHA-256, jamais en clair.
+- [x] Stocker prefix pour identification.
+- [x] Champs : last_used_at, expires_at, revoked_at.
+- [x] Permissions héritées du rôle user.
 
 ### 22.3 Rate limiting & audit (docs/SPECS.md §17.8)
-- [ ] Rate limit : 60 req/min par API key.
-- [ ] Logging appels MCP (audit).
+- [x] Rate limit : 60 req/min par API key.
+- [x] Logging appels MCP (audit).
 
 ### 22.4 Tools MCP (docs/SPECS.md §17.4)
 
 #### 22.4.1 Lecture bibliothèque
-- [ ] `search_books(query, filters?, limit?)`
-- [ ] `get_book(book_id)`
-- [ ] `list_books(page?, per_page?, sort?, filters?)`
-- [ ] `get_book_content(book_id, chapter?)` (limite tokens)
+- [x] `search_books(query, filters?, limit?)`
+- [x] `get_book(book_id)`
+- [x] `list_books(page?, per_page?, sort?, filters?)`
+- [x] `get_book_content(book_id, chapter?)` (limite tokens)
 
 #### 22.4.2 Annotations & progression
-- [ ] `get_annotations(book_id, type?)`
-- [ ] `get_all_annotations(limit?, offset?)`
-- [ ] `get_reading_progress(book_id?)`
-- [ ] `create_annotation(book_id, type, content, note?)`
+- [x] `get_annotations(book_id, type?)`
+- [x] `get_all_annotations(limit?, offset?)`
+- [x] `get_reading_progress(book_id?)`
+- [x] `create_annotation(book_id, type, content, note?)`
 
 #### 22.4.3 Étagères
-- [ ] `list_shelves()`
-- [ ] `get_shelf_books(shelf_id)`
-- [ ] `add_to_shelf(book_id, shelf_id)`
-- [ ] `remove_from_shelf(book_id, shelf_id)`
+- [x] `list_shelves()`
+- [x] `get_shelf_books(shelf_id)`
+- [x] `add_to_shelf(book_id, shelf_id)`
+- [x] `remove_from_shelf(book_id, shelf_id)`
 
 #### 22.4.4 Recommandations
-- [ ] `get_recommendations(limit?)`
-- [ ] `dismiss_recommendation(book_id)`
+- [x] `get_recommendations(limit?)`
+- [x] `dismiss_recommendation(book_id)`
 
 #### 22.4.5 Admin-only
-- [ ] `add_book(...)` (physique)
-- [ ] `update_book(book_id, fields)`
-- [ ] `delete_book(book_id)` (soft delete)
-- [ ] `scan_duplicates()`
+- [x] `add_book(...)` (physique)
+- [x] `update_book(book_id, fields)`
+- [x] `delete_book(book_id)` (soft delete)
+- [x] `scan_duplicates()`
 
 ### 22.5 Resources MCP (docs/SPECS.md §17.5)
-- [ ] `shelf://library/stats`
-- [ ] `shelf://user/reading-list`
-- [ ] `shelf://user/favorites`
-- [ ] `shelf://user/recent-annotations`
-- [ ] `shelf://book/{id}/metadata`
-- [ ] `shelf://book/{id}/annotations`
-- [ ] `shelf://shelves`
+- [x] `shelf://library/stats`
+- [x] `shelf://user/reading-list`
+- [x] `shelf://user/favorites`
+- [x] `shelf://user/recent-annotations`
+- [x] `shelf://book/{id}/metadata`
+- [x] `shelf://book/{id}/annotations`
+- [x] `shelf://shelves`
 
 ### 22.6 Prompts MCP (docs/SPECS.md §17.6)
-- [ ] `summarize_book`
-- [ ] `reading_insights`
-- [ ] `find_similar`
-- [ ] `shelf_curator`
-- [ ] `quote_finder`
+- [x] `summarize_book`
+- [x] `reading_insights`
+- [x] `find_similar`
+- [x] `shelf_curator`
+- [x] `quote_finder`
 
 ### 22.7 Doc client config (docs/SPECS.md §17.7)
-- [ ] Fournir snippet JSON “mcpServers.shelf.url + Authorization Bearer sk_shelf_...”.
-- [ ] Ajouter guide de rotation/revocation keys.
+- [x] Fournir snippet JSON “mcpServers.shelf.url + Authorization Bearer sk_shelf_...”.
+- [x] Ajouter guide de rotation/revocation keys.
 
 ### 22.8 Implémentation SDK (docs/SPECS.md §17.8)
-- [ ] Intégrer `@modelcontextprotocol/sdk`.
-- [ ] Implémenter extraction texte chapitre `get_book_content` avec limite tokens.
+- [x] Intégrer `@modelcontextprotocol/sdk`.
+- [x] Implémenter extraction texte chapitre `get_book_content` avec limite tokens.
 
 ---
 

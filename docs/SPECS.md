@@ -982,8 +982,8 @@ Table `ApiKey` :
 | id | UUID | PK |
 | user_id | UUID | FK → User |
 | name | VARCHAR(100) | Label choisi par l'utilisateur |
-| key_hash | VARCHAR(64) | SHA-256 du token |
-| key_prefix | VARCHAR(12) | `sk_shelf_xxxx` pour identification visuelle |
+| hash | VARCHAR(255) | SHA-256 hex du token (colonne `hash` / `key_hash` conceptuel) |
+| prefix | VARCHAR(16) | Début du token (`sk_shelf_` + suffixe) pour identification visuelle |
 | last_used_at | TIMESTAMPTZ | Nullable |
 | expires_at | TIMESTAMPTZ | Nullable |
 | created_at | TIMESTAMPTZ | |
@@ -998,7 +998,7 @@ Table `ApiKey` :
 | `search_books` | Recherche full-text dans la bibliothèque | `query: string`, `filters?: object`, `limit?: number` |
 | `get_book` | Détail complet d'un livre | `book_id: string` |
 | `list_books` | Liste paginée avec filtres | `page?: number`, `per_page?: number`, `sort?: string`, `filters?: object` |
-| `get_book_content` | Extraire le texte d'un chapitre EPUB | `book_id: string`, `chapter?: number` |
+| `get_book_content` | Extraire le texte d'un chapitre EPUB | `book_id: string`, `chapter?: number` (index **0-based** sur les items spine XHTML/HTML), `max_chars?: number` |
 
 #### Annotations et progression
 
@@ -1007,7 +1007,7 @@ Table `ApiKey` :
 | `get_annotations` | Annotations de l'utilisateur pour un livre | `book_id: string`, `type?: 'highlight' \| 'note' \| 'bookmark'` |
 | `get_all_annotations` | Toutes les annotations de l'utilisateur | `limit?: number`, `offset?: number` |
 | `get_reading_progress` | Progression de lecture | `book_id?: string` (tous si omis) |
-| `create_annotation` | Créer une annotation | `book_id: string`, `type: string`, `content: string`, `note?: string` |
+| `create_annotation` | Créer une annotation | `book_id: string`, `type: 'highlight' \| 'note' \| 'bookmark'`, `content?: string`, `note?: string`, `cfi_range?: string` (défaut `mcp:synthetic` si absent), `color?: string` (`#RRGGBB`) |
 
 #### Étagères
 

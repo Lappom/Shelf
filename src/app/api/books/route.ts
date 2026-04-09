@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { runApiRoute } from "@/lib/api/route";
 import { corsPreflight, getClientIp, parseJsonBody } from "@/lib/api/http";
+import { createPhysicalBook, normalizeIsbn } from "@/lib/books/createPhysicalBook";
 import { ingestEpub } from "@/lib/books/ingest";
 import { prisma } from "@/lib/db/prisma";
 import {
@@ -35,16 +36,6 @@ function getMaxCoverUploadBytes() {
 function isLikelyEpubMime(mime: string) {
   const m = mime.trim().toLowerCase();
   return m === "application/epub+zip" || m === "application/octet-stream";
-}
-
-function normalizeIsbn(raw: string | null | undefined) {
-  const s = (raw ?? "").trim();
-  if (!s) return null;
-  const compact = s.replace(/[\s-]+/g, "").toUpperCase();
-  if (/^[0-9]{10}$/.test(compact)) return compact;
-  if (/^[0-9]{9}X$/.test(compact)) return compact;
-  if (/^[0-9]{13}$/.test(compact)) return compact;
-  return null;
 }
 
 function splitCsvList(raw: string | null | undefined) {
@@ -179,48 +170,20 @@ export async function POST(req: Request) {
           windowMs: 60_000,
         });
 
-        const isbn = normalizeIsbn(create.data.isbn);
-        const applyOpenLibrary = Boolean(create.data.applyOpenLibrary);
-
-        if (applyOpenLibrary && !isbn) {
-          return NextResponse.json({ error: "Invalid ISBN" }, { status: 400 });
+        const { intent, ...physicalInput } = create.data;
+        void intent;
+        try {
+          const { bookId } = await createPhysicalBook({
+            addedByUserId: adminId,
+            input: physicalInput,
+          });
+          return NextResponse.json({ bookId }, { status: 201 });
+        } catch (e) {
+          if (e instanceof Error && e.message === "INVALID_ISBN") {
+            return NextResponse.json({ error: "Invalid ISBN" }, { status: 400 });
+          }
+          throw e;
         }
-
-        const enrichment =
-          applyOpenLibrary && isbn
-            ? await enrichFromOpenLibraryByIsbn(isbn).catch(() => null)
-            : null;
-
-        const subjects = create.data.subjects?.length
-          ? create.data.subjects
-          : (enrichment?.subjects ?? []);
-        const pageCount = create.data.pageCount ?? enrichment?.pageCount ?? null;
-        const description = create.data.description ?? enrichment?.description ?? null;
-        const metadataSource = enrichment ? "openlibrary" : "manual";
-
-        const book = await prisma.book.create({
-          data: {
-            title: create.data.title,
-            authors: create.data.authors,
-            isbn10: isbn && isbn.length === 10 ? isbn : null,
-            isbn13: isbn && isbn.length === 13 ? isbn : null,
-            publisher: create.data.publisher?.trim() || null,
-            publishDate: create.data.publishDate?.trim() || null,
-            language: create.data.language?.trim() || null,
-            pageCount: pageCount ?? null,
-            description,
-            subjects,
-            format: "physical",
-            contentHash: null,
-            openLibraryId: enrichment?.openLibraryId ?? null,
-            metadataSource: metadataSource as never,
-            addedById: adminId,
-          },
-          select: { id: true },
-        });
-
-        await updateBookSearchVector(book.id);
-        return NextResponse.json({ bookId: book.id }, { status: 201 });
       }
 
       // Multipart form-data mode (EPUB upload OR physical creation with optional cover)
