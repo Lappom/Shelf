@@ -1,0 +1,16 @@
+---
+description: Standards DB (Prisma + PostgreSQL) : migrations, index, FTS
+globs: prisma/**;**/*.prisma;**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Prisma + PostgreSQL
+
+- Les queries complexes (search, filtres) doivent être expliquées par un test d’intégration ou un exemple.
+- FTS : privilégier `tsvector` + index GIN ; fuzzy : `pg_trgm` avec index GIN/GiST.
+- Pagination : cursor-based (id + tie-break) plutôt que OFFSET.
+- Toujours indexer : `content_hash`, `isbn_13`, `(user_id, book_id)` (progress/annotations), pivots N:N.
+- Soft delete : filtrer `deleted_at IS NULL` par défaut ; prévoir un mode admin “inclure supprimés”.
+
+## JSONB
+- Stocker `authors`, `subjects`, `rules` en JSONB mais exposer des types/DTO côté app.

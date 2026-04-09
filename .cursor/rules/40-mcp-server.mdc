@@ -1,0 +1,17 @@
+---
+description: Serveur MCP Shelf (tools/resources/prompts) + API keys utilisateur
+globs: src/app/api/mcp/**;src/lib/mcp/**;**/*mcp*.*;docs/SPECS.md
+alwaysApply: false
+---
+
+# MCP — standards Shelf
+
+- Endpoint : `/api/mcp` (SSE ou Streamable HTTP).
+- Auth : API key **par utilisateur**, hashée en DB, révocable, rate-limited.
+- Les tools doivent respecter l’isolement multi-user : jamais d’accès aux données d’un autre user.
+- Journaliser l’usage (tool name, user_id, latency, status) sans loguer de secrets.
+
+## Conception des tools
+- Inputs validés (zod) + erreurs structurées.
+- Limiter `get_book_content` (taille/chapitres) pour éviter des réponses énormes.
+- Admin tools : refuser si role != admin.

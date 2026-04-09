@@ -1,0 +1,13 @@
+---
+description: UI Shelf — suivre le design system (DESIGN.md), light/dark, responsive
+globs: src/**/*.{tsx,css};DESIGN.md
+alwaysApply: false
+---
+
+# UI — DESIGN.md (ElevenLabs-like)
+
+- Palette : blanc/gris chaud, noir, surfaces “warm stone”, ombres très subtiles.
+- Typo : headings ultra-light (Waldenburg 300), body UI en Inter avec tracking léger.
+- Composants : boutons pill (9999px), cards radius 16–24px, shadows multi-couches < 0.1 opacity.
+- Toujours prévoir Light + Dark mode + focus ring accessible.
+- Mobile-first : PWA responsive, interactions fluides, pas de layouts “cassés” sur 360px.

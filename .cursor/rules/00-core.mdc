@@ -1,0 +1,34 @@
+﻿---
+description: Règles globales Shelf (qualité, sécurité, architecture)
+alwaysApply: true
+---
+
+# Shelf — règles globales
+
+- Répondre en français, style concis.
+- Les commentaires de code doivent être en anglais.
+- Ne pas inventer des endpoints/outils qui ne figurent pas dans `docs/SPECS.md` sans les ajouter à la spec.
+- Préférer une architecture simple et testable (Next.js App Router + Prisma + PostgreSQL).
+- Tout ce qui touche à l’auth, l’upload, le storage, le reader et le MCP est **security-critical**.
+- Ne jamais servir un fichier du storage directement : toujours via un endpoint authentifié + checks d’accès.
+- Valider systématiquement les inputs côté serveur (zod ou équivalent) et retourner des erreurs utilisateur claires.
+- Prioriser PostgreSQL natif (tsvector, trigram) avant d’ajouter une infra externe (Elastic, etc.).
+
+## Politique “subagents” (profils)
+
+Les profils dans `.cursor/agents/*.md` ne sont pas auto-déclenchés par Cursor. **Par contre, moi je les applique automatiquement** dès que le sujet le justifie.
+
+- Si la tâche touche **MCP / API keys / tools/resources/prompts** → utiliser le profil `shelf-mcp`.
+- Si la tâche touche **EPUB / parsing / merge / writeback / OPF** → utiliser le profil `shelf-epub`.
+- Si la tâche touche **recommandations / scoring / cold start / collaborative filtering** → utiliser le profil `shelf-qa` en support + `shelf-backend` pour l’implémentation.
+- Si la tâche touche **UI / design system / shadcn / responsive / PWA** → utiliser le profil `shelf-frontend`.
+- Si la tâche touche **DB / Prisma / migrations / FTS / index / perf** → utiliser le profil `shelf-backend`.
+
+Quand c’est utile, lancer ces profils **en parallèle** (ex: backend + qa, mcp + backend).
+
+## Terminologie projet
+- Livre = `Book`
+- Fichier = `BookFile`
+- Snapshot = `BookMetadataSnapshot` (three-way merge)
+- Étagère = `Shelf` (manual/dynamic/system)
+- MCP = serveur sur `/api/mcp` + API keys utilisateur

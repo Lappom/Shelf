@@ -1,0 +1,14 @@
+---
+description: Sécurité & privacy Shelf (auth, upload, storage, reader)
+globs: src/**/*.{ts,tsx};docs/SPECS.md
+alwaysApply: false
+---
+
+# Sécurité & privacy
+
+- Upload : valider type/taille, rejeter les ZIP invalides, protéger contre zip bombs (limites).
+- XSS : sanitization du contenu EPUB rendu dans le reader.
+- Accès fichiers : endpoints authentifiés + contrôle d’accès par user/role.
+- Secrets : uniquement en variables d’environnement ; jamais côté client.
+- Rate limit : auth, upload, endpoints MCP.
+- Logs : jamais loguer tokens, API keys, mots de passe, contenu privé (annotations) en clair.

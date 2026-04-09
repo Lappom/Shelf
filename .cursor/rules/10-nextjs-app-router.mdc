@@ -1,0 +1,17 @@
+---
+description: Conventions Next.js (App Router) pour Shelf
+globs: **/*.{ts,tsx,js,jsx}
+alwaysApply: false
+---
+
+# Next.js App Router
+
+- Utiliser `src/app` (App Router). Server Components par défaut, `use client` seulement si nécessaire.
+- Mutations via Server Actions quand possible ; Route Handlers (`src/app/api/**`) pour streaming/fichiers/MCP.
+- AuthZ : vérifier rôle + ownership (données séparées par utilisateur) côté serveur.
+- Reader/EPUB : charger le reader en lazy/dynamic import pour réduire le bundle initial.
+- Ne pas faire de requêtes Open Library depuis le client (clé/quotas + CORS) : uniquement côté serveur.
+
+## Patterns
+- Les pages listées (library/search/shelves) doivent être paginées et filter-friendly.
+- Préférer des DTOs explicites (types) entre DB → UI.

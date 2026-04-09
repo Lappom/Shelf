@@ -1,0 +1,21 @@
+---
+description: EPUB ingestion + three-way merge + writeback vers EPUB
+globs: src/lib/epub/**;src/lib/metadata/**;**/*epub*.*;**/*merge*.*
+alwaysApply: false
+---
+
+# EPUB — ingestion & sync
+
+- Toujours calculer `content_hash` (SHA-256) côté serveur.
+- Déduplication : d’abord `content_hash`, puis fallback filename + heuristiques.
+- Soft delete : si un fichier “revient”, restaurer l’entrée supprimée plutôt que créer un nouveau livre.
+
+## Three-way merge (règle)
+- Sources : EPUB (actuel), DB (actuel), Snapshot (dernier sync).
+- En conflit (EPUB et DB modifiés depuis snapshot) : **le fichier gagne**.
+- Si DB gagne (cas DB ≠ snapshot et EPUB == snapshot) : écrire les métadonnées DB dans l’EPUB.
+
+## Writeback EPUB
+- Écrire dans l’OPF metadata, conserver la structure ZIP valide.
+- Après writeback : recalculer le hash, mettre à jour DB + snapshot.
+- Limiter les champs écrits (titre, auteurs, description, langue, publisher, date, identifiers) pour réduire les risques.

@@ -1,0 +1,16 @@
+---
+description: Recommandations personnalisées (scoring, privacy, UX)
+globs: src/lib/recommendations/**;src/app/(app)/recommendations/**;**/*recommend*.*;docs/SPECS.md
+alwaysApply: false
+---
+
+# Recommandations — standards
+
+- Calcul “local-first” : pas d’envoi de données utilisateur à des services externes.
+- Expliquer chaque reco avec `reasons[]` (ex: auteur/sujet/tag similaires).
+- Respect vie privée : collaborative filtering désactivable par utilisateur.
+- UX : bouton “Pas intéressé” (dismiss) qui influence le scoring.
+
+## Qualité
+- Éviter les boucles de recommandation (toujours le même auteur) : pénalité de diversité.
+- Prévoir un mode “cold start” basé sur popularité globale.
