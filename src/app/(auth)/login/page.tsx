@@ -17,7 +17,9 @@ export default async function LoginPage({
   searchParams?: Promise<{ error?: keyof typeof errorMessages }>;
 }) {
   const oidcEnabled = Boolean(
-    process.env.OIDC_ISSUER?.trim() && process.env.OIDC_CLIENT_ID?.trim() && process.env.OIDC_CLIENT_SECRET?.trim(),
+    process.env.OIDC_ISSUER?.trim() &&
+    process.env.OIDC_CLIENT_ID?.trim() &&
+    process.env.OIDC_CLIENT_SECRET?.trim(),
   );
 
   const sp = searchParams ? await searchParams : undefined;

@@ -77,4 +77,3 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     return addCorsHeaders(NextResponse.json({ error: "Storage error" }, { status: 500 }), req);
   }
 }
-

@@ -118,7 +118,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
               for (let attempt = 0; attempt < 5; attempt++) {
                 const candidate =
-                  attempt === 0 ? baseUsername : `${baseUsername}-${Math.random().toString(16).slice(2, 6)}`;
+                  attempt === 0
+                    ? baseUsername
+                    : `${baseUsername}-${Math.random().toString(16).slice(2, 6)}`;
                 const taken = await prisma.user.findFirst({
                   where: { OR: [{ email: email ?? "__missing__" }, { username: candidate }] },
                   select: { id: true },

@@ -1,6 +1,13 @@
 import { requireUser } from "@/lib/auth/rbac";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -29,8 +36,8 @@ export default async function UiShowcasePage() {
         <p className="text-eleven-muted text-xs tracking-widest uppercase">UI Kit</p>
         <h1 className="eleven-display-hero text-4xl">Surface, type, and whisper-level depth.</h1>
         <p className="text-eleven-secondary eleven-body-airy max-w-2xl text-[1.05rem] leading-relaxed">
-          Cette page sert de référence visuelle pour valider les tokens, la typographie Waldenburg 300, les ombres
-          multi-couches et les boutons pilule.
+          Cette page sert de référence visuelle pour valider les tokens, la typographie Waldenburg
+          300, les ombres multi-couches et les boutons pilule.
         </p>
       </header>
 
@@ -51,7 +58,8 @@ export default async function UiShowcasePage() {
             <Button variant="ghost">Ghost</Button>
           </CardContent>
           <CardFooter className="text-eleven-muted text-xs">
-            Tip: utilisez <code className="font-mono">size=&quot;warm&quot;</code> pour la pill warm-stone.
+            Tip: utilisez <code className="font-mono">size=&quot;warm&quot;</code> pour la pill
+            warm-stone.
           </CardFooter>
         </Card>
 
@@ -64,7 +72,9 @@ export default async function UiShowcasePage() {
             <Input placeholder="Email" type="email" />
             <Input placeholder="Search…" />
           </CardContent>
-          <CardFooter className="text-eleven-muted text-xs">Les placeholders doivent rester légers, jamais gris froid.</CardFooter>
+          <CardFooter className="text-eleven-muted text-xs">
+            Les placeholders doivent rester légers, jamais gris froid.
+          </CardFooter>
         </Card>
       </section>
 
@@ -127,4 +137,3 @@ export default async function UiShowcasePage() {
     </div>
   );
 }
-

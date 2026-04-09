@@ -28,4 +28,3 @@ export function handleCorsPreflight(req: Request) {
   const res = new Response(null, { status: 204 });
   return addCorsHeaders(res, req);
 }
-

@@ -49,4 +49,3 @@ describe("assertSameOriginFromHeaders", () => {
     ).not.toThrow();
   });
 });
-

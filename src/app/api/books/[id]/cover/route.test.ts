@@ -86,4 +86,3 @@ describe("GET /api/books/[id]/cover", () => {
     expect(res.status).toBe(404);
   });
 });
-

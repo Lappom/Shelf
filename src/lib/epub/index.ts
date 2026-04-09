@@ -46,9 +46,7 @@ function normalizeWhitespace(s: string) {
 }
 
 function extractIsbns(raw: string[]) {
-  const normalized = raw
-    .map((s) => s.replace(/[^0-9Xx]/g, "").toUpperCase())
-    .filter(Boolean);
+  const normalized = raw.map((s) => s.replace(/[^0-9Xx]/g, "").toUpperCase()).filter(Boolean);
   const isbn13 = normalized.find((s) => s.length === 13 && /^\d{13}$/.test(s)) ?? null;
   const isbn10 = normalized.find((s) => s.length === 10 && /^[0-9X]{10}$/.test(s)) ?? null;
   return { isbn10, isbn13 };
@@ -183,4 +181,3 @@ export async function extractEpubMetadata(epubBytes: Buffer): Promise<EpubMetada
     cover,
   };
 }
-

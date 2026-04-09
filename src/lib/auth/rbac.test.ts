@@ -29,4 +29,3 @@ describe("rbac", () => {
     await expect(requireAdmin()).resolves.toMatchObject({ id: "u1" });
   });
 });
-

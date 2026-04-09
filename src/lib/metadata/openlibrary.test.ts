@@ -47,4 +47,3 @@ describe("enrichFromOpenLibraryByIsbn", () => {
     expect(res.coverUrl).toMatch(/covers\.openlibrary\.org/);
   });
 });
-

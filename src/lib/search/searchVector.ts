@@ -26,4 +26,3 @@ export async function updateBookSearchVector(bookId: string) {
     bookId,
   );
 }
-

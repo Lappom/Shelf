@@ -38,7 +38,8 @@ export async function ingestEpub(args: {
     where: { deletedAt: null, contentHash },
     select: { id: true },
   });
-  if (activeDuplicate) return { ok: false, code: "DUPLICATE_ACTIVE", existingBookId: activeDuplicate.id };
+  if (activeDuplicate)
+    return { ok: false, code: "DUPLICATE_ACTIVE", existingBookId: activeDuplicate.id };
 
   const adapter = getStorageAdapter();
 
@@ -61,7 +62,9 @@ export async function ingestEpub(args: {
   const isbn13 = meta.isbn13;
 
   const isbnForEnrich = isbn13 ?? isbn10;
-  const enrichment = isbnForEnrich ? await enrichFromOpenLibraryByIsbn(isbnForEnrich).catch(() => null) : null;
+  const enrichment = isbnForEnrich
+    ? await enrichFromOpenLibraryByIsbn(isbnForEnrich).catch(() => null)
+    : null;
 
   const subjects = enrichment?.subjects?.length ? enrichment.subjects : [];
   const pageCount = enrichment?.pageCount ?? null;
@@ -252,4 +255,3 @@ export async function ingestEpub(args: {
 
   return { ok: true, bookId, restored: false };
 }
-

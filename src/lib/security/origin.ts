@@ -8,10 +8,7 @@ function getAppOrigin() {
   }
 }
 
-export function assertSameOriginFromHeaders(input: {
-  origin: string | null;
-  host: string | null;
-}) {
+export function assertSameOriginFromHeaders(input: { origin: string | null; host: string | null }) {
   const appOrigin = getAppOrigin();
 
   // If we can't determine app origin, we can't enforce a strict check safely.
@@ -25,4 +22,3 @@ export function assertSameOriginFromHeaders(input: {
     throw new Error("BAD_ORIGIN");
   }
 }
-

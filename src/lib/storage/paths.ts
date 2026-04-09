@@ -19,7 +19,11 @@ export function slugifyAuthor(author: string) {
   return s || "unknown";
 }
 
-export function buildBookFileStoragePath(args: { format: string; author: string; filename: string }) {
+export function buildBookFileStoragePath(args: {
+  format: string;
+  author: string;
+  filename: string;
+}) {
   const format = sanitizePathSegment(args.format);
   const authorSlug = slugifyAuthor(args.author);
   const filename = sanitizePathSegment(args.filename);
@@ -32,4 +36,3 @@ export function buildCoverStoragePath(args: { bookId: string; ext: string }) {
   if (!/^[a-z0-9]+$/.test(ext)) throw new StorageError("Invalid cover extension.", "INVALID_PATH");
   return `covers/${bookId}.${ext}`;
 }
-

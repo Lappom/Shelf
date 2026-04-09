@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react";
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -34,9 +41,12 @@ export function UploadEpubDialog({ triggerText = "Ajouter un EPUB" }: { triggerT
       return;
     }
 
-    const json = (await res.json().catch(() => null)) as
-      | { bookId?: string; restored?: boolean; error?: string; existingBookId?: string }
-      | null;
+    const json = (await res.json().catch(() => null)) as {
+      bookId?: string;
+      restored?: boolean;
+      error?: string;
+      existingBookId?: string;
+    } | null;
 
     if (!res.ok) {
       setState({
@@ -76,7 +86,8 @@ export function UploadEpubDialog({ triggerText = "Ajouter un EPUB" }: { triggerT
         <DialogHeader>
           <DialogTitle>Importer un EPUB</DialogTitle>
           <DialogDescription className="text-eleven-secondary eleven-body-airy">
-            Upload réservé admin. Le fichier est stocké côté serveur et les métadonnées sont extraites automatiquement.
+            Upload réservé admin. Le fichier est stocké côté serveur et les métadonnées sont
+            extraites automatiquement.
           </DialogDescription>
         </DialogHeader>
 
@@ -93,7 +104,10 @@ export function UploadEpubDialog({ triggerText = "Ajouter un EPUB" }: { triggerT
               {state.existingBookId && (
                 <div className="mt-1">
                   Livre existant :{" "}
-                  <a className="underline underline-offset-3" href={`/reader/${state.existingBookId}`}>
+                  <a
+                    className="underline underline-offset-3"
+                    href={`/reader/${state.existingBookId}`}
+                  >
                     ouvrir
                   </a>
                 </div>
@@ -102,7 +116,7 @@ export function UploadEpubDialog({ triggerText = "Ajouter un EPUB" }: { triggerT
           )}
 
           {state.type === "done" && (
-            <div className="rounded-xl border border-(--eleven-border-subtle) bg-muted/30 px-3 py-2 text-sm">
+            <div className="bg-muted/30 rounded-xl border border-(--eleven-border-subtle) px-3 py-2 text-sm">
               Import OK.{" "}
               <a className="underline underline-offset-3" href={`/reader/${state.bookId}`}>
                 Ouvrir dans le reader
@@ -113,7 +127,11 @@ export function UploadEpubDialog({ triggerText = "Ajouter un EPUB" }: { triggerT
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={state.type === "uploading"}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={state.type === "uploading"}
+          >
             Annuler
           </Button>
           <Button onClick={onUpload} disabled={!canSubmit}>
@@ -124,4 +142,3 @@ export function UploadEpubDialog({ triggerText = "Ajouter un EPUB" }: { triggerT
     </Dialog>
   );
 }
-

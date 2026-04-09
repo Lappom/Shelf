@@ -111,4 +111,3 @@ export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLib
   await setCachedJson(isbnKey(isbn), enrichment);
   return enrichment;
 }
-

@@ -48,4 +48,3 @@ describe("S3StorageAdapter error mapping", () => {
     expect(Buffer.concat(chunks).toString("utf8")).toBe("ok");
   });
 });
-

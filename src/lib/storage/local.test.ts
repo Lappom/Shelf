@@ -51,4 +51,3 @@ describe("LocalStorageAdapter", () => {
     expect(Buffer.concat(chunks).toString("utf8")).toBe("stream-me");
   });
 });
-

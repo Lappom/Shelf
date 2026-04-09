@@ -48,7 +48,13 @@ describe("GET /api/books/[id]/file", () => {
     (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: crypto.randomUUID(),
       format: "epub",
-      files: [{ storagePath: "epub/A/file.epub", filename: "file.epub", mimeType: "application/epub+zip" }],
+      files: [
+        {
+          storagePath: "epub/A/file.epub",
+          filename: "file.epub",
+          mimeType: "application/epub+zip",
+        },
+      ],
     });
 
     const { getStorageAdapter } = await import("@/lib/storage");
@@ -71,7 +77,9 @@ describe("GET /api/books/[id]/file", () => {
     (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       id: crypto.randomUUID(),
       format: "epub",
-      files: [{ storagePath: "missing.epub", filename: "missing.epub", mimeType: "application/epub+zip" }],
+      files: [
+        { storagePath: "missing.epub", filename: "missing.epub", mimeType: "application/epub+zip" },
+      ],
     });
 
     const { getStorageAdapter } = await import("@/lib/storage");
@@ -88,4 +96,3 @@ describe("GET /api/books/[id]/file", () => {
     expect(res.status).toBe(404);
   });
 });
-

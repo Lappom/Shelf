@@ -4,9 +4,9 @@ import { buildBookFileStoragePath, buildCoverStoragePath, slugifyAuthor } from "
 
 describe("storage paths", () => {
   it("buildBookFileStoragePath follows /{format}/{author}/{filename}", () => {
-    expect(buildBookFileStoragePath({ format: "epub", author: "Isaac Asimov", filename: "x.epub" })).toBe(
-      "epub/isaac-asimov/x.epub",
-    );
+    expect(
+      buildBookFileStoragePath({ format: "epub", author: "Isaac Asimov", filename: "x.epub" }),
+    ).toBe("epub/isaac-asimov/x.epub");
   });
 
   it("slugifyAuthor is stable and never empty", () => {
@@ -19,4 +19,3 @@ describe("storage paths", () => {
     expect(buildCoverStoragePath({ bookId: "b1", ext: ".png" })).toBe("covers/b1.png");
   });
 });
-

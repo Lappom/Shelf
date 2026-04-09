@@ -97,4 +97,3 @@ describe("ingestEpub", () => {
     expect(prismaMock.bookMetadataSnapshot.create).toHaveBeenCalled();
   });
 });
-

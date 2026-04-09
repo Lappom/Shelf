@@ -41,6 +41,10 @@ export async function POST(req: Request) {
 
   // Admin-only
   const admin = await requireAdmin();
+  const addedByUserId = admin.id;
+  if (!addedByUserId) {
+    return addCorsHeaders(NextResponse.json({ error: "Invalid session" }, { status: 401 }), req);
+  }
 
   // Rate limit (by IP)
   try {
@@ -83,7 +87,7 @@ export async function POST(req: Request) {
     epubBytes: buf,
     filename,
     mimeType: file.type,
-    addedByUserId: admin.id,
+    addedByUserId,
   });
 
   if (!res.ok) {
@@ -104,4 +108,3 @@ export async function POST(req: Request) {
     req,
   );
 }
-

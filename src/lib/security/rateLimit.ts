@@ -50,4 +50,3 @@ export async function rateLimitOrThrow(args: RateLimitArgs) {
   if (!res.ok) throw new Error("RATE_LIMITED");
   return res;
 }
-

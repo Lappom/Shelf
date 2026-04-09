@@ -31,4 +31,3 @@ export async function ensureSystemShelves(userId: string) {
     },
   });
 }
-

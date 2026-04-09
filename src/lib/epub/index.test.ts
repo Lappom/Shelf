@@ -51,4 +51,3 @@ describe("extractEpubMetadata", () => {
     expect(meta.cover?.bytes.length).toBeGreaterThan(0);
   });
 });
-

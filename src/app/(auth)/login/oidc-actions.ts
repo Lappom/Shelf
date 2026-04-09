@@ -11,4 +11,3 @@ export async function oidcSignInAction() {
     redirect("/login?error=auth");
   }
 }
-
