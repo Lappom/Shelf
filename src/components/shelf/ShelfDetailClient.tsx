@@ -213,6 +213,10 @@ function defaultValueFor(field: RuleField, op: RuleOp): unknown {
   if (op === "is_empty" || op === "is_not_empty") return undefined;
   if (field === "page_count") return 300;
   if (field === "added_at") return new Date().toISOString().slice(0, 10);
+  if (field === "tags") {
+    if (op === "in" || op === "not_in" || op === "has_any" || op === "has_all") return ["to-read"];
+    return "to-read";
+  }
   if (op === "in" || op === "not_in" || op === "has_any" || op === "has_all") return ["fr"];
   return "fr";
 }
@@ -475,7 +479,9 @@ export function ShelfDetailClient({
                         }}
                         placeholder={
                           c.operator === "in" || c.operator === "has_any" || c.operator === "has_all"
-                            ? "ex: fr, en"
+                            ? c.field === "tags"
+                              ? "ex: to-read, classic"
+                              : "ex: fr, en"
                             : "valeur"
                         }
                         disabled={busy}

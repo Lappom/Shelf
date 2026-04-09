@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResyncMetadataPanel } from "@/components/book/ResyncMetadataPanel";
+import { BookTagsPanel, type BookTagItem } from "@/components/book/BookTagsPanel";
 import { AddToShelfMenu, type AddToShelfMenuShelf } from "@/components/shelf/AddToShelfMenu";
 
 const ParamsSchema = z.object({
@@ -43,10 +44,23 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
       pageCount: true,
       openLibraryId: true,
       format: true,
+      tags: { select: { tag: { select: { id: true, name: true, color: true } } } },
     },
   });
 
   if (!book) return <div className="p-6">Introuvable.</div>;
+
+  const selectedTags: BookTagItem[] = book.tags
+    .map((bt) => bt.tag)
+    .sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
+
+  const allTags: BookTagItem[] = isAdmin
+    ? await prisma.tag.findMany({
+        select: { id: true, name: true, color: true },
+        orderBy: [{ name: "asc" }],
+        take: 1000,
+      })
+    : [];
 
   const shelves = await prisma.shelf.findMany({
     where: { ownerId: user.id, type: { in: ["manual", "favorites"] } },
@@ -123,6 +137,17 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             <div className="text-muted-foreground text-xs">Sujets</div>
             <div className="text-sm">
               {Array.isArray(book.subjects) ? book.subjects.join(", ") : "—"}
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <div className="text-muted-foreground text-xs">Tags</div>
+            <div className="pt-1">
+              <BookTagsPanel
+                bookId={book.id}
+                canEdit={isAdmin}
+                initialSelected={selectedTags}
+                allTags={allTags}
+              />
             </div>
           </div>
           <div className="md:col-span-2">

@@ -272,12 +272,12 @@
 ## Phase 11 — Tags globaux
 
 ### 11.1 Modèle & CRUD admin (docs/SPECS.md §6.4)
-- [ ] CRUD tags (admin).
-- [ ] Couleur hex, nom unique.
+- [x] CRUD tags (admin).
+- [x] Couleur hex, nom unique.
 
 ### 11.2 Assignation tags aux livres
-- [ ] UI Book Detail : ajouter/retirer tags.
-- [ ] Support tags dans recherche et règles d’étagères dynamiques.
+- [x] UI Book Detail : ajouter/retirer tags.
+- [x] Support tags dans recherche et règles d’étagères dynamiques.
 
 ---
 
