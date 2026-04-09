@@ -4,11 +4,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
 RUN corepack enable
-COPY package.json pnpm-lock.yaml ./
+# prisma.config.ts requires DATABASE_URL to load; install postinstall runs prisma generate
+ENV DATABASE_URL=postgresql://ci:ci@127.0.0.1:5432/ci
+COPY package.json pnpm-lock.yaml prisma.config.ts ./
+COPY prisma ./prisma/
 RUN pnpm install --frozen-lockfile
 
 FROM base AS build
 RUN corepack enable
+ENV DATABASE_URL=postgresql://ci:ci@127.0.0.1:5432/ci
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm db:generate
