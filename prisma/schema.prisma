@@ -85,6 +85,15 @@ enum DuplicateAuditAction {
   merged
 }
 
+enum AdminAuditAction {
+  epub_ingest
+  calibre_import
+  book_purge
+  duplicate_ignore
+  duplicate_merge
+  mcp_tool_call
+}
+
 model User {
   id           String    @id @default(uuid()) @db.Uuid
   email        String    @unique @db.VarChar(255)
@@ -106,6 +115,7 @@ model User {
   recommendations UserRecommendation[]
   apiKeys         ApiKey[]
   duplicateAudits DuplicateResolutionAudit[]
+  adminAuditLogs  AdminAuditLog[]
 
   @@map("users")
 }
@@ -393,4 +403,18 @@ model DuplicateResolutionAudit {
   @@index([actorId])
   @@index([createdAt])
   @@map("duplicate_resolution_audits")
+}
+
+model AdminAuditLog {
+  id        String           @id @default(uuid()) @db.Uuid
+  action    AdminAuditAction
+  actorId   String           @map("actor_id") @db.Uuid
+  meta      Json             @default("{}")
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@map("admin_audit_logs")
 }

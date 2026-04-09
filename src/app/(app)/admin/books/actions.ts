@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 
+import { logAdminAudit } from "@/lib/admin/auditLog";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { getStorageAdapter, StorageError } from "@/lib/storage";
@@ -21,7 +22,9 @@ async function deleteFromStorageIfPresent(path: string) {
 }
 
 export async function purgeBookAction(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const actorId = admin.id;
+  if (!actorId) throw new Error("Unauthorized");
   const parsed = PurgeSchema.safeParse({
     bookId: formData.get("bookId"),
   });
@@ -56,6 +59,12 @@ export async function purgeBookAction(formData: FormData) {
     await tx.userAnnotation.deleteMany({ where: { bookId: book.id } });
     await tx.userRecommendation.deleteMany({ where: { bookId: book.id } });
     await tx.book.delete({ where: { id: book.id } });
+  });
+
+  await logAdminAudit({
+    action: "book_purge",
+    actorId,
+    meta: { bookId: book.id },
   });
 
   return { ok: true as const };

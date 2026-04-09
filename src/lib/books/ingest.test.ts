@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+vi.mock("@/lib/admin/auditLog", () => ({
+  logAdminAudit: vi.fn(async () => undefined),
+}));
+
 vi.mock("@/lib/storage", () => ({
   getStorageAdapter: vi.fn(() => ({
     upload: vi.fn(async () => "ok"),

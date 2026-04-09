@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 
+import { logAdminAudit } from "@/lib/admin/auditLog";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 
@@ -51,6 +52,12 @@ export async function ignoreDuplicatePairAction(formData: FormData) {
         meta: {},
       },
     });
+  });
+
+  await logAdminAudit({
+    action: "duplicate_ignore",
+    actorId,
+    meta: { pairId: pair.id },
   });
 
   return { ok: true as const };
@@ -286,6 +293,12 @@ export async function mergeDuplicatePairAction(formData: FormData) {
         meta: {},
       },
     });
+  });
+
+  await logAdminAudit({
+    action: "duplicate_merge",
+    actorId,
+    meta: { pairId, primaryBookId, absorbedBookId },
   });
 
   return { ok: true as const };

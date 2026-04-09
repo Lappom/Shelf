@@ -73,8 +73,9 @@ const serverEnvSchema = z
       });
     }
 
-    const oidcSet = [data.OIDC_ISSUER, data.OIDC_CLIENT_ID, data.OIDC_CLIENT_SECRET].filter(Boolean)
-      .length;
+    const oidcSet = [data.OIDC_ISSUER, data.OIDC_CLIENT_ID, data.OIDC_CLIENT_SECRET].filter(
+      Boolean,
+    ).length;
     if (oidcSet > 0 && oidcSet < 3) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -154,8 +155,7 @@ const serverEnvSchema = z
       if (!/^[a-z]{2}(-[A-Z]{2})?$/.test(data.DEFAULT_LOCALE)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message:
-            'DEFAULT_LOCALE must match /^[a-z]{2}(-[A-Z]{2})?$/ (e.g. "fr" or "en-US")',
+          message: 'DEFAULT_LOCALE must match /^[a-z]{2}(-[A-Z]{2})?$/ (e.g. "fr" or "en-US")',
           path: ["DEFAULT_LOCALE"],
         });
       }

@@ -30,10 +30,23 @@ function getOptionalOidcProvider() {
   } as const;
 }
 
+const sessionCookieSecure = process.env.NODE_ENV === "production";
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt", maxAge: getSessionMaxAgeSeconds(), updateAge: 24 * 60 * 60 },
   jwt: { maxAge: getSessionMaxAgeSeconds() },
+  cookies: {
+    // JWT session cookie: explicit hardening (csrf/callback cookies keep Auth.js defaults).
+    sessionToken: {
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: sessionCookieSecure,
+      },
+    },
+  },
   providers: [
     Credentials({
       name: "Credentials",

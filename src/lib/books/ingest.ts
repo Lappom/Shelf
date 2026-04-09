@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { logAdminAudit } from "@/lib/admin/auditLog";
 import { prisma } from "@/lib/db/prisma";
 import { getStorageAdapter } from "@/lib/storage";
 import { buildBookFileStoragePath, buildCoverStoragePath } from "@/lib/storage/paths";
@@ -204,6 +205,16 @@ export async function ingestEpub(args: {
     });
 
     await updateBookSearchVector(bookId);
+    await logAdminAudit({
+      action: "epub_ingest",
+      actorId: args.addedByUserId,
+      meta: {
+        bookId,
+        restored: true,
+        filename: args.filename,
+        contentHash,
+      },
+    });
     return { ok: true, bookId, restored: true };
   }
 
@@ -277,6 +288,17 @@ export async function ingestEpub(args: {
   });
 
   await updateBookSearchVector(bookId);
+
+  await logAdminAudit({
+    action: "epub_ingest",
+    actorId: args.addedByUserId,
+    meta: {
+      bookId,
+      restored: false,
+      filename: args.filename,
+      contentHash,
+    },
+  });
 
   return { ok: true, bookId, restored: false };
 }

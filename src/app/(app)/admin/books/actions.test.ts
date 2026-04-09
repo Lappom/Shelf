@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@/lib/admin/auditLog", () => ({
+  logAdminAudit: vi.fn(async () => undefined),
+}));
+
 vi.mock("@/lib/auth/rbac", () => ({
   requireAdmin: vi.fn(async () => ({ id: "admin-1" })),
 }));

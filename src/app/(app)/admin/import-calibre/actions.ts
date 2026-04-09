@@ -6,6 +6,7 @@ import * as path from "node:path";
 
 import { z } from "zod";
 
+import { logAdminAudit } from "@/lib/admin/auditLog";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { extractEpubMetadata } from "@/lib/epub";
@@ -401,6 +402,19 @@ export async function importCalibreAction(formData: FormData): Promise<CalibreIm
       });
     }
   }
+
+  await logAdminAudit({
+    action: "calibre_import",
+    actorId: adminId,
+    meta: {
+      dryRun: parsed.data.dryRun,
+      totalInDb: calibre.books.length,
+      considered: items.length,
+      imported: imported.length,
+      ignoredDuplicates: ignored.length,
+      errors: errors.length,
+    },
+  });
 
   return {
     ok: true,

@@ -700,6 +700,7 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | POST | `/api/admin/scan-duplicates` | Scanner les doublons |
 | POST | `/api/admin/import-calibre` | Import Calibre |
 | GET | `/api/admin/users` | Liste des utilisateurs |
+| GET | `/api/admin/audit-logs` | Journal d’audit admin (pagination `limit`, `before`, `beforeId`) |
 
 ---
 
@@ -754,6 +755,10 @@ REDIS_URL=redis://localhost:6379
 SESSION_MAX_DAYS=30
 UPLOAD_MAX_BYTES=
 COVER_UPLOAD_MAX_BYTES=
+# EPUB (ZIP) — limites déclarées dans le central directory (mitigation zip-bomb / zip-slip)
+EPUB_ZIP_MAX_ENTRIES=
+EPUB_ZIP_MAX_UNCOMPRESSED_TOTAL_BYTES=
+EPUB_ZIP_MAX_ENTRY_UNCOMPRESSED_BYTES=
 OPENLIBRARY_COVER_MAX_BYTES=
 OPENLIBRARY_TIMEOUT_MS=
 OPENLIBRARY_RETRIES=
@@ -812,13 +817,15 @@ volumes:
 
 ## 14. Sécurité
 
-- **Auth** : bcrypt pour les mots de passe, JWT httpOnly, CSRF protection.
-- **Upload** : validation MIME type, taille max configurable (défaut 100MB), scan du contenu EPUB (ZIP valide).
+- **Auth** : bcrypt pour les mots de passe, JWT en cookie **httpOnly**, **Secure** en production, **SameSite=Lax** (config explicite côté Auth.js). **CSRF** : mutations API protégées par vérification d’origine (`Origin` vs `NEXTAUTH_URL`) + CORS restrictif ; les Server Actions reposent sur la protection intégrée de Next.js.
+- **Upload** : validation MIME type, taille max configurable (défaut 100MB), EPUB = ZIP valide ; limites sur le nombre d’entrées et les tailles déclarées décompressées (`EPUB_ZIP_MAX_*`, voir §13) ; rejet des chemins d’archive type zip-slip (`..`, chemins absolus).
 - **SQL** : requêtes paramétrées via Prisma (pas d'injection).
-- **XSS** : React escape par défaut, sanitization du contenu EPUB affiché dans le reader.
+- **XSS** : React escape par défaut, sanitization du contenu EPUB affiché dans le reader (balises/tableaux courants autorisés, pas de SVG arbitraire).
+- **CSP** : en-tête `Content-Security-Policy` sur l’app (compatible reader EPUB / workers blob ; `script-src` inclut `unsafe-inline` et `unsafe-eval` tant qu’epub.js l’exige — durcissement futur possible via nonces).
 - **CORS** : restrictif, uniquement l'origine de l'app.
 - **Rate limiting** : sur les endpoints d'auth et d'upload.
-- **Storage** : les fichiers ne sont jamais servis directement, toujours via un endpoint authentifié.
+- **Storage** : les fichiers ne sont jamais servis directement depuis le stockage ; pas d’URL publique ni de présignage exposé au client (`getUrl` des adapters lève une erreur). Téléchargements et streams uniquement via endpoints authentifiés avec contrôles d’accès.
+- **Audit admin** : table `AdminAuditLog` — événements : ingestion EPUB, import Calibre, purge livre, ignore/merge doublons ; extension prévue pour les clés API (CRUD) et les appels MCP (`logMcpToolAudit`, action `mcp_tool_call`). Lecture via `GET /api/admin/audit-logs` (admin uniquement).
 
 ---
 
@@ -1062,7 +1069,7 @@ L'utilisateur configure son client IA avec :
 - Basé sur le SDK officiel `@modelcontextprotocol/sdk`.
 - Intégré comme API Route Next.js (`/api/mcp`).
 - Rate limiting : 60 requêtes/minute par API key.
-- Logging des appels MCP pour audit.
+- Logging des appels MCP pour audit : utiliser `logMcpToolAudit` (`src/lib/mcp/audit.ts`) après résolution de l’utilisateur via API key, pour persister une ligne `AdminAuditLog` avec l’action `mcp_tool_call`.
 - `get_book_content` : extraction du texte par chapitre avec limite de tokens pour éviter de surcharger le contexte de l'IA.
 
 ---

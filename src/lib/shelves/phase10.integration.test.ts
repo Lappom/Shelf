@@ -15,6 +15,7 @@ async function tryConnect() {
 }
 
 async function cleanupAll() {
+  await prisma.adminAuditLog.deleteMany({});
   await prisma.apiKey.deleteMany({});
   await prisma.userRecommendation.deleteMany({});
   await prisma.userAnnotation.deleteMany({});

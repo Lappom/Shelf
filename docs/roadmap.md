@@ -502,23 +502,23 @@
 ## Phase 19 — Sécurité (hardening)
 
 ### 19.1 Upload & contenu (docs/SPECS.md §14)
-- [ ] Validation mime/size/zip.
-- [ ] Protection contre zip-bombs (limites de taille/décompression).
+- [x] Validation mime/size/zip.
+- [x] Protection contre zip-bombs (limites de taille/décompression).
 
 ### 19.2 Auth & sessions (docs/SPECS.md §14 + §4)
-- [ ] Cookies httpOnly, secure en prod, sameSite approprié.
-- [ ] CSRF sur mutations.
+- [x] Cookies httpOnly, secure en prod, sameSite approprié.
+- [x] CSRF sur mutations.
 
 ### 19.3 XSS & reader (docs/SPECS.md §14)
-- [ ] Sanitization du HTML EPUB.
-- [ ] CSP adaptée (si possible) pour réduire scripts inline.
+- [x] Sanitization du HTML EPUB.
+- [x] CSP adaptée (si possible) pour réduire scripts inline.
 
 ### 19.4 Storage delivery (docs/SPECS.md §14)
-- [ ] Confirmer : jamais de service direct depuis storage.
-- [ ] Tous downloads/streams passent par endpoints auth + checks.
+- [x] Confirmer : jamais de service direct depuis storage.
+- [x] Tous downloads/streams passent par endpoints auth + checks.
 
 ### 19.5 Audit logs minimaux
-- [ ] Logs admin : import, purge, merge doublons, API key events, MCP usage.
+- [x] Logs admin : import, purge, merge doublons, API key events, MCP usage.
 
 ---
 

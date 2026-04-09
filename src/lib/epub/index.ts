@@ -1,6 +1,8 @@
 import JSZip from "jszip";
 import { XMLParser } from "fast-xml-parser";
 
+import { assertSafeEpubZip, assertZipSlipSafePath } from "@/lib/epub/zipLimits";
+
 export type EpubCover = {
   bytes: Buffer;
   mimeType: string;
@@ -158,6 +160,7 @@ async function getOpfPathAndXml(zip: JSZip) {
   }) as Record<string, unknown> | undefined;
   const opfPath = (rootfile?.["@_full-path"] as string | undefined)?.trim();
   if (!opfPath) throw new Error("Invalid EPUB: missing OPF path in container.xml");
+  assertZipSlipSafePath(opfPath);
 
   const opfXml = await readText(zip, opfPath);
   if (!opfXml) throw new Error("Invalid EPUB: missing OPF file");
@@ -167,6 +170,7 @@ async function getOpfPathAndXml(zip: JSZip) {
 
 export async function extractEpubMetadata(epubBytes: Buffer): Promise<EpubMetadata> {
   const zip = await JSZip.loadAsync(epubBytes);
+  assertSafeEpubZip(zip);
 
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -219,6 +223,7 @@ export async function extractEpubMetadata(epubBytes: Buffer): Promise<EpubMetada
     const mediaType = (o["@_media-type"] as string | undefined)?.trim() || "image/jpeg";
     if (href) {
       const coverPath = joinPosix(opfDir, href);
+      assertZipSlipSafePath(coverPath);
       const bytes = await readBinary(zip, coverPath);
       if (bytes) {
         cover = {
@@ -256,6 +261,7 @@ export async function writeEpubOpfMetadata(
   },
 ): Promise<Buffer> {
   const zip = await JSZip.loadAsync(epubBytes);
+  assertSafeEpubZip(zip);
   const { opfPath, opfXml } = await getOpfPathAndXml(zip);
 
   const metaMatch = /<metadata\b[^>]*>[\s\S]*?<\/metadata>/i.exec(opfXml);

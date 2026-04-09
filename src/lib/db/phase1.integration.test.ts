@@ -16,6 +16,7 @@ async function tryConnect() {
 
 async function cleanupAll() {
   // Order matters due to FK constraints.
+  await prisma.adminAuditLog.deleteMany({});
   await prisma.apiKey.deleteMany({});
   await prisma.userRecommendation.deleteMany({});
   await prisma.userAnnotation.deleteMany({});
