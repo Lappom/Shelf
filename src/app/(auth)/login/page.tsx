@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { loginAction } from "./actions";
+import { oidcSignInAction } from "./oidc-actions";
 
 const errorMessages = {
   invalid: "Email ou mot de passe invalide.",
@@ -15,6 +16,10 @@ export default async function LoginPage({
 }: {
   searchParams?: Promise<{ error?: keyof typeof errorMessages }>;
 }) {
+  const oidcEnabled = Boolean(
+    process.env.OIDC_ISSUER?.trim() && process.env.OIDC_CLIENT_ID?.trim() && process.env.OIDC_CLIENT_SECRET?.trim(),
+  );
+
   const sp = searchParams ? await searchParams : undefined;
   const error = sp?.error ? errorMessages[sp.error] : null;
   return (
@@ -55,6 +60,14 @@ export default async function LoginPage({
           Se connecter
         </Button>
       </form>
+
+      {oidcEnabled ? (
+        <form action={oidcSignInAction}>
+          <Button className="w-full" type="submit" variant="outline">
+            Continuer avec OIDC
+          </Button>
+        </form>
+      ) : null}
 
       <p className="text-muted-foreground text-sm">
         Pas de compte ?{" "}

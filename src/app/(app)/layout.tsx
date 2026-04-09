@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { LogoMark } from "@/components/LogoMark";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
+  if (!session?.user?.id) redirect("/login");
 
   return (
     <div className="min-h-screen">

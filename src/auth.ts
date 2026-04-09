@@ -6,6 +6,13 @@ import { prisma } from "@/lib/db/prisma";
 import { verifyPassword } from "@/lib/auth/password";
 import { ensureSystemShelves } from "@/lib/shelves/system";
 
+function getSessionMaxAgeSeconds() {
+  const rawDays = process.env.SESSION_MAX_DAYS?.trim();
+  const days = rawDays ? Number(rawDays) : 30;
+  if (!Number.isFinite(days) || days <= 0) return 30 * 24 * 60 * 60;
+  return Math.round(days * 24 * 60 * 60);
+}
+
 function getOptionalOidcProvider() {
   const issuer = process.env.OIDC_ISSUER?.trim();
   const clientId = process.env.OIDC_CLIENT_ID?.trim();
@@ -25,7 +32,8 @@ function getOptionalOidcProvider() {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.NEXTAUTH_SECRET,
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: getSessionMaxAgeSeconds(), updateAge: 24 * 60 * 60 },
+  jwt: { maxAge: getSessionMaxAgeSeconds() },
   providers: [
     Credentials({
       name: "Credentials",

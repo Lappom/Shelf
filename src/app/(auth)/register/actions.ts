@@ -2,11 +2,14 @@
 
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
 import { signIn } from "@/auth";
 import { ensureSystemShelves } from "@/lib/shelves/system";
+import { assertSameOriginFromHeaders } from "@/lib/security/origin";
+import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const RegisterSchema = z.object({
   email: z.string().email(),
@@ -15,6 +18,22 @@ const RegisterSchema = z.object({
 });
 
 export async function registerAction(formData: FormData) {
+  const h = await headers();
+  assertSameOriginFromHeaders({
+    origin: h.get("origin"),
+    host: h.get("host"),
+  });
+
+  try {
+    await rateLimitOrThrow({
+      key: `auth:register:${h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? "unknown"}`,
+      limit: 5,
+      windowMs: 60_000,
+    });
+  } catch {
+    redirect("/register?error=invalid");
+  }
+
   if (process.env.REGISTRATION_ENABLED === "false") {
     redirect("/register?error=disabled");
   }

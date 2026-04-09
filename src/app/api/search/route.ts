@@ -3,6 +3,8 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
+import { handleCorsPreflight, addCorsHeaders } from "@/lib/security/cors";
+import { assertSameOriginFromHeaders } from "@/lib/security/origin";
 
 const QuerySchema = z.object({
   q: z.string().trim().min(1).max(200),
@@ -11,6 +13,14 @@ const QuerySchema = z.object({
 });
 
 export async function GET(req: Request) {
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+
+  assertSameOriginFromHeaders({
+    origin: req.headers.get("origin"),
+    host: req.headers.get("host"),
+  });
+
   await requireUser();
 
   const url = new URL(req.url);
@@ -53,5 +63,5 @@ export async function GET(req: Request) {
   `;
 
   const nextCursor = results.length === limit ? results[results.length - 1]?.id : null;
-  return NextResponse.json({ results, nextCursor });
+  return addCorsHeaders(NextResponse.json({ results, nextCursor }), req);
 }

@@ -5,12 +5,22 @@ import { prisma } from "@/lib/db/prisma";
 import { requireUser } from "@/lib/auth/rbac";
 import { getStorageAdapter } from "@/lib/storage";
 import { StorageError } from "@/lib/storage";
+import { handleCorsPreflight, addCorsHeaders } from "@/lib/security/cors";
+import { assertSameOriginFromHeaders } from "@/lib/security/origin";
 
 const ParamsSchema = z.object({
   id: z.string().uuid(),
 });
 
-export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const preflight = handleCorsPreflight(req);
+  if (preflight) return preflight;
+
+  assertSameOriginFromHeaders({
+    origin: req.headers.get("origin"),
+    host: req.headers.get("host"),
+  });
+
   await requireUser();
   const params = await ctx.params;
   const parsed = ParamsSchema.safeParse(params);
@@ -38,17 +48,20 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   try {
     // For simplicity we buffer for now; reader integration will stream later.
     const buf = await adapter.download(file.storagePath);
-    return new NextResponse(new Uint8Array(buf), {
-      headers: {
-        "Content-Type": file.mimeType || "application/epub+zip",
-        "Content-Disposition": `inline; filename=\"${file.filename}\"`,
-        "Cache-Control": "private, max-age=0, no-store",
-      },
-    });
+    return addCorsHeaders(
+      new NextResponse(new Uint8Array(buf), {
+        headers: {
+          "Content-Type": file.mimeType || "application/epub+zip",
+          "Content-Disposition": `inline; filename=\"${file.filename}\"`,
+          "Cache-Control": "private, max-age=0, no-store",
+        },
+      }),
+      req,
+    );
   } catch (e) {
     if (e instanceof StorageError) {
-      return NextResponse.json({ error: e.message }, { status: 500 });
+      return addCorsHeaders(NextResponse.json({ error: e.message }, { status: 500 }), req);
     }
-    return NextResponse.json({ error: "Storage error" }, { status: 500 });
+    return addCorsHeaders(NextResponse.json({ error: "Storage error" }, { status: 500 }), req);
   }
 }
