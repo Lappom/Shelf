@@ -1,4 +1,5 @@
 import { getCachedJson, setCachedJson } from "@/lib/metadata/openlibrary-cache";
+import { createHash } from "node:crypto";
 
 type OpenLibraryEdition = {
   key?: string;
@@ -21,6 +22,14 @@ export type OpenLibraryEnrichment = {
   subjects: string[];
   pageCount: number | null;
   coverUrl: string | null;
+};
+
+export type OpenLibrarySearchCandidate = {
+  key: string;
+  title: string;
+  authors: string[];
+  firstPublishYear: number | null;
+  isbns: string[];
 };
 
 function sleep(ms: number) {
@@ -68,6 +77,14 @@ function workKey(workKey: string) {
   return `openlibrary:work:${workKey}`;
 }
 
+function searchKey(key: string) {
+  return `openlibrary:search:${key}`;
+}
+
+function stableHash(input: string) {
+  return createHash("sha256").update(input).digest("hex");
+}
+
 export function buildOpenLibraryCoverUrl(isbn: string) {
   return `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-L.jpg`;
 }
@@ -110,4 +127,47 @@ export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLib
 
   await setCachedJson(isbnKey(isbn), enrichment);
   return enrichment;
+}
+
+type OpenLibrarySearchResponse = {
+  docs?: Array<{
+    key?: string;
+    title?: string;
+    author_name?: string[];
+    first_publish_year?: number;
+    isbn?: string[];
+  }>;
+};
+
+export async function searchOpenLibraryByTitleAuthor(args: {
+  title: string;
+  author: string;
+  limit?: number;
+}): Promise<OpenLibrarySearchCandidate[]> {
+  const title = args.title.trim();
+  const author = args.author.trim();
+  const limit = Math.max(1, Math.min(10, Math.trunc(args.limit ?? 10)));
+  if (!title || !author) return [];
+
+  const cacheId = stableHash(`${title.toLowerCase()}|${author.toLowerCase()}|${limit}`);
+  const cached = await getCachedJson<OpenLibrarySearchCandidate[]>(searchKey(cacheId));
+  if (cached) return cached;
+
+  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}`;
+  const json = await fetchJson<OpenLibrarySearchResponse>(url);
+
+  const candidates: OpenLibrarySearchCandidate[] = (json.docs ?? [])
+    .map((d) => {
+      const key = typeof d.key === "string" ? d.key.trim() : "";
+      const t = typeof d.title === "string" ? d.title.trim() : "";
+      const authors = Array.isArray(d.author_name) ? d.author_name.map((a) => String(a).trim()).filter(Boolean) : [];
+      const firstPublishYear = typeof d.first_publish_year === "number" ? d.first_publish_year : null;
+      const isbns = Array.isArray(d.isbn) ? d.isbn.map((x) => String(x).trim()).filter(Boolean) : [];
+      return { key, title: t, authors, firstPublishYear, isbns };
+    })
+    .filter((c) => c.key && c.title)
+    .slice(0, limit);
+
+  await setCachedJson(searchKey(cacheId), candidates);
+  return candidates;
 }

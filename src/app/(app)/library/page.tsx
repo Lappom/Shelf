@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth/rbac";
 import { Button } from "@/components/ui/button";
 import { UploadEpubDialog } from "@/components/book/UploadEpubDialog";
+import { AddPhysicalBookDialog } from "@/components/book/AddPhysicalBookDialog";
 
 export default async function LibraryPage() {
   const user = await requireUser();
@@ -21,7 +22,12 @@ export default async function LibraryPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {isAdmin && <UploadEpubDialog />}
+          {isAdmin && (
+            <>
+              <AddPhysicalBookDialog />
+              <UploadEpubDialog />
+            </>
+          )}
           <Button asChild variant="outline">
             <Link href="/reader/00000000-0000-0000-0000-000000000000">Ouvrir le reader</Link>
           </Button>

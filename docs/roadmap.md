@@ -151,16 +151,16 @@
 ## Phase 5 — Livres physiques & couvertures
 
 ### 5.1 Création livre physique (docs/SPECS.md §5.2)
-- [ ] Form admin : titre, auteurs, ISBN, etc.
-- [ ] `format = physical`, pas de `BookFile`, `content_hash` null.
+- [x] Form admin : titre, auteurs, ISBN, etc.
+- [x] `format = physical`, pas de `BookFile`, `content_hash` null.
 
 ### 5.2 Auto-complétion Open Library (docs/SPECS.md §5.2 + §9.3)
-- [ ] Si ISBN fourni : proposition d’auto-complétion.
-- [ ] Sinon : recherche fuzzy titre+auteur + écran de confirmation admin.
+- [x] Si ISBN fourni : proposition d’auto-complétion.
+- [x] Sinon : recherche fuzzy titre+auteur + écran de confirmation admin.
 
 ### 5.3 Photo couverture (docs/SPECS.md §5.2)
-- [ ] Upload image + stockage via adapter + lien `cover_url`.
-- [ ] Optimisation côté UI via Next `<Image>` (docs/SPECS.md §15).
+- [x] Upload image + stockage via adapter + lien `cover_url`.
+- [x] Optimisation côté UI via Next `<Image>` (docs/SPECS.md §15).
 
 ---
 
