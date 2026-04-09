@@ -119,32 +119,32 @@
 ## Phase 4 — Ingestion EPUB (upload), extraction, création Book/BookFile
 
 ### 4.1 Upload EPUB (docs/SPECS.md §5.1 + §14)
-- [ ] UI upload réservé admin (FAB sur Library).
-- [ ] Validation : MIME + taille max (défaut 100MB) + ZIP/EPUB valide.
-- [ ] Calcul SHA-256 (`content_hash`) côté serveur.
+- [x] UI upload réservé admin (FAB sur Library).
+- [x] Validation : MIME + taille max (défaut 100MB) + ZIP/EPUB valide.
+- [x] Calcul SHA-256 (`content_hash`) côté serveur.
 
 ### 4.2 Soft-delete restore / dédup (docs/SPECS.md §5.1 + §5.4)
-- [ ] Si soft-deleted book match (hash ou filename) → restaurer au lieu de recréer.
-- [ ] Si book actif même hash → rejeter upload + fournir lien vers existant.
+- [x] Si soft-deleted book match (hash ou filename) → restaurer au lieu de recréer.
+- [x] Si book actif même hash → rejeter upload + fournir lien vers existant.
 
 ### 4.3 Stockage du fichier (docs/SPECS.md §5.1 + §10)
-- [ ] Upload vers StorageAdapter (persist `storage_path`, `file_size`, `mime_type`, hash dans `BookFile`).
+- [x] Upload vers StorageAdapter (persist `storage_path`, `file_size`, `mime_type`, hash dans `BookFile`).
 
 ### 4.4 Extraction métadonnées EPUB (docs/SPECS.md §5.1 + §9)
-- [ ] Extraire : titre, auteurs, ISBN, description, couverture, langue.
-- [ ] Gérer cas incomplets (valeurs manquantes, encodage, champs multiples).
-- [ ] Stocker la couverture (fichier local/S3) et `Book.cover_url` en path relatif/URL.
+- [x] Extraire : titre, auteurs, ISBN, description, couverture, langue.
+- [x] Gérer cas incomplets (valeurs manquantes, encodage, champs multiples).
+- [x] Stocker la couverture (fichier local/S3) et `Book.cover_url` en path relatif/URL.
 
 ### 4.5 Création snapshot initial (docs/SPECS.md §5.1 + §3.2)
-- [ ] Créer `BookMetadataSnapshot.epub_metadata` au moment de l’ingestion.
+- [x] Créer `BookMetadataSnapshot.epub_metadata` au moment de l’ingestion.
 
 ### 4.6 Enrichissement Open Library à l’ingestion (docs/SPECS.md §5.1 + §9)
-- [ ] Si ISBN trouvé : call Open Library, compléter description/sujets/pages/cover HR.
-- [ ] Fusion : EPUB prioritaire, OpenLibrary en complément.
-- [ ] `metadata_source` cohérent (epub/openlibrary/manual).
+- [x] Si ISBN trouvé : call Open Library, compléter description/sujets/pages/cover HR.
+- [x] Fusion : EPUB prioritaire, OpenLibrary en complément.
+- [x] `metadata_source` cohérent (epub/openlibrary/manual).
 
 ### 4.7 Search vector (docs/SPECS.md §5.1 + §7.1)
-- [ ] Calculer `search_vector` depuis titre/auteurs/description/sujets.
+- [x] Calculer `search_vector` depuis titre/auteurs/description/sujets.
 
 ---
 

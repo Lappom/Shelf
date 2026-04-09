@@ -1,4 +1,4 @@
-import Redis from "ioredis";
+import { getRedis } from "@/lib/utils/redis";
 
 type RateLimitArgs = {
   key: string;
@@ -11,12 +11,6 @@ type RateLimitResult =
   | { ok: false; remaining: 0; resetAt: number };
 
 const memoryStore = new Map<string, { count: number; resetAt: number }>();
-
-function getRedis() {
-  const url = process.env.REDIS_URL?.trim();
-  if (!url) return null;
-  return new Redis(url, { maxRetriesPerRequest: 1 });
-}
 
 function nowMs() {
   return Date.now();
@@ -33,15 +27,9 @@ export async function rateLimit(args: RateLimitArgs): Promise<RateLimitResult> {
       const count = await redis.incr(redisKey);
       if (count === 1) await redis.pexpire(redisKey, args.windowMs);
       const remaining = Math.max(0, args.limit - count);
-      await redis.quit();
       if (count > args.limit) return { ok: false, remaining: 0, resetAt };
       return { ok: true, remaining, resetAt };
     } catch {
-      try {
-        await redis.quit();
-      } catch {
-        // ignore
-      }
       // fall through to memory
     }
   }

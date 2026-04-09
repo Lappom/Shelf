@@ -2,9 +2,13 @@ import Link from "next/link";
 
 import { requireUser } from "@/lib/auth/rbac";
 import { Button } from "@/components/ui/button";
+import { UploadEpubDialog } from "@/components/book/UploadEpubDialog";
 
 export default async function LibraryPage() {
-  await requireUser();
+  const user = await requireUser();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const role = (user as any).role as string | undefined;
+  const isAdmin = role === "admin";
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
@@ -16,9 +20,12 @@ export default async function LibraryPage() {
           </p>
         </div>
 
-        <Button asChild>
-          <Link href="/reader/00000000-0000-0000-0000-000000000000">Ouvrir le reader</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {isAdmin && <UploadEpubDialog />}
+          <Button asChild variant="outline">
+            <Link href="/reader/00000000-0000-0000-0000-000000000000">Ouvrir le reader</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
