@@ -146,6 +146,10 @@ model Book {
   @@index([contentHash])
   @@index([isbn13])
   @@index([deletedAt])
+  @@index([language])
+  @@index([format])
+  @@index([pageCount])
+  @@index([createdAt])
   @@map("books")
 }
 
@@ -194,8 +198,9 @@ model Shelf {
   rule  ShelfRule?
   books BookShelf[]
 
-  @@unique([ownerId, type])
   @@index([ownerId])
+  @@index([ownerId, type])
+  @@index([ownerId, sortOrder])
   @@map("shelves")
 }
 
@@ -220,6 +225,8 @@ model BookShelf {
 
   @@id([bookId, shelfId])
   @@index([shelfId])
+  @@index([shelfId, sortOrder])
+  @@index([shelfId, addedAt])
   @@map("book_shelves")
 }
 

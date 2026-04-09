@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ResyncMetadataPanel } from "@/components/book/ResyncMetadataPanel";
+import { AddToShelfMenu, type AddToShelfMenuShelf } from "@/components/shelf/AddToShelfMenu";
 
 const ParamsSchema = z.object({
   id: z.string().uuid(),
@@ -47,6 +48,26 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
 
   if (!book) return <div className="p-6">Introuvable.</div>;
 
+  const shelves = await prisma.shelf.findMany({
+    where: { ownerId: user.id, type: { in: ["manual", "favorites"] } },
+    select: { id: true, name: true, icon: true, type: true, sortOrder: true, createdAt: true },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+  });
+
+  const memberships = await prisma.bookShelf.findMany({
+    where: { bookId: book.id, shelfId: { in: shelves.map((s) => s.id) } },
+    select: { shelfId: true },
+  });
+  const memberSet = new Set(memberships.map((m) => m.shelfId));
+
+  const shelfMenuItems: AddToShelfMenuShelf[] = shelves.map((s) => ({
+    id: s.id,
+    name: s.name,
+    icon: s.icon,
+    type: s.type,
+    checked: memberSet.has(s.id),
+  }));
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -61,6 +82,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
               <Link href={`/reader/${book.id}`}>Lire</Link>
             </Button>
           )}
+          <AddToShelfMenu bookId={book.id} shelves={shelfMenuItems} />
           <Button asChild variant="outline">
             <Link href="/library">Retour</Link>
           </Button>

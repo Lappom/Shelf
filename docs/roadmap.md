@@ -246,26 +246,26 @@
 ## Phase 10 — Étagères & organisation
 
 ### 10.1 Étagères manuelles (docs/SPECS.md §6.1)
-- [ ] CRUD étagères par utilisateur.
-- [ ] Un livre peut appartenir à plusieurs étagères (N:N).
-- [ ] Tri : drag & drop + options alpha/date ajout.
-- [ ] Icône personnalisable (emoji).
+- [x] CRUD étagères par utilisateur.
+- [x] Un livre peut appartenir à plusieurs étagères (N:N).
+- [x] Tri : drag & drop + options alpha/date ajout.
+- [x] Icône personnalisable (emoji).
 
 ### 10.2 Étagères système (docs/SPECS.md §6.2)
-- [ ] Favoris (non supprimable).
-- [ ] En cours (non supprimable) basé sur `UserBookProgress.status='reading'`.
-- [ ] UI : afficher en haut de `/shelves`.
+- [x] Favoris (non supprimable).
+- [x] En cours (non supprimable) basé sur `UserBookProgress.status='reading'`.
+- [x] UI : afficher en haut de `/shelves`.
 
 ### 10.3 Étagères dynamiques rule-based (docs/SPECS.md §6.3)
-- [ ] Stockage `ShelfRule.rules` JSONB.
-- [ ] Support `match: all|any`.
-- [ ] Support opérateurs : eq/neq/contains/not_contains/in/not_in/gt/gte/lt/lte/after/before/has_any/has_all/is_empty/is_not_empty.
-- [ ] Traduire règles en requêtes DB performantes (indexes nécessaires).
+- [x] Stockage `ShelfRule.rules` JSONB.
+- [x] Support `match: all|any`.
+- [x] Support opérateurs : eq/neq/contains/not_contains/in/not_in/gt/gte/lt/lte/after/before/has_any/has_all/is_empty/is_not_empty.
+- [x] Traduire règles en requêtes DB performantes (indexes nécessaires).
 
 ### 10.4 UI éditeur de règles (docs/SPECS.md §11.2 Shelf Detail)
-- [ ] Builder visuel : ajout conditions, choix champ/opérateur/valeur.
-- [ ] Validation client+serveur de la structure JSON.
-- [ ] Prévisualisation des résultats (compte + exemples).
+- [x] Builder visuel : ajout conditions, choix champ/opérateur/valeur.
+- [x] Validation client+serveur de la structure JSON.
+- [x] Prévisualisation des résultats (compte + exemples).
 
 ---
 

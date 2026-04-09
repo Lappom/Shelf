@@ -13,14 +13,25 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen">
       <header className="border-b">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-6">
-          <Link
-            aria-label="Shelf"
-            className="flex items-center gap-2 font-semibold tracking-tight"
-            href="/library"
-          >
-            <LogoMark className="h-6 w-6" title="" />
-            <span>Shelf</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              aria-label="Shelf"
+              className="flex items-center gap-2 font-semibold tracking-tight"
+              href="/library"
+            >
+              <LogoMark className="h-6 w-6" title="" />
+              <span>Shelf</span>
+            </Link>
+
+            <nav className="hidden items-center gap-1 sm:flex" aria-label="Navigation">
+              <Button asChild size="sm" variant="ghost">
+                <Link href="/library">Bibliothèque</Link>
+              </Button>
+              <Button asChild size="sm" variant="ghost">
+                <Link href="/shelves">Étagères</Link>
+              </Button>
+            </nav>
+          </div>
 
           <div className="flex items-center gap-3">
             <span className="text-muted-foreground text-sm">{session?.user?.email ?? ""}</span>
