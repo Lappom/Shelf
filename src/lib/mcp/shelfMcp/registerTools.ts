@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { logMcpToolAudit } from "@/lib/mcp/audit";
+import { logShelfEvent } from "@/lib/observability/structuredLog";
 import { requireMcpContext } from "@/lib/mcp/context";
 import { mcpErrorResult, mcpJsonResult, type McpToolResult } from "@/lib/mcp/toolResult";
 import { createPhysicalBook, CreatePhysicalBookInputSchema } from "@/lib/books/createPhysicalBook";
@@ -67,12 +68,19 @@ async function runAuditedTool(
   fn: () => Promise<McpToolResult>,
 ): Promise<McpToolResult> {
   const ctx = requireMcpContext();
+  const t0 = Date.now();
   try {
     const out = await fn();
     await logMcpToolAudit({
       actorUserId: ctx.userId,
       toolName,
       ok: !out.isError,
+    });
+    logShelfEvent("mcp_tool", {
+      toolName,
+      ok: !out.isError,
+      durationMs: Date.now() - t0,
+      userId: ctx.userId,
     });
     return out;
   } catch (e) {
@@ -81,6 +89,13 @@ async function runAuditedTool(
       toolName,
       ok: false,
       meta: { message: e instanceof Error ? e.message : String(e) },
+    });
+    logShelfEvent("mcp_tool", {
+      toolName,
+      ok: false,
+      durationMs: Date.now() - t0,
+      userId: ctx.userId,
+      error: e instanceof Error ? e.message : String(e),
     });
     return mcpErrorResult(e instanceof Error ? e.message : "Internal error");
   }

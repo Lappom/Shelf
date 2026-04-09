@@ -3,6 +3,7 @@
 import { z } from "zod";
 
 import { logAdminAudit } from "@/lib/admin/auditLog";
+import { logShelfEvent } from "@/lib/observability/structuredLog";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 
@@ -299,6 +300,14 @@ export async function mergeDuplicatePairAction(formData: FormData) {
     action: "duplicate_merge",
     actorId,
     meta: { pairId, primaryBookId, absorbedBookId },
+  });
+
+  logShelfEvent("duplicate_merge", {
+    ok: true,
+    actorId,
+    pairId,
+    primaryBookId,
+    absorbedBookId,
   });
 
   return { ok: true as const };

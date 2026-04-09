@@ -13,6 +13,7 @@ import {
 } from "@/lib/metadata/openlibrary";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
+import { logShelfEvent } from "@/lib/observability/structuredLog";
 import { getStorageAdapter } from "@/lib/storage";
 import { buildCoverStoragePath } from "@/lib/storage/paths";
 
@@ -235,6 +236,12 @@ export async function POST(req: Request) {
         });
 
         if (!res.ok) {
+          logShelfEvent("epub_ingest", {
+            ok: false,
+            actorId: adminId,
+            sizeBytes: buf.byteLength,
+            code: res.code,
+          });
           if (res.code === "DUPLICATE_ACTIVE") {
             return NextResponse.json(
               { error: "Duplicate book", existingBookId: res.existingBookId },
@@ -244,6 +251,13 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: res.message }, { status: 400 });
         }
 
+        logShelfEvent("epub_ingest", {
+          ok: true,
+          actorId: adminId,
+          bookId: res.bookId,
+          restored: res.restored,
+          sizeBytes: buf.byteLength,
+        });
         return NextResponse.json({ bookId: res.bookId, restored: res.restored }, { status: 201 });
       }
 

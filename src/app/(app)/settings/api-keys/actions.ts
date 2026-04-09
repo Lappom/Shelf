@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/rbac";
 import { generateApiKeyMaterial } from "@/lib/apiKeys/crypto";
 import { prisma } from "@/lib/db/prisma";
 import { assertSameOriginFromHeaders } from "@/lib/security/origin";
+import { logShelfEvent } from "@/lib/observability/structuredLog";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 function actionKey(h: Headers, suffix: string) {
@@ -79,6 +80,8 @@ export async function createApiKeyAction(input: unknown) {
     select: { id: true },
   });
 
+  logShelfEvent("api_key_create", { ok: true, userId, keyId: created.id });
+
   return {
     ok: true as const,
     id: created.id,
@@ -104,5 +107,6 @@ export async function revokeApiKeyAction(input: unknown) {
   });
 
   if (res.count === 0) return { ok: false as const, error: "NOT_FOUND" as const };
+  logShelfEvent("api_key_revoke", { ok: true, userId, keyId: parsed.data.id });
   return { ok: true as const };
 }

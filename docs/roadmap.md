@@ -680,27 +680,27 @@
 ## Phase 24 — CI/CD & release readiness
 
 ### 24.1 GitHub Actions (docs/SPECS.md §2)
-- [ ] Lint.
-- [ ] Tests unit/integration/component.
-- [ ] Build.
-- [ ] Build Docker image.
+- [x] Lint.
+- [x] Tests unit/integration/component.
+- [x] Build.
+- [x] Build Docker image.
 
 ### 24.2 Observabilité minimale
-- [ ] Logs structurés pour actions critiques (upload, sync, admin merges, MCP, API keys).
-- [ ] Métriques simples (optionnel) : latence search, taux erreurs OpenLibrary, etc.
+- [x] Logs structurés pour actions critiques (upload, sync, admin merges, MCP, API keys).
+- [x] Métriques simples (optionnel) : latence search, taux erreurs OpenLibrary, etc.
 
 ---
 
 ## Phase 25 — Glossaire & docs
 
 ### 25.1 Glossaire (docs/SPECS.md §19)
-- [ ] Vérifier termes : CFI, three-way merge, storage adapter, dynamic shelf, soft delete, content hash, OPF, MCP, content-based/collaborative filtering, API key, cold start.
-- [ ] Ajouter un “developer glossary” si besoin (CFI/OPF implications).
+- [x] Vérifier termes : CFI, three-way merge, storage adapter, dynamic shelf, soft delete, content hash, OPF, MCP, content-based/collaborative filtering, API key, cold start.
+- [x] Ajouter un “developer glossary” si besoin (CFI/OPF implications).
 
 ### 25.2 Documentation opérateur self-hosted
-- [ ] Guide docker-compose (env, volumes, upgrades, backups).
-- [ ] Guide sécurité : rotation secrets, OIDC, CORS, rate limits.
-- [ ] Guide stockage : local vs S3/MinIO, migrations de storage.
+- [x] Guide docker-compose (env, volumes, upgrades, backups).
+- [x] Guide sécurité : rotation secrets, OIDC, CORS, rate limits.
+- [x] Guide stockage : local vs S3/MinIO, migrations de storage.
 
 ---
 

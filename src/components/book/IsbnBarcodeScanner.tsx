@@ -295,7 +295,7 @@ export function IsbnBarcodeScanner({
     void (async () => {
       await waitForVideoPaint();
       if (cancelled || stoppedRef.current) return;
-      if (!videoRef.current) {
+      if (!video.isConnected) {
         fail("Élément vidéo manquant.");
         return;
       }
@@ -324,9 +324,7 @@ export function IsbnBarcodeScanner({
         /* ignore */
       }
       zxingControlsRef.current = null;
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
+      video.srcObject = null;
     };
   }, [panelOpen, clearAnimation]);
 

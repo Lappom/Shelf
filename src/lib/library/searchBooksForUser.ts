@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { createCoverAccessToken } from "@/lib/cover/coverToken";
 import { prisma } from "@/lib/db/prisma";
+import { logShelfEvent } from "@/lib/observability/structuredLog";
 import { join, sql, type Sql } from "@/lib/db/sql";
 
 export const LibrarySortSchema = z.enum([
@@ -189,6 +190,7 @@ export async function searchBooksForUser(
   | { ok: true; results: LibrarySearchBookRow[]; nextCursor: string | null }
   | { ok: false; error: string }
 > {
+  const t0 = Date.now();
   const mode = input.mode ?? "websearch";
   const sort = input.sort ?? "relevance";
   const dir = input.dir ?? "desc";
@@ -417,6 +419,14 @@ export async function searchBooksForUser(
       publishDate: r.publishDate,
       progress: r.progress,
     };
+  });
+
+  logShelfEvent("library_search", {
+    ok: true,
+    durationMs: Date.now() - t0,
+    resultCount: publicResults.length,
+    hasQuery: q.length > 0,
+    sort,
   });
 
   return { ok: true, results: publicResults, nextCursor };

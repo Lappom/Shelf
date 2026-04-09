@@ -1,4 +1,5 @@
 import { getCachedJson, setCachedJson } from "@/lib/metadata/openlibrary-cache";
+import { logShelfEvent } from "@/lib/observability/structuredLog";
 import { createHash } from "node:crypto";
 
 type OpenLibraryEdition = {
@@ -81,11 +82,14 @@ function coerceText(v: unknown): string | null {
   return null;
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
+async function fetchJson<T>(url: string, operation: "enrich" | "search"): Promise<T> {
   const timeoutMs = getOpenLibraryTimeoutMs();
   const maxRetries = getOpenLibraryRetries();
+  const t0 = Date.now();
 
   let lastErr: unknown = null;
+  let lastHttpStatus: number | null = null;
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     await rateLimitOpenLibrary();
     const ctrl = new AbortController();
@@ -99,6 +103,7 @@ async function fetchJson<T>(url: string): Promise<T> {
           Accept: "application/json",
         },
       });
+      lastHttpStatus = res.status;
 
       if (!res.ok) {
         if (attempt < maxRetries && isTransientHttpStatus(res.status)) {
@@ -108,7 +113,14 @@ async function fetchJson<T>(url: string): Promise<T> {
         throw new Error(`OpenLibrary error (${res.status})`);
       }
 
-      return (await res.json()) as T;
+      const data = (await res.json()) as T;
+      logShelfEvent("openlibrary_request", {
+        operation,
+        ok: true,
+        httpStatus: res.status,
+        durationMs: Date.now() - t0,
+      });
+      return data;
     } catch (e) {
       lastErr = e;
       const aborted =
@@ -121,13 +133,29 @@ async function fetchJson<T>(url: string): Promise<T> {
         await sleep(backoffMs(attempt));
         continue;
       }
+      const msg = e instanceof Error ? e.message : String(e);
+      logShelfEvent("openlibrary_request", {
+        operation,
+        ok: false,
+        httpStatus: lastHttpStatus,
+        durationMs: Date.now() - t0,
+        error: msg,
+      });
       throw e;
     } finally {
       clearTimeout(t);
     }
   }
 
-  throw lastErr instanceof Error ? lastErr : new Error("OpenLibrary error");
+  const fallback = lastErr instanceof Error ? lastErr : new Error("OpenLibrary error");
+  logShelfEvent("openlibrary_request", {
+    operation,
+    ok: false,
+    httpStatus: lastHttpStatus,
+    durationMs: Date.now() - t0,
+    error: fallback.message,
+  });
+  throw fallback;
 }
 
 function isbnKey(isbn: string) {
@@ -155,7 +183,7 @@ export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLib
   if (cached) return cached;
 
   const editionUrl = `https://openlibrary.org/isbn/${encodeURIComponent(isbn)}.json`;
-  const edition = await fetchJson<OpenLibraryEdition>(editionUrl);
+  const edition = await fetchJson<OpenLibraryEdition>(editionUrl, "enrich");
 
   const workRef = edition.works?.[0]?.key ?? null;
   let work: OpenLibraryWork | null = null;
@@ -164,7 +192,7 @@ export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLib
     if (cachedWork) {
       work = cachedWork;
     } else {
-      work = await fetchJson<OpenLibraryWork>(`https://openlibrary.org${workRef}.json`);
+      work = await fetchJson<OpenLibraryWork>(`https://openlibrary.org${workRef}.json`, "enrich");
       await setCachedJson(workKey(workRef), work);
     }
   }
@@ -215,7 +243,7 @@ export async function searchOpenLibraryByTitleAuthor(args: {
   if (cached) return cached;
 
   const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}`;
-  const json = await fetchJson<OpenLibrarySearchResponse>(url);
+  const json = await fetchJson<OpenLibrarySearchResponse>(url, "search");
 
   const candidates: OpenLibrarySearchCandidate[] = (json.docs ?? [])
     .map((d) => {

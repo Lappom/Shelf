@@ -30,7 +30,7 @@
 | Recherche | PostgreSQL `tsvector` + `pg_trgm` | Full-text search sans dépendance externe |
 | Cache | Redis (optionnel) | Sessions, cache métadonnées Open Library |
 | Conteneurisation | Docker + Docker Compose | Image unique multi-stage |
-| CI/CD | GitHub Actions | Lint, tests, build Docker |
+| CI/CD | GitHub Actions | Lint, typecheck, tests (unit/integration + composants), build Next, build image Docker |
 
 ### Arborescence projet
 
@@ -826,6 +826,12 @@ volumes:
   redis_data:
 ```
 
+### 13.3 Observabilité
+
+- **Logs structurés** : événements métier écrits sur stdout en **une ligne JSON** par événement (`ts`, `level`, `event`, champs contextuels). Implémentation : `src/lib/observability/structuredLog.ts` (`logShelfEvent`).
+- **Ne jamais journaliser** : secrets (tokens de clés API, mots de passe), ni le texte brut des requêtes de recherche utilisateur (éviter la fuite de titres / requêtes sensibles).
+- **Événements nominaux** (non exhaustif) : `epub_ingest`, `metadata_resync`, `duplicate_merge`, `mcp_request`, `mcp_tool`, `api_key_create`, `api_key_revoke`, `openlibrary_request`, `library_search` (latence / résultat agrégé sans requête textuelle).
+
 ---
 
 ## 14. Sécurité
@@ -1102,15 +1108,21 @@ L'utilisateur configure son client IA avec :
 
 | Terme | Définition |
 |-------|------------|
-| CFI | Canonical Fragment Identifier — standard EPUB pour identifier une position dans un livre |
-| Three-way merge | Algorithme de fusion comparant trois versions d'une donnée (fichier, base, snapshot) |
-| Storage adapter | Abstraction permettant de switcher entre stockage local et S3 |
-| Dynamic shelf | Étagère dont le contenu est calculé automatiquement via des règles de filtrage |
-| Soft delete | Suppression logique (marquage `deleted_at`) sans suppression physique des données |
-| Content hash | SHA-256 du contenu d'un fichier, utilisé pour la déduplication et le matching |
-| OPF | Open Packaging Format — fichier XML de métadonnées dans un EPUB |
-| MCP | Model Context Protocol — protocole ouvert permettant aux clients IA d'interagir avec des services externes via tools, resources et prompts |
-| Content-based filtering | Recommandation basée sur la similarité des attributs des items (auteurs, sujets, tags) |
-| Collaborative filtering | Recommandation basée sur les comportements d'utilisateurs similaires |
-| API key | Token d'authentification opaque permettant l'accès programmatique à l'API et au serveur MCP |
-| Cold start | Problème des systèmes de recommandation quand un utilisateur n'a pas encore assez d'historique |
+| CFI | Canonical Fragment Identifier — identifiant standard EPUB pour une position dans le flux de contenu d'un livre |
+| Three-way merge | Algorithme de fusion à trois sources : métadonnées **extraites de l'EPUB**, valeurs **courantes en base**, et **dernier snapshot** (`BookMetadataSnapshot`) — voir §5.3 |
+| BookMetadataSnapshot | Enregistrement en base de la dernière version des métadonnées synchronisée entre EPUB et DB ; sert de pivot pour le three-way merge |
+| Storage adapter | Abstraction (`STORAGE_TYPE`) : stockage **local** sous `STORAGE_PATH`, ou **S3-compatible** via `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` — voir §10 |
+| Dynamic shelf | Étagère dont le contenu est calculé automatiquement via des règles de filtrage (§6.3) |
+| Soft delete | Suppression logique (`deleted_at` sur livre ou fichier) sans effacement immédiat du storage ; restauration possible — voir §5.4 |
+| Content hash | Hachage SHA-256 du contenu binaire d'un `BookFile`, utilisé pour la déduplication et le matching à la ré-ingestion — voir §5.5 |
+| OPF | Open Packaging Format — manifeste XML (`package.opf`) des métadonnées et de la structure du paquet EPUB |
+| MCP | Model Context Protocol — exposition contrôlée de tools, resources et prompts sur `/api/mcp`, authentifiée par clé API utilisateur — voir §17 |
+| Content-based filtering | Recommandation basée sur la similarité des attributs des livres (auteurs, sujets, tags, etc.) — voir §16 |
+| Collaborative filtering | Recommandation basée sur les comportements d'utilisateurs proches (signaux agrégés) — voir §16 |
+| API key | Jeton opaque lié à un utilisateur ; authentifie notamment le serveur MCP et la gestion des clés côté UI — voir §17 |
+| Cold start | Situation où le système de recommandations manque de signaux suffisants (nouvel utilisateur ou peu d'interactions) — voir §16 |
+
+### 19.1 Notes développeur (CFI / OPF)
+
+- **CFI** : utilisé pour ancrer la **progression de lecture** et les **annotations / surlignages** dans le document EPUB ; une CFI stable permet de retrouver le même fragment après re-layout. Les détails d'implémentation (reader, persistance) suivent §8.
+- **OPF** : lors du sync métadonnées (§5.3), les champs packagés dans l'OPF sont comparés au snapshot et à la DB ; en cas de mise à jour depuis la DB, l'**écriture retour** modifie l'OPF (et le fichier EPUB est re-haché).

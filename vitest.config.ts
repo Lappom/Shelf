@@ -10,7 +10,12 @@ export default defineConfig({
   test: {
     environment: "node",
     setupFiles: ["./vitest.setup.dom.ts"],
-    include: ["**/*.{test,spec}.?(c|m)[jt]s?(x)", "**/*.component.test.tsx"],
-    exclude: ["**/node_modules/**", "**/e2e/**", "**/.next/**"],
+    include: ["**/*.{test,spec}.?(c|m)[jt]s?(x)"],
+    exclude: [
+      "**/node_modules/**",
+      "**/e2e/**",
+      "**/.next/**",
+      "**/*.component.test.tsx",
+    ],
   },
 });
