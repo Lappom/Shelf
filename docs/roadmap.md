@@ -357,21 +357,21 @@
 ## Phase 14 — PWA & offline
 
 ### 14.1 Manifest & install (docs/SPECS.md §11.4)
-- [ ] `manifest.json` (icônes, couleurs, `display: standalone`).
-- [ ] Install prompt mobile.
+- [x] `manifest.json` (icônes, couleurs, `display: standalone`).
+- [x] Install prompt mobile.
 
 ### 14.2 Service worker (docs/SPECS.md §8.4 + §11.4)
-- [ ] Cache app shell.
-- [ ] Cache EPUB “téléchargés” (offline reading).
-- [ ] Offline fallback page.
+- [x] Cache app shell.
+- [x] Cache EPUB “téléchargés” (offline reading).
+- [x] Offline fallback page.
 
 ### 14.3 Sync retour en ligne (docs/SPECS.md §8.4)
-- [ ] File d’attente : progression + annotations.
-- [ ] Résolution conflits côté serveur (timestamps/last-write-wins ou règles explicites).
+- [x] File d’attente : progression + annotations.
+- [x] Résolution conflits côté serveur (timestamps/last-write-wins ou règles explicites).
 
 ### 14.4 Quotas (docs/SPECS.md §8.4)
-- [ ] Limite configurable stockage local.
-- [ ] UI : affichage utilisation + purge sélective.
+- [x] Limite configurable stockage local.
+- [x] UI : affichage utilisation + purge sélective.
 
 ---
 

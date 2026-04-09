@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LogoMark } from "@/components/LogoMark";
 import { Button } from "@/components/ui/button";
+import { SignOutButton } from "@/components/pwa/SignOutButton";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -35,9 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
           <div className="flex items-center gap-3">
             <span className="text-muted-foreground text-sm">{session?.user?.email ?? ""}</span>
-            <Button asChild variant="outline">
-              <Link href="/api/auth/signout">Déconnexion</Link>
-            </Button>
+            <SignOutButton />
           </div>
         </div>
       </header>

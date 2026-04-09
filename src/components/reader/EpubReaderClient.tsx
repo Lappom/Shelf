@@ -33,6 +33,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { updateReaderPreferencesAction } from "@/app/(app)/reader/[id]/actions";
+import { ensureEpubCachedAndIndexed } from "@/lib/offline/epubIndex";
+import {
+  flushOfflineQueue,
+  offlineOrQueueAnnotationCreate,
+  offlineOrQueueAnnotationDelete,
+  offlineOrQueueAnnotationPatch,
+  offlineOrQueueProgress,
+} from "@/lib/offline/queue";
+import { OfflineManagerDialog } from "@/components/pwa/OfflineManagerDialog";
 
 type ReaderPrefs = {
   readerFontFamily: string | null;
@@ -113,6 +122,7 @@ export function EpubReaderClient({
   const [leftOpen, setLeftOpen] = React.useState(true);
   const [rightOpen, setRightOpen] = React.useState(true);
   const [busy, startTransition] = React.useTransition();
+  const [offlineDialogOpen, setOfflineDialogOpen] = React.useState(false);
 
   const [prefs, setPrefs] = React.useState(() => ({
     readerFontFamily: initialPrefs?.readerFontFamily ?? "system",
@@ -139,20 +149,40 @@ export function EpubReaderClient({
 
   const sanitizedFileUrl = React.useMemo(() => fileUrl, [fileUrl]);
 
+  React.useEffect(() => {
+    // Auto-cache the EPUB on first read (best-effort).
+    void ensureEpubCachedAndIndexed({ bookId, fileUrl: sanitizedFileUrl }).catch(() => undefined);
+  }, [bookId, sanitizedFileUrl]);
+
+  React.useEffect(() => {
+    const onOnline = () => {
+      void flushOfflineQueue().catch(() => undefined);
+    };
+    window.addEventListener("online", onOnline);
+    void flushOfflineQueue().catch(() => undefined);
+    const interval = window.setInterval(() => {
+      void flushOfflineQueue().catch(() => undefined);
+    }, 15_000);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.clearInterval(interval);
+    };
+  }, []);
+
   const saveProgress = React.useCallback(
     async (opts?: { bestEffort?: boolean }) => {
       const cfi = location.cfi;
       const progress = location.progress;
       if (!cfi) return;
       try {
-        await fetch(`/api/progress/${bookId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        await offlineOrQueueProgress({
+          bookId,
+          url: `/api/progress/${bookId}`,
+          body: {
             currentCfi: cfi,
-            progress: typeof progress === "number" ? clampNumber(progress, 0, 1) : undefined,
             status: "reading",
-          }),
+            ...(typeof progress === "number" ? { progress: clampNumber(progress, 0, 1) } : {}),
+          },
         });
       } catch {
         if (!opts?.bestEffort) throw new Error("SAVE_FAILED");
@@ -418,12 +448,18 @@ export function EpubReaderClient({
   const createBookmark = React.useCallback(async () => {
     const cfi = location.cfi;
     if (!cfi) return;
-    await fetch(`/api/books/${bookId}/annotations`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type: "bookmark", cfiRange: cfi }),
+    const res = await offlineOrQueueAnnotationCreate({
+      bookId,
+      url: `/api/books/${bookId}/annotations`,
+      body: { type: "bookmark", cfiRange: cfi },
     });
-    await refreshAnnotations();
+    if (!res.queued) await refreshAnnotations();
+    if (res.queued) {
+      setAnnotations((prev) => [
+        ...prev,
+        { id: `local:${Date.now()}`, type: "bookmark", cfiRange: cfi, content: null, note: null, color: null },
+      ]);
+    }
   }, [bookId, location.cfi, refreshAnnotations]);
 
   const updatePref = React.useCallback(
@@ -447,25 +483,38 @@ export function EpubReaderClient({
 
   const createHighlightFromDialog = React.useCallback(async () => {
     if (!pendingSelection) return;
-    await fetch(`/api/books/${bookId}/annotations`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const res = await offlineOrQueueAnnotationCreate({
+      bookId,
+      url: `/api/books/${bookId}/annotations`,
+      body: {
         type: "highlight",
         cfiRange: pendingSelection.cfiRange,
         content: pendingSelection.text || null,
         note: pendingSelection.note || null,
         color: pendingSelection.color,
-      }),
+      },
     });
     setSelectionDialogOpen(false);
     setPendingSelection(null);
-    await refreshAnnotations();
+    if (!res.queued) await refreshAnnotations();
+    if (res.queued) {
+      setAnnotations((prev) => [
+        ...prev,
+        {
+          id: `local:${Date.now()}`,
+          type: "highlight",
+          cfiRange: pendingSelection.cfiRange,
+          content: pendingSelection.text || null,
+          note: pendingSelection.note || null,
+          color: pendingSelection.color,
+        },
+      ]);
+    }
   }, [bookId, pendingSelection, refreshAnnotations]);
 
   return (
     <div className="bg-background text-foreground relative h-[calc(100vh-56px)] w-full">
-      <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 border-b px-3 py-2 backdrop-blur">
+      <header className="bg-background/80 supports-backdrop-filter:bg-background/60 border-b px-3 py-2 backdrop-blur">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <Button
@@ -597,6 +646,15 @@ export function EpubReaderClient({
                   <DropdownMenuRadioItem value="paginated">Paginé</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="scrolled">Scroll</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setOfflineDialogOpen(true);
+                  }}
+                >
+                  Offline & stockage
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onSelect={(e) => {
@@ -735,8 +793,16 @@ export function EpubReaderClient({
                           title="Supprimer"
                           onClick={() => {
                             startTransition(async () => {
-                              await fetch(`/api/annotations/${a.id}`, { method: "DELETE" });
-                              await refreshAnnotations();
+                              if (a.id.startsWith("local:")) {
+                                setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
+                                return;
+                              }
+                              const res = await offlineOrQueueAnnotationDelete({
+                                bookId,
+                                url: `/api/annotations/${a.id}`,
+                              });
+                              if (!res.queued) await refreshAnnotations();
+                              if (res.queued) setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
                             });
                           }}
                         >
@@ -862,8 +928,16 @@ export function EpubReaderClient({
                           title="Supprimer"
                           onClick={() => {
                             startTransition(async () => {
-                              await fetch(`/api/annotations/${a.id}`, { method: "DELETE" });
-                              await refreshAnnotations();
+                              if (a.id.startsWith("local:")) {
+                                setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
+                                return;
+                              }
+                              const res = await offlineOrQueueAnnotationDelete({
+                                bookId,
+                                url: `/api/annotations/${a.id}`,
+                              });
+                              if (!res.queued) await refreshAnnotations();
+                              if (res.queued) setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
                             });
                           }}
                         >
@@ -979,18 +1053,49 @@ export function EpubReaderClient({
                       (a) => a.cfiRange === pendingSelection.cfiRange,
                     );
                     if (existing) {
-                      await fetch(`/api/annotations/${existing.id}`, {
-                        method: "PATCH",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
+                      if (existing.id.startsWith("local:")) {
+                        setAnnotations((prev) =>
+                          prev.map((x) =>
+                            x.id === existing.id
+                              ? {
+                                  ...x,
+                                  content: pendingSelection.text || null,
+                                  note: pendingSelection.note || null,
+                                  color: pendingSelection.color || null,
+                                }
+                              : x,
+                          ),
+                        );
+                        setSelectionDialogOpen(false);
+                        setPendingSelection(null);
+                        return;
+                      }
+                      const res = await offlineOrQueueAnnotationPatch({
+                        bookId,
+                        url: `/api/annotations/${existing.id}`,
+                        body: {
                           content: pendingSelection.text || null,
                           note: pendingSelection.note || null,
                           color: pendingSelection.color || null,
-                        }),
+                        },
                       });
                       setSelectionDialogOpen(false);
                       setPendingSelection(null);
-                      await refreshAnnotations();
+                      if (!res.queued) await refreshAnnotations();
+                      if (res.queued) {
+                        setAnnotations((prev) =>
+                          prev.map((x) =>
+                            x.id === existing.id
+                              ? {
+                                  ...x,
+                                  content: pendingSelection.text || null,
+                                  note: pendingSelection.note || null,
+                                  color: pendingSelection.color || null,
+                                }
+                              : x,
+                          ),
+                        );
+                      }
                       return;
                     }
                   }
@@ -1004,6 +1109,12 @@ export function EpubReaderClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <OfflineManagerDialog
+        open={offlineDialogOpen}
+        onOpenChange={setOfflineDialogOpen}
+        current={{ bookId, fileUrl: sanitizedFileUrl }}
+      />
     </div>
   );
 }
