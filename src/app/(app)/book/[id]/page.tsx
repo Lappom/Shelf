@@ -99,7 +99,9 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
           </div>
           <div className="md:col-span-2">
             <div className="text-muted-foreground text-xs">Sujets</div>
-            <div className="text-sm">{Array.isArray(book.subjects) ? book.subjects.join(", ") : "—"}</div>
+            <div className="text-sm">
+              {Array.isArray(book.subjects) ? book.subjects.join(", ") : "—"}
+            </div>
           </div>
           <div className="md:col-span-2">
             <div className="text-muted-foreground text-xs">Description</div>
@@ -112,4 +114,3 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
     </div>
   );
 }
-

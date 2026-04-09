@@ -38,9 +38,7 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
   const [rows, setRows] = useState<AdminBookRow[]>(initialRows);
   const [busy, startTransition] = useTransition();
   const [confirm, setConfirm] = useState<
-    | null
-    | { type: "soft_delete"; book: AdminBookRow }
-    | { type: "purge"; book: AdminBookRow }
+    null | { type: "soft_delete"; book: AdminBookRow } | { type: "purge"; book: AdminBookRow }
   >(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,9 +58,7 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
     }
 
     setRows((prev) =>
-      prev.map((r) =>
-        r.id === bookId ? { ...r, deletedAt: new Date().toISOString() } : r,
-      ),
+      prev.map((r) => (r.id === bookId ? { ...r, deletedAt: new Date().toISOString() } : r)),
     );
   }
 
@@ -130,7 +126,7 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
                 <th className="px-3 py-2 font-medium">Auteurs</th>
                 <th className="px-3 py-2 font-medium">Format</th>
                 <th className="px-3 py-2 font-medium">Ajouté</th>
-                <th className="px-3 py-2 font-medium text-right">Actions</th>
+                <th className="px-3 py-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -141,9 +137,9 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
                       {b.title}
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{formatAuthors(b.authors)}</td>
+                  <td className="text-muted-foreground px-3 py-2">{formatAuthors(b.authors)}</td>
                   <td className="px-3 py-2">{b.format}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{formatWhen(b.createdAt)}</td>
+                  <td className="text-muted-foreground px-3 py-2">{formatWhen(b.createdAt)}</td>
                   <td className="px-3 py-2 text-right">
                     <Button
                       variant="outline"
@@ -157,7 +153,7 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
               ))}
               {!active.length && (
                 <tr>
-                  <td className="px-3 py-3 text-muted-foreground" colSpan={5}>
+                  <td className="text-muted-foreground px-3 py-3" colSpan={5}>
                     Aucun livre actif.
                   </td>
                 </tr>
@@ -181,7 +177,7 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
                 <th className="px-3 py-2 font-medium">Auteurs</th>
                 <th className="px-3 py-2 font-medium">Format</th>
                 <th className="px-3 py-2 font-medium">Supprimé</th>
-                <th className="px-3 py-2 font-medium text-right">Actions</th>
+                <th className="px-3 py-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -190,9 +186,9 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
                   <td className="px-3 py-2">
                     <span className="text-muted-foreground">{b.title}</span>
                   </td>
-                  <td className="px-3 py-2 text-muted-foreground">{formatAuthors(b.authors)}</td>
+                  <td className="text-muted-foreground px-3 py-2">{formatAuthors(b.authors)}</td>
                   <td className="px-3 py-2">{b.format}</td>
-                  <td className="px-3 py-2 text-muted-foreground">{formatWhen(b.deletedAt)}</td>
+                  <td className="text-muted-foreground px-3 py-2">{formatWhen(b.deletedAt)}</td>
                   <td className="px-3 py-2 text-right">
                     <Button
                       variant="default"
@@ -206,7 +202,7 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
               ))}
               {!deleted.length && (
                 <tr>
-                  <td className="px-3 py-3 text-muted-foreground" colSpan={5}>
+                  <td className="text-muted-foreground px-3 py-3" colSpan={5}>
                     Aucun livre supprimé.
                   </td>
                 </tr>
@@ -236,4 +232,3 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
     </div>
   );
 }
-

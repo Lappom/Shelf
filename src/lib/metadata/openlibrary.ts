@@ -160,9 +160,14 @@ export async function searchOpenLibraryByTitleAuthor(args: {
     .map((d) => {
       const key = typeof d.key === "string" ? d.key.trim() : "";
       const t = typeof d.title === "string" ? d.title.trim() : "";
-      const authors = Array.isArray(d.author_name) ? d.author_name.map((a) => String(a).trim()).filter(Boolean) : [];
-      const firstPublishYear = typeof d.first_publish_year === "number" ? d.first_publish_year : null;
-      const isbns = Array.isArray(d.isbn) ? d.isbn.map((x) => String(x).trim()).filter(Boolean) : [];
+      const authors = Array.isArray(d.author_name)
+        ? d.author_name.map((a) => String(a).trim()).filter(Boolean)
+        : [];
+      const firstPublishYear =
+        typeof d.first_publish_year === "number" ? d.first_publish_year : null;
+      const isbns = Array.isArray(d.isbn)
+        ? d.isbn.map((x) => String(x).trim()).filter(Boolean)
+        : [];
       return { key, title: t, authors, firstPublishYear, isbns };
     })
     .filter((c) => c.key && c.title)

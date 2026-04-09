@@ -34,7 +34,11 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
 
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
   try {
-    await rateLimitOrThrow({ key: `books:soft_delete:${admin.id}:${ip}`, limit: 30, windowMs: 60_000 });
+    await rateLimitOrThrow({
+      key: `books:soft_delete:${admin.id}:${ip}`,
+      limit: 30,
+      windowMs: 60_000,
+    });
   } catch {
     return addCorsHeaders(NextResponse.json({ error: "Too many requests" }, { status: 429 }), req);
   }
@@ -57,4 +61,3 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
 
   return addCorsHeaders(NextResponse.json({ ok: true }, { status: 200 }), req);
 }
-

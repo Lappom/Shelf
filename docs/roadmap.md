@@ -225,21 +225,21 @@
 ## Phase 9 — Import Calibre
 
 ### 9.1 Parsing Calibre `metadata.db` (docs/SPECS.md §5.6)
-- [ ] Upload du fichier SQLite `metadata.db`.
-- [ ] Lire tables Calibre nécessaires (books/authors/tags/series/formats/cover).
+- [x] Upload du fichier SQLite `metadata.db`.
+- [x] Lire tables Calibre nécessaires (books/authors/tags/series/formats/cover).
 
 ### 9.2 Mapping Calibre → Shelf (docs/SPECS.md §5.6)
-- [ ] Champs : titre, auteurs, tags, séries, description, couverture, formats.
-- [ ] Tags Calibre → `Tag` (global).
-- [ ] Séries → `Shelf` (manual).
+- [x] Champs : titre, auteurs, tags, séries, description, couverture, formats.
+- [x] Tags Calibre → `Tag` (global).
+- [x] Séries → `Shelf` (manual).
 
 ### 9.3 Import fichiers EPUB (docs/SPECS.md §5.6)
-- [ ] Import des EPUB vers storage adapter.
-- [ ] Dédup via `content_hash` (ignorer doublons).
+- [x] Import des EPUB vers storage adapter.
+- [x] Dédup via `content_hash` (ignorer doublons).
 
 ### 9.4 Rapport d’import (docs/SPECS.md §5.6)
-- [ ] Stats : importés, ignorés, erreurs.
-- [ ] UI admin : affichage exportable.
+- [x] Stats : importés, ignorés, erreurs.
+- [x] UI admin : affichage exportable.
 
 ---
 

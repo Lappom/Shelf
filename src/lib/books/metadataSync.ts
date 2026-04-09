@@ -66,11 +66,7 @@ export const SyncMetadataSchema = z.object({
 
 export type SyncMetadata = z.infer<typeof SyncMetadataSchema>;
 
-export type MergeDecision =
-  | "no_change"
-  | "take_epub"
-  | "take_db"
-  | "conflict_take_epub";
+export type MergeDecision = "no_change" | "take_epub" | "take_db" | "conflict_take_epub";
 
 export type MergeFieldResult = {
   field: keyof SyncMetadata;
@@ -304,7 +300,9 @@ export function threeWayMergeAllFields(args: {
     }
   }
 
-  const requiresWriteback = fieldResults.some((r) => r.decision === "take_db" && r.field !== "pageCount" && r.field !== "openLibraryId");
+  const requiresWriteback = fieldResults.some(
+    (r) => r.decision === "take_db" && r.field !== "pageCount" && r.field !== "openLibraryId",
+  );
 
   return { mergedDb, fields: fieldResults, requiresWriteback };
 }
@@ -382,7 +380,11 @@ export async function resyncBookMetadata(bookId: string): Promise<ResyncResult> 
       select: { id: true },
     });
     if (collision) {
-      return { ok: false, bookId, error: "Writeback would create a duplicate (content hash collision)." };
+      return {
+        ok: false,
+        bookId,
+        error: "Writeback would create a duplicate (content hash collision).",
+      };
     }
 
     const newStoragePath = buildBookFileStoragePath({
@@ -450,7 +452,10 @@ export async function resyncBookMetadata(bookId: string): Promise<ResyncResult> 
 
   // No writeback: EPUB wins (or no changes). Update DB + snapshot if needed.
   const anyDbUpdate = merge.fields.some(
-    (r) => r.decision === "take_epub" || r.decision === "conflict_take_epub" || (r.decision === "take_db" && (r.field === "pageCount" || r.field === "openLibraryId")),
+    (r) =>
+      r.decision === "take_epub" ||
+      r.decision === "conflict_take_epub" ||
+      (r.decision === "take_db" && (r.field === "pageCount" || r.field === "openLibraryId")),
   );
 
   if (!anyDbUpdate) {
@@ -505,4 +510,3 @@ export async function resyncBookMetadata(bookId: string): Promise<ResyncResult> 
     fields: merge.fields,
   };
 }
-

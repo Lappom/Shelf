@@ -43,7 +43,9 @@ describe("DELETE /api/books/[id]", () => {
       id: crypto.randomUUID(),
       deletedAt: null,
     });
-    (prisma.book.update as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: crypto.randomUUID() });
+    (prisma.book.update as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: crypto.randomUUID(),
+    });
 
     const { DELETE } = await import("./route");
     const req = new Request("http://test.local/api/books/x", { method: "DELETE" });
@@ -64,4 +66,3 @@ describe("DELETE /api/books/[id]", () => {
     expect(res.status).toBe(200);
   });
 });
-

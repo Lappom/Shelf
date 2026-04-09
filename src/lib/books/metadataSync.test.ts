@@ -70,4 +70,3 @@ describe("threeWayMergeAllFields", () => {
     expect(res.fields.find((f) => f.field === "openLibraryId")?.decision).toBe("take_db");
   });
 });
-

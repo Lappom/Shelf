@@ -60,4 +60,3 @@ export async function purgeBookAction(formData: FormData) {
 
   return { ok: true as const };
 }
-

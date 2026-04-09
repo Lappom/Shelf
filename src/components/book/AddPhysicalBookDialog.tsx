@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react";
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -40,7 +47,11 @@ function splitAuthorsCsv(raw: string) {
     .slice(0, 50);
 }
 
-export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique" }: { triggerText?: string }) {
+export function AddPhysicalBookDialog({
+  triggerText = "Ajouter un livre physique",
+}: {
+  triggerText?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<UiState>({ type: "idle" });
 
@@ -56,8 +67,15 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
   const [applyOpenLibrary, setApplyOpenLibrary] = useState(true);
   const [cover, setCover] = useState<File | null>(null);
 
-  const canSearch = useMemo(() => Boolean(title.trim()) && Boolean(authorsCsv.trim()) && state.type !== "creating", [title, authorsCsv, state.type]);
-  const canCreate = useMemo(() => Boolean(title.trim()) && splitAuthorsCsv(authorsCsv).length > 0 && state.type !== "creating", [title, authorsCsv, state.type]);
+  const canSearch = useMemo(
+    () => Boolean(title.trim()) && Boolean(authorsCsv.trim()) && state.type !== "creating",
+    [title, authorsCsv, state.type],
+  );
+  const canCreate = useMemo(
+    () =>
+      Boolean(title.trim()) && splitAuthorsCsv(authorsCsv).length > 0 && state.type !== "creating",
+    [title, authorsCsv, state.type],
+  );
 
   function reset() {
     setState({ type: "idle" });
@@ -87,16 +105,22 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
       return;
     }
 
-    const json = (await res.json().catch(() => null)) as { enrichment?: Enrichment; error?: string } | null;
+    const json = (await res.json().catch(() => null)) as {
+      enrichment?: Enrichment;
+      error?: string;
+    } | null;
     if (!res.ok || !json?.enrichment) {
       setState({ type: "error", message: json?.error ?? "Erreur Open Library." });
       return;
     }
 
     setState({ type: "ready", enrichment: json.enrichment });
-    if (!description.trim() && json.enrichment.description) setDescription(json.enrichment.description);
-    if (!subjectsCsv.trim() && json.enrichment.subjects?.length) setSubjectsCsv(json.enrichment.subjects.join(", "));
-    if (!pageCount.trim() && json.enrichment.pageCount) setPageCount(String(json.enrichment.pageCount));
+    if (!description.trim() && json.enrichment.description)
+      setDescription(json.enrichment.description);
+    if (!subjectsCsv.trim() && json.enrichment.subjects?.length)
+      setSubjectsCsv(json.enrichment.subjects.join(", "));
+    if (!pageCount.trim() && json.enrichment.pageCount)
+      setPageCount(String(json.enrichment.pageCount));
   }
 
   async function searchOpenLibrary() {
@@ -116,7 +140,11 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
     const res = await fetch("/api/books", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ intent: "openlibrary_search", title: title.trim(), author: authors[0] }),
+      body: JSON.stringify({
+        intent: "openlibrary_search",
+        title: title.trim(),
+        author: authors[0],
+      }),
     }).catch(() => null);
 
     if (!res) {
@@ -124,7 +152,10 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
       return;
     }
 
-    const json = (await res.json().catch(() => null)) as { candidates?: Candidate[]; error?: string } | null;
+    const json = (await res.json().catch(() => null)) as {
+      candidates?: Candidate[];
+      error?: string;
+    } | null;
     if (!res.ok) {
       setState({ type: "error", message: json?.error ?? "Erreur Open Library." });
       return;
@@ -193,7 +224,8 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
         <DialogHeader>
           <DialogTitle>Ajouter un livre physique</DialogTitle>
           <DialogDescription className="text-eleven-secondary eleven-body-airy">
-            Création réservée admin. Optionnellement, auto-complétion via Open Library (ISBN ou recherche titre+auteur).
+            Création réservée admin. Optionnellement, auto-complétion via Open Library (ISBN ou
+            recherche titre+auteur).
           </DialogDescription>
         </DialogHeader>
 
@@ -201,41 +233,78 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Titre</div>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Fondation" />
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Fondation"
+              />
             </div>
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Auteurs (CSV)</div>
-              <Input value={authorsCsv} onChange={(e) => setAuthorsCsv(e.target.value)} placeholder="Ex: Isaac Asimov" />
+              <Input
+                value={authorsCsv}
+                onChange={(e) => setAuthorsCsv(e.target.value)}
+                placeholder="Ex: Isaac Asimov"
+              />
             </div>
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">ISBN (optionnel)</div>
-              <Input value={isbn} onChange={(e) => setIsbn(e.target.value)} placeholder="10/13 chiffres, tirets OK" />
+              <Input
+                value={isbn}
+                onChange={(e) => setIsbn(e.target.value)}
+                placeholder="10/13 chiffres, tirets OK"
+              />
             </div>
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Langue</div>
-              <Input value={language} onChange={(e) => setLanguage(e.target.value)} placeholder="Ex: fr" />
+              <Input
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                placeholder="Ex: fr"
+              />
             </div>
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Éditeur</div>
-              <Input value={publisher} onChange={(e) => setPublisher(e.target.value)} placeholder="Ex: Denoël" />
+              <Input
+                value={publisher}
+                onChange={(e) => setPublisher(e.target.value)}
+                placeholder="Ex: Denoël"
+              />
             </div>
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Date de publication</div>
-              <Input value={publishDate} onChange={(e) => setPublishDate(e.target.value)} placeholder="Ex: 1951" />
+              <Input
+                value={publishDate}
+                onChange={(e) => setPublishDate(e.target.value)}
+                placeholder="Ex: 1951"
+              />
             </div>
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Pages</div>
-              <Input value={pageCount} onChange={(e) => setPageCount(e.target.value)} placeholder="Ex: 255" inputMode="numeric" />
+              <Input
+                value={pageCount}
+                onChange={(e) => setPageCount(e.target.value)}
+                placeholder="Ex: 255"
+                inputMode="numeric"
+              />
             </div>
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Couverture (optionnel)</div>
-              <Input type="file" accept="image/*" onChange={(e) => setCover(e.target.files?.[0] ?? null)} />
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setCover(e.target.files?.[0] ?? null)}
+              />
             </div>
           </div>
 
           <div className="space-y-1">
             <div className="text-muted-foreground text-xs">Sujets (CSV)</div>
-            <Input value={subjectsCsv} onChange={(e) => setSubjectsCsv(e.target.value)} placeholder="Ex: Science Fiction, Classics" />
+            <Input
+              value={subjectsCsv}
+              onChange={(e) => setSubjectsCsv(e.target.value)}
+              placeholder="Ex: Science Fiction, Classics"
+            />
           </div>
 
           <div className="space-y-1">
@@ -249,7 +318,12 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={searchOpenLibrary} disabled={!canSearch || state.type === "searching" || state.type === "previewing"}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={searchOpenLibrary}
+              disabled={!canSearch || state.type === "searching" || state.type === "previewing"}
+            >
               {isbn.trim() ? "Prévisualiser Open Library (ISBN)" : "Rechercher sur Open Library"}
             </Button>
             <Button
@@ -263,10 +337,14 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
           </div>
 
           {state.type === "candidates" && (
-            <div className="rounded-2xl border border-(--eleven-border-subtle) bg-muted/30 p-3">
-              <div className="text-muted-foreground mb-2 text-xs">Confirme un résultat Open Library</div>
+            <div className="bg-muted/30 rounded-2xl border border-(--eleven-border-subtle) p-3">
+              <div className="text-muted-foreground mb-2 text-xs">
+                Confirme un résultat Open Library
+              </div>
               <div className="max-h-48 space-y-2 overflow-auto pr-1">
-                {state.items.length === 0 && <div className="text-muted-foreground text-sm">Aucun résultat.</div>}
+                {state.items.length === 0 && (
+                  <div className="text-muted-foreground text-sm">Aucun résultat.</div>
+                )}
                 {state.items.map((c) => (
                   <button
                     key={c.key}
@@ -287,13 +365,13 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
           )}
 
           {state.type === "ready" && (
-            <div className="rounded-2xl border border-(--eleven-border-subtle) bg-muted/30 px-3 py-2 text-sm">
+            <div className="bg-muted/30 rounded-2xl border border-(--eleven-border-subtle) px-3 py-2 text-sm">
               Open Library prêt. Champs suggérés appliqués (description/sujets/pages si vides).
             </div>
           )}
 
           {state.type === "done" && (
-            <div className="rounded-2xl border border-(--eleven-border-subtle) bg-muted/30 px-3 py-2 text-sm">
+            <div className="bg-muted/30 rounded-2xl border border-(--eleven-border-subtle) px-3 py-2 text-sm">
               Création OK.{" "}
               <a className="underline underline-offset-3" href={`/reader/${state.bookId}`}>
                 Ouvrir
@@ -309,7 +387,11 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)} disabled={state.type === "creating"}>
+          <Button
+            variant="outline"
+            onClick={() => setOpen(false)}
+            disabled={state.type === "creating"}
+          >
             Annuler
           </Button>
           <Button onClick={() => void create()} disabled={!canCreate}>
@@ -320,4 +402,3 @@ export function AddPhysicalBookDialog({ triggerText = "Ajouter un livre physique
     </Dialog>
   );
 }
-

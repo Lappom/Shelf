@@ -175,4 +175,3 @@ describe("resyncBookMetadata", () => {
     expect(adapterMock.upload).not.toHaveBeenCalled();
   });
 });
-

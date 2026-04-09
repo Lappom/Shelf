@@ -4,7 +4,10 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { ingestEpub } from "@/lib/books/ingest";
 import { prisma } from "@/lib/db/prisma";
-import { enrichFromOpenLibraryByIsbn, searchOpenLibraryByTitleAuthor } from "@/lib/metadata/openlibrary";
+import {
+  enrichFromOpenLibraryByIsbn,
+  searchOpenLibraryByTitleAuthor,
+} from "@/lib/metadata/openlibrary";
 import { handleCorsPreflight, addCorsHeaders } from "@/lib/security/cors";
 import { assertSameOriginFromHeaders } from "@/lib/security/origin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
@@ -136,20 +139,31 @@ export async function POST(req: Request) {
     const preview = OpenLibraryPreviewSchema.safeParse(body);
     if (preview.success) {
       try {
-        await rateLimitOrThrow({ key: `books:openlibrary_preview:${ip}`, limit: 30, windowMs: 60_000 });
+        await rateLimitOrThrow({
+          key: `books:openlibrary_preview:${ip}`,
+          limit: 30,
+          windowMs: 60_000,
+        });
       } catch {
-        return addCorsHeaders(NextResponse.json({ error: "Too many requests" }, { status: 429 }), req);
+        return addCorsHeaders(
+          NextResponse.json({ error: "Too many requests" }, { status: 429 }),
+          req,
+        );
       }
 
       const isbn = normalizeIsbn(preview.data.isbn);
-      if (!isbn) return addCorsHeaders(NextResponse.json({ error: "Invalid ISBN" }, { status: 400 }), req);
+      if (!isbn)
+        return addCorsHeaders(NextResponse.json({ error: "Invalid ISBN" }, { status: 400 }), req);
 
       try {
         const enrichment = await enrichFromOpenLibraryByIsbn(isbn);
         return addCorsHeaders(NextResponse.json({ enrichment }, { status: 200 }), req);
       } catch (e) {
         return addCorsHeaders(
-          NextResponse.json({ error: e instanceof Error ? e.message : "OpenLibrary error" }, { status: 502 }),
+          NextResponse.json(
+            { error: e instanceof Error ? e.message : "OpenLibrary error" },
+            { status: 502 },
+          ),
           req,
         );
       }
@@ -158,9 +172,16 @@ export async function POST(req: Request) {
     const search = OpenLibrarySearchSchema.safeParse(body);
     if (search.success) {
       try {
-        await rateLimitOrThrow({ key: `books:openlibrary_search:${ip}`, limit: 30, windowMs: 60_000 });
+        await rateLimitOrThrow({
+          key: `books:openlibrary_search:${ip}`,
+          limit: 30,
+          windowMs: 60_000,
+        });
       } catch {
-        return addCorsHeaders(NextResponse.json({ error: "Too many requests" }, { status: 429 }), req);
+        return addCorsHeaders(
+          NextResponse.json({ error: "Too many requests" }, { status: 429 }),
+          req,
+        );
       }
 
       try {
@@ -172,7 +193,10 @@ export async function POST(req: Request) {
         return addCorsHeaders(NextResponse.json({ candidates }, { status: 200 }), req);
       } catch (e) {
         return addCorsHeaders(
-          NextResponse.json({ error: e instanceof Error ? e.message : "OpenLibrary error" }, { status: 502 }),
+          NextResponse.json(
+            { error: e instanceof Error ? e.message : "OpenLibrary error" },
+            { status: 502 },
+          ),
           req,
         );
       }
@@ -186,7 +210,10 @@ export async function POST(req: Request) {
     try {
       await rateLimitOrThrow({ key: `books:create_physical:${ip}`, limit: 20, windowMs: 60_000 });
     } catch {
-      return addCorsHeaders(NextResponse.json({ error: "Too many requests" }, { status: 429 }), req);
+      return addCorsHeaders(
+        NextResponse.json({ error: "Too many requests" }, { status: 429 }),
+        req,
+      );
     }
 
     const isbn = normalizeIsbn(create.data.isbn);
@@ -196,9 +223,12 @@ export async function POST(req: Request) {
       return addCorsHeaders(NextResponse.json({ error: "Invalid ISBN" }, { status: 400 }), req);
     }
 
-    const enrichment = applyOpenLibrary && isbn ? await enrichFromOpenLibraryByIsbn(isbn).catch(() => null) : null;
+    const enrichment =
+      applyOpenLibrary && isbn ? await enrichFromOpenLibraryByIsbn(isbn).catch(() => null) : null;
 
-    const subjects = create.data.subjects?.length ? create.data.subjects : enrichment?.subjects ?? [];
+    const subjects = create.data.subjects?.length
+      ? create.data.subjects
+      : (enrichment?.subjects ?? []);
     const pageCount = create.data.pageCount ?? enrichment?.pageCount ?? null;
     const description = create.data.description ?? enrichment?.description ?? null;
     const metadataSource = enrichment ? "openlibrary" : "manual";
@@ -266,7 +296,10 @@ export async function POST(req: Request) {
     }
 
     if (file.type && !isLikelyEpubMime(file.type)) {
-      return addCorsHeaders(NextResponse.json({ error: "Invalid MIME type" }, { status: 400 }), req);
+      return addCorsHeaders(
+        NextResponse.json({ error: "Invalid MIME type" }, { status: 400 }),
+        req,
+      );
     }
 
     const buf = Buffer.from(await file.arrayBuffer());
@@ -281,17 +314,25 @@ export async function POST(req: Request) {
     if (!res.ok) {
       if (res.code === "DUPLICATE_ACTIVE") {
         return addCorsHeaders(
-          NextResponse.json({ error: "Duplicate book", existingBookId: res.existingBookId }, { status: 409 }),
+          NextResponse.json(
+            { error: "Duplicate book", existingBookId: res.existingBookId },
+            { status: 409 },
+          ),
           req,
         );
       }
       return addCorsHeaders(NextResponse.json({ error: res.message }, { status: 400 }), req);
     }
 
-    return addCorsHeaders(NextResponse.json({ bookId: res.bookId, restored: res.restored }, { status: 201 }), req);
+    return addCorsHeaders(
+      NextResponse.json({ bookId: res.bookId, restored: res.restored }, { status: 201 }),
+      req,
+    );
   }
 
-  const format = String(formData.get("format") ?? "").trim().toLowerCase();
+  const format = String(formData.get("format") ?? "")
+    .trim()
+    .toLowerCase();
   if (format !== "physical") {
     return addCorsHeaders(NextResponse.json({ error: "Missing file" }, { status: 400 }), req);
   }
@@ -304,15 +345,24 @@ export async function POST(req: Request) {
 
   const title = String(formData.get("title") ?? "").trim();
   const authors = splitCsvList(formData.get("authors")?.toString() ?? "");
-  if (!title) return addCorsHeaders(NextResponse.json({ error: "Title is required" }, { status: 400 }), req);
-  if (!authors.length) return addCorsHeaders(NextResponse.json({ error: "Authors are required" }, { status: 400 }), req);
+  if (!title)
+    return addCorsHeaders(NextResponse.json({ error: "Title is required" }, { status: 400 }), req);
+  if (!authors.length)
+    return addCorsHeaders(
+      NextResponse.json({ error: "Authors are required" }, { status: 400 }),
+      req,
+    );
 
   const isbn = normalizeIsbn(formData.get("isbn")?.toString());
-  const applyOpenLibrary = String(formData.get("applyOpenLibrary") ?? "").trim().toLowerCase() === "true";
+  const applyOpenLibrary =
+    String(formData.get("applyOpenLibrary") ?? "")
+      .trim()
+      .toLowerCase() === "true";
   if (applyOpenLibrary && !isbn) {
     return addCorsHeaders(NextResponse.json({ error: "Invalid ISBN" }, { status: 400 }), req);
   }
-  const enrichment = applyOpenLibrary && isbn ? await enrichFromOpenLibraryByIsbn(isbn).catch(() => null) : null;
+  const enrichment =
+    applyOpenLibrary && isbn ? await enrichFromOpenLibraryByIsbn(isbn).catch(() => null) : null;
 
   const publisher = String(formData.get("publisher") ?? "").trim() || null;
   const publishDate = String(formData.get("publishDate") ?? "").trim() || null;
@@ -322,8 +372,11 @@ export async function POST(req: Request) {
   const description =
     (String(formData.get("description") ?? "").trim() || null) ?? enrichment?.description ?? null;
   const subjects = splitCsvList(formData.get("subjects")?.toString()) ?? [];
-  const mergedSubjects = subjects.length ? subjects : enrichment?.subjects ?? [];
-  const mergedPageCount = Number.isFinite(pageCount) && pageCount > 0 ? Math.trunc(pageCount) : enrichment?.pageCount ?? null;
+  const mergedSubjects = subjects.length ? subjects : (enrichment?.subjects ?? []);
+  const mergedPageCount =
+    Number.isFinite(pageCount) && pageCount > 0
+      ? Math.trunc(pageCount)
+      : (enrichment?.pageCount ?? null);
   const metadataSource = enrichment ? "openlibrary" : "manual";
 
   const coverFile = formData.get("cover");
@@ -332,16 +385,26 @@ export async function POST(req: Request) {
     const maxCoverBytes = getMaxCoverUploadBytes();
     if (coverFile.size <= 0 || coverFile.size > maxCoverBytes) {
       return addCorsHeaders(
-        NextResponse.json({ error: `Cover too large (max ${maxCoverBytes} bytes)` }, { status: 400 }),
+        NextResponse.json(
+          { error: `Cover too large (max ${maxCoverBytes} bytes)` },
+          { status: 400 },
+        ),
         req,
       );
     }
     if (coverFile.type && !coverFile.type.toLowerCase().startsWith("image/")) {
-      return addCorsHeaders(NextResponse.json({ error: "Invalid cover type" }, { status: 400 }), req);
+      return addCorsHeaders(
+        NextResponse.json({ error: "Invalid cover type" }, { status: 400 }),
+        req,
+      );
     }
 
     const ext = detectImageExt(coverFile);
-    if (!ext) return addCorsHeaders(NextResponse.json({ error: "Unsupported cover format" }, { status: 400 }), req);
+    if (!ext)
+      return addCorsHeaders(
+        NextResponse.json({ error: "Unsupported cover format" }, { status: 400 }),
+        req,
+      );
     coverToUpload = { ext, bytes: Buffer.from(await coverFile.arrayBuffer()) };
   }
 
@@ -380,8 +443,5 @@ export async function POST(req: Request) {
 
   await updateBookSearchVector(created.id);
 
-  return addCorsHeaders(
-    NextResponse.json({ bookId: created.id }, { status: 201 }),
-    req,
-  );
+  return addCorsHeaders(NextResponse.json({ bookId: created.id }, { status: 201 }), req);
 }

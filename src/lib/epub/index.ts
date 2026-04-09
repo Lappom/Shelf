@@ -132,9 +132,7 @@ function insertMultipleTags(args: { metadataXml: string; tag: string; values: st
   if (!values.length) return metadataXml;
   const insertAfter = /<metadata\b[^>]*>/i;
   if (!insertAfter.test(metadataXml)) return metadataXml;
-  const xml = values
-    .map((v) => `    <dc:${tag}>${escapeXmlText(v)}</dc:${tag}>`)
-    .join("\n");
+  const xml = values.map((v) => `    <dc:${tag}>${escapeXmlText(v)}</dc:${tag}>`).join("\n");
   return metadataXml.replace(insertAfter, (m) => `${m}\n${xml}`);
 }
 
@@ -267,8 +265,16 @@ export async function writeEpubOpfMetadata(
 
   metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "title", value: updates.title });
   metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "language", value: updates.language });
-  metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "description", value: updates.description });
-  metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "publisher", value: updates.publisher });
+  metadataXml = replaceOrInsertSingleTag({
+    metadataXml,
+    tag: "description",
+    value: updates.description,
+  });
+  metadataXml = replaceOrInsertSingleTag({
+    metadataXml,
+    tag: "publisher",
+    value: updates.publisher,
+  });
   metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "date", value: updates.publishDate });
 
   // Multi-value tags: remove and re-insert.

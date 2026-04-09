@@ -87,7 +87,9 @@ describe("POST /api/books (JSON intents)", () => {
 
   it("create_physical creates a physical book", async () => {
     const { prisma } = await import("@/lib/db/prisma");
-    (prisma.book.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: crypto.randomUUID() });
+    (prisma.book.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: crypto.randomUUID(),
+    });
 
     const { POST } = await import("./route");
     const req = new Request("http://test.local/api/books", {
@@ -107,4 +109,3 @@ describe("POST /api/books (JSON intents)", () => {
     expect(typeof json.bookId).toBe("string");
   });
 });
-

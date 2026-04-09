@@ -75,7 +75,11 @@ describe("searchOpenLibraryByTitleAuthor", () => {
   });
 
   it("returns normalized candidates", async () => {
-    const res = await searchOpenLibraryByTitleAuthor({ title: "The Book", author: "Ada", limit: 10 });
+    const res = await searchOpenLibraryByTitleAuthor({
+      title: "The Book",
+      author: "Ada",
+      limit: 10,
+    });
     expect(res).toEqual([
       {
         key: "/works/OL123W",

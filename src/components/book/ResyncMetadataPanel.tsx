@@ -1,10 +1,17 @@
 "use client";
 
-import { useActionState } from "react";
+import { Fragment, useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import type { ResyncResult } from "@/lib/books/metadataSync";
 import { resyncMetadataAction } from "@/app/(app)/book/[id]/actions";
 
@@ -29,7 +36,13 @@ function formatValue(v: unknown) {
   }
 }
 
-function Badge({ children, variant }: { children: string; variant: "muted" | "epub" | "db" | "conflict" }) {
+function Badge({
+  children,
+  variant,
+}: {
+  children: string;
+  variant: "muted" | "epub" | "db" | "conflict";
+}) {
   const cls =
     variant === "epub"
       ? "border-emerald-200 bg-emerald-50 text-emerald-800"
@@ -38,7 +51,11 @@ function Badge({ children, variant }: { children: string; variant: "muted" | "ep
         : variant === "conflict"
           ? "border-amber-200 bg-amber-50 text-amber-900"
           : "border-[var(--eleven-border-subtle)] bg-muted/30 text-muted-foreground";
-  return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${cls}`}>{children}</span>;
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs ${cls}`}>
+      {children}
+    </span>
+  );
 }
 
 export function ResyncMetadataPanel({ bookId }: { bookId: string }) {
@@ -49,7 +66,8 @@ export function ResyncMetadataPanel({ bookId }: { bookId: string }) {
       <CardHeader className="border-b">
         <CardTitle>Synchronisation métadonnées</CardTitle>
         <CardDescription>
-          Three-way merge (EPUB vs DB vs snapshot). En conflit, le fichier gagne. En cas DB gagnante, writeback OPF.
+          Three-way merge (EPUB vs DB vs snapshot). En conflit, le fichier gagne. En cas DB
+          gagnante, writeback OPF.
         </CardDescription>
       </CardHeader>
 
@@ -104,23 +122,23 @@ export function ResyncMetadataPanel({ bookId }: { bookId: string }) {
                           : "muted";
 
                   return (
-                    <>
-                      <div key={`${f.field}-k`} className="bg-background px-3 py-2 text-xs font-medium">
+                    <Fragment key={String(f.field)}>
+                      <div className="bg-background px-3 py-2 text-xs font-medium">
                         {String(f.field)}
                       </div>
-                      <div key={`${f.field}-e`} className="bg-background px-3 py-2 text-xs text-muted-foreground">
+                      <div className="bg-background text-muted-foreground px-3 py-2 text-xs">
                         {formatValue(f.epubValue)}
                       </div>
-                      <div key={`${f.field}-d`} className="bg-background px-3 py-2 text-xs text-muted-foreground">
+                      <div className="bg-background text-muted-foreground px-3 py-2 text-xs">
                         {formatValue(f.dbValue)}
                       </div>
-                      <div key={`${f.field}-s`} className="bg-background px-3 py-2 text-xs text-muted-foreground">
+                      <div className="bg-background text-muted-foreground px-3 py-2 text-xs">
                         {formatValue(f.snapValue)}
                       </div>
-                      <div key={`${f.field}-r`} className="bg-background px-3 py-2 text-xs">
+                      <div className="bg-background px-3 py-2 text-xs">
                         <Badge variant={badgeVariant}>{decisionLabel}</Badge>
                       </div>
-                    </>
+                    </Fragment>
                   );
                 })}
               </div>
@@ -137,4 +155,3 @@ export function ResyncMetadataPanel({ bookId }: { bookId: string }) {
     </Card>
   );
 }
-

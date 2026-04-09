@@ -20,8 +20,8 @@ vi.mock("@/lib/storage", () => ({
 vi.mock("@/lib/db/prisma", () => ({
   prisma: {
     book: { findFirst: vi.fn() },
-    $transaction: vi.fn(async (fn: (tx: any) => Promise<void>) => {
-      const tx = {
+    $transaction: vi.fn(async (fn: (tx: PrismaTxMock) => Promise<void>) => {
+      const tx: PrismaTxMock = {
         bookFile: { deleteMany: vi.fn(async () => undefined) },
         bookMetadataSnapshot: { deleteMany: vi.fn(async () => undefined) },
         bookShelf: { deleteMany: vi.fn(async () => undefined) },
@@ -35,6 +35,17 @@ vi.mock("@/lib/db/prisma", () => ({
     }),
   },
 }));
+
+type PrismaTxMock = {
+  bookFile: { deleteMany: ReturnType<typeof vi.fn> };
+  bookMetadataSnapshot: { deleteMany: ReturnType<typeof vi.fn> };
+  bookShelf: { deleteMany: ReturnType<typeof vi.fn> };
+  bookTag: { deleteMany: ReturnType<typeof vi.fn> };
+  userBookProgress: { deleteMany: ReturnType<typeof vi.fn> };
+  userAnnotation: { deleteMany: ReturnType<typeof vi.fn> };
+  userRecommendation: { deleteMany: ReturnType<typeof vi.fn> };
+  book: { delete: ReturnType<typeof vi.fn> };
+};
 
 describe("purgeBookAction", () => {
   it("purges storage paths then deletes DB rows", async () => {
@@ -73,4 +84,3 @@ describe("purgeBookAction", () => {
     await expect(purgeBookAction(fd)).rejects.toThrow(/soft-deleted/i);
   });
 });
-
