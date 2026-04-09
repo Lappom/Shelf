@@ -33,14 +33,13 @@ export default async function AdminBooksPage() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
+    <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Admin — Livres</h1>
+        <h2 className="text-xl font-semibold tracking-tight">Livres</h2>
         <p className="text-muted-foreground text-sm">
           Soft delete garde les fichiers en storage. Purge définitive supprime storage + DB.
         </p>
       </div>
-
       <AdminBooksClient initialRows={rows} />
     </div>
   );

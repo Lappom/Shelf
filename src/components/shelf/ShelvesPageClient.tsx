@@ -175,6 +175,8 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
 
   const systemShelves = shelves.filter((s) => s.type === "favorites" || s.type === "reading");
   const reorderableShelves = shelves.filter((s) => s.type === "manual" || s.type === "dynamic");
+  const manualShelves = reorderableShelves.filter((s) => s.type === "manual");
+  const dynamicShelves = reorderableShelves.filter((s) => s.type === "dynamic");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -196,11 +198,21 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
     const overId = ev.over ? String(ev.over.id) : null;
     if (!overId || activeId === overId) return;
 
-    const oldIndex = reorderableShelves.findIndex((x) => x.id === activeId);
-    const newIndex = reorderableShelves.findIndex((x) => x.id === overId);
-    if (oldIndex < 0 || newIndex < 0) return;
+    const oldIndexManual = manualShelves.findIndex((x) => x.id === activeId);
+    const newIndexManual = manualShelves.findIndex((x) => x.id === overId);
+    const oldIndexDynamic = dynamicShelves.findIndex((x) => x.id === activeId);
+    const newIndexDynamic = dynamicShelves.findIndex((x) => x.id === overId);
 
-    const nextReorderable = arrayMove(reorderableShelves, oldIndex, newIndex);
+    const inManual = oldIndexManual >= 0 && newIndexManual >= 0;
+    const inDynamic = oldIndexDynamic >= 0 && newIndexDynamic >= 0;
+    if (!inManual && !inDynamic) return;
+
+    const nextManual = inManual ? arrayMove(manualShelves, oldIndexManual, newIndexManual) : manualShelves;
+    const nextDynamic = inDynamic
+      ? arrayMove(dynamicShelves, oldIndexDynamic, newIndexDynamic)
+      : dynamicShelves;
+
+    const nextReorderable = [...nextManual, ...nextDynamic];
     const nextAll = [...systemShelves, ...nextReorderable];
     setShelves(nextAll);
 
@@ -278,39 +290,89 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
-        {systemShelves.map((s) => (
-          <SortableShelfRow key={s.id} shelf={s} disabled onEdit={() => {}} onDelete={() => {}} />
-        ))}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">
+              Système
+            </div>
+            <div className="grid grid-cols-1 gap-3">
+              {systemShelves.map((s) => (
+                <SortableShelfRow
+                  key={s.id}
+                  shelf={s}
+                  disabled
+                  onEdit={() => {}}
+                  onDelete={() => {}}
+                />
+              ))}
+            </div>
+          </div>
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext
-            items={reorderableShelves.map((s) => s.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {reorderableShelves.map((s) => (
-              <SortableShelfRow
-                key={s.id}
-                shelf={s}
-                onEdit={(sh) => {
-                  setSelected(sh);
-                  setDraft({
-                    type: sh.type === "dynamic" ? "dynamic" : "manual",
-                    name: sh.name,
-                    description: sh.description ?? "",
-                    icon: sh.icon ?? "",
-                  });
-                  setEditOpen(true);
-                }}
-                onDelete={(sh) => {
-                  setSelected(sh);
-                  setDeleteOpen(true);
-                }}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
-      </div>
+          <div className="space-y-3">
+            <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">
+              Manuelles
+            </div>
+            <SortableContext items={manualShelves.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+              <div className="grid grid-cols-1 gap-3">
+                {manualShelves.map((s) => (
+                  <SortableShelfRow
+                    key={s.id}
+                    shelf={s}
+                    onEdit={(sh) => {
+                      setSelected(sh);
+                      setDraft({
+                        type: sh.type === "dynamic" ? "dynamic" : "manual",
+                        name: sh.name,
+                        description: sh.description ?? "",
+                        icon: sh.icon ?? "",
+                      });
+                      setEditOpen(true);
+                    }}
+                    onDelete={(sh) => {
+                      setSelected(sh);
+                      setDeleteOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </div>
+
+          <div className="space-y-3">
+            <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">
+              Dynamiques
+            </div>
+            <SortableContext
+              items={dynamicShelves.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="grid grid-cols-1 gap-3">
+                {dynamicShelves.map((s) => (
+                  <SortableShelfRow
+                    key={s.id}
+                    shelf={s}
+                    onEdit={(sh) => {
+                      setSelected(sh);
+                      setDraft({
+                        type: sh.type === "dynamic" ? "dynamic" : "manual",
+                        name: sh.name,
+                        description: sh.description ?? "",
+                        icon: sh.icon ?? "",
+                      });
+                      setEditOpen(true);
+                    }}
+                    onDelete={(sh) => {
+                      setSelected(sh);
+                      setDeleteOpen(true);
+                    }}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </div>
+        </div>
+      </DndContext>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>

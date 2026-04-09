@@ -60,29 +60,29 @@ export async function getOfflineDb(): Promise<OfflineDb> {
   });
 
   const api: OfflineDb = {
-    async get(store, key) {
+    async get<T>(store: IdbStoreName, key: IDBValidKey): Promise<T | undefined> {
       const tx = db.transaction(store, "readonly");
       const req = tx.objectStore(store).get(key);
       const out = await new Promise<unknown>((resolve, reject) => {
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = () => resolve(req.result as unknown);
         req.onerror = () => reject(req.error ?? new Error("IDB_GET_FAILED"));
       });
       await txDone(tx);
-      return out as any;
+      return out as T | undefined;
     },
-    async put(store, value, key) {
+    async put<T>(store: IdbStoreName, value: T, key?: IDBValidKey): Promise<void> {
       const tx = db.transaction(store, "readwrite");
       const req =
         key == null
-          ? tx.objectStore(store).put(value as any)
-          : tx.objectStore(store).put(value as any, key);
+          ? tx.objectStore(store).put(value)
+          : tx.objectStore(store).put(value, key);
       await new Promise<void>((resolve, reject) => {
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error ?? new Error("IDB_PUT_FAILED"));
       });
       await txDone(tx);
     },
-    async delete(store, key) {
+    async delete(store: IdbStoreName, key: IDBValidKey): Promise<void> {
       const tx = db.transaction(store, "readwrite");
       const req = tx.objectStore(store).delete(key);
       await new Promise<void>((resolve, reject) => {
@@ -91,7 +91,7 @@ export async function getOfflineDb(): Promise<OfflineDb> {
       });
       await txDone(tx);
     },
-    async getAll(store) {
+    async getAll<T>(store: IdbStoreName): Promise<T[]> {
       const tx = db.transaction(store, "readonly");
       const req = tx.objectStore(store).getAll();
       const out = await new Promise<unknown[]>((resolve, reject) => {
@@ -99,9 +99,9 @@ export async function getOfflineDb(): Promise<OfflineDb> {
         req.onerror = () => reject(req.error ?? new Error("IDB_GETALL_FAILED"));
       });
       await txDone(tx);
-      return out as any;
+      return out as T[];
     },
-    async clear(store) {
+    async clear(store: IdbStoreName): Promise<void> {
       const tx = db.transaction(store, "readwrite");
       const req = tx.objectStore(store).clear();
       await new Promise<void>((resolve, reject) => {

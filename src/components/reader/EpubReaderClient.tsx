@@ -42,6 +42,7 @@ import {
   offlineOrQueueProgress,
 } from "@/lib/offline/queue";
 import { OfflineManagerDialog } from "@/components/pwa/OfflineManagerDialog";
+import { cn } from "@/lib/utils";
 
 type ReaderPrefs = {
   readerFontFamily: string | null;
@@ -121,6 +122,7 @@ export function EpubReaderClient({
   const [toc, setToc] = React.useState<Array<{ href: string; label: string; depth: number }>>([]);
   const [leftOpen, setLeftOpen] = React.useState(true);
   const [rightOpen, setRightOpen] = React.useState(true);
+  const [focusMode, setFocusMode] = React.useState(false);
   const [busy, startTransition] = React.useTransition();
   const [offlineDialogOpen, setOfflineDialogOpen] = React.useState(false);
 
@@ -167,6 +169,20 @@ export function EpubReaderClient({
       window.removeEventListener("online", onOnline);
       window.clearInterval(interval);
     };
+  }, []);
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setFocusMode(false);
+      }
+      if (e.key.toLowerCase?.() === "f" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setFocusMode((v) => !v);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
   const saveProgress = React.useCallback(
@@ -521,7 +537,32 @@ export function EpubReaderClient({
 
   return (
     <div className="bg-background text-foreground relative h-[calc(100vh-56px)] w-full">
-      <header className="bg-background/80 supports-backdrop-filter:bg-background/60 border-b px-3 py-2 backdrop-blur">
+      {focusMode ? (
+        <div className="relative h-full w-full">
+          <div className="absolute inset-0">
+            <div ref={containerRef} className="h-full w-full" />
+          </div>
+          <div className="absolute right-3 top-3 z-50 flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFocusMode(false)}
+              aria-label="Quitter le mode focus"
+              title="Quitter le mode focus"
+              disabled={busy}
+            >
+              Quitter focus
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      <header
+        className={cn(
+          "bg-background/80 supports-backdrop-filter:bg-background/60 border-b px-3 py-2 backdrop-blur",
+          focusMode ? "hidden" : "",
+        )}
+      >
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <Button
@@ -679,6 +720,22 @@ export function EpubReaderClient({
                 >
                   Exporter les annotations (Markdown)
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={(e) => {
+                    e.preventDefault();
+                    setFocusMode((v) => {
+                      const next = !v;
+                      if (next) {
+                        setLeftOpen(false);
+                        setRightOpen(false);
+                      }
+                      return next;
+                    });
+                  }}
+                >
+                  Mode focus (Ctrl/Cmd+F)
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -691,7 +748,7 @@ export function EpubReaderClient({
         </div>
       </header>
 
-      <div className="absolute inset-x-0 top-[49px] bottom-0 flex">
+      <div className={cn("absolute inset-x-0 top-[49px] bottom-0 flex", focusMode ? "hidden" : "")}>
         {leftOpen ? (
           <aside className="bg-background hidden w-72 shrink-0 overflow-auto border-r md:block">
             <div className="p-3 text-sm font-medium">Chapitres</div>

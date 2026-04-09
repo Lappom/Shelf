@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeftIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +22,17 @@ export default async function RegisterPage({
   const error = sp?.error ? errorMessages[sp.error] : null;
   return (
     <div className="space-y-6">
+      <Button asChild className="-ml-1 w-fit rounded-eleven-pill" size="sm" variant="ghost">
+        <Link href="/">
+          <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
+          <span>Retour</span>
+        </Link>
+      </Button>
+
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Créer un compte</h1>
-        <p className="text-muted-foreground text-sm">Le premier compte devient administrateur.</p>
+        <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">Shelf</div>
+        <h1 className="eleven-display-section text-3xl">Créer un compte</h1>
+        <p className="text-sm text-eleven-secondary">Le premier compte devient administrateur.</p>
       </div>
 
       {error ? (
@@ -60,7 +69,7 @@ export default async function RegisterPage({
           />
         </div>
 
-        <Button className="w-full" type="submit">
+        <Button className="w-full rounded-eleven-pill" type="submit">
           Créer le compte
         </Button>
       </form>

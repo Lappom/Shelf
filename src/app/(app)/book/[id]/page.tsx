@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/rbac";
@@ -20,11 +21,26 @@ function formatAuthors(authors: unknown) {
   return s || "—";
 }
 
+function normalizeAuthors(authors: unknown): string[] {
+  if (!Array.isArray(authors)) return [];
+  return authors
+    .filter((a): a is string => typeof a === "string" && Boolean(a.trim()))
+    .map((a) => a.trim())
+    .slice(0, 12);
+}
+
+function formatPercent(p: number | null) {
+  if (p == null || !Number.isFinite(p)) return "—";
+  const x = Math.round(Math.max(0, Math.min(1, p)) * 1000) / 10;
+  return `${x.toFixed(1)}%`;
+}
+
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = (user as any).role as string | undefined;
   const isAdmin = role === "admin";
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
 
   const parsed = ParamsSchema.safeParse(await params);
   if (!parsed.success) return <div className="p-6">Livre invalide.</div>;
@@ -51,6 +67,19 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   });
 
   if (!book) return <div className="p-6">Introuvable.</div>;
+
+  const [progress, annotations] = await Promise.all([
+    prisma.userBookProgress.findUnique({
+      where: { userId_bookId: { userId, bookId: book.id } },
+      select: { progress: true, status: true, updatedAt: true },
+    }),
+    prisma.userAnnotation.findMany({
+      where: { userId, bookId: book.id },
+      select: { id: true, type: true, content: true, note: true, color: true, createdAt: true },
+      orderBy: [{ createdAt: "desc" }],
+      take: 200,
+    }),
+  ]);
 
   const selectedTags: BookTagItem[] = book.tags
     .map((bt) => bt.tag)
@@ -84,80 +113,167 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
     checked: memberSet.has(s.id),
   }));
 
+  const authorList = normalizeAuthors(book.authors);
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{book.title}</h1>
-          <p className="text-muted-foreground text-sm">{formatAuthors(book.authors)}</p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {book.format === "epub" && (
-            <Button asChild>
-              <Link href={`/reader/${book.id}`}>Lire</Link>
-            </Button>
-          )}
-          <AddToShelfMenu bookId={book.id} shelves={shelfMenuItems} />
-          <Button asChild variant="outline">
-            <Link href="/library">Retour</Link>
-          </Button>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Métadonnées</CardTitle>
-          <CardDescription>Données en base (DB).</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div>
-            <div className="text-muted-foreground text-xs">Langue</div>
-            <div className="text-sm">{book.language ?? "—"}</div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr]">
+        <Card className="overflow-hidden shadow-eleven-card">
+          <div className="relative aspect-2/3 w-full bg-muted">
+            {book.coverUrl ? (
+              <Image
+                src={`/api/books/${book.id}/cover`}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 60vw, 240px"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-xs text-eleven-muted">
+                Couverture
+              </div>
+            )}
           </div>
-          <div>
-            <div className="text-muted-foreground text-xs">Éditeur</div>
-            <div className="text-sm">{book.publisher ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground text-xs">Date</div>
-            <div className="text-sm">{book.publishDate ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground text-xs">ISBN</div>
-            <div className="text-sm">{book.isbn13 ?? book.isbn10 ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground text-xs">Pages</div>
-            <div className="text-sm">{book.pageCount ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-muted-foreground text-xs">Open Library</div>
-            <div className="text-sm">{book.openLibraryId ?? "—"}</div>
-          </div>
-          <div className="md:col-span-2">
-            <div className="text-muted-foreground text-xs">Sujets</div>
-            <div className="text-sm">
-              {Array.isArray(book.subjects) ? book.subjects.join(", ") : "—"}
-            </div>
-          </div>
-          <div className="md:col-span-2">
-            <div className="text-muted-foreground text-xs">Tags</div>
-            <div className="pt-1">
-              <BookTagsPanel
-                bookId={book.id}
-                canEdit={isAdmin}
-                initialSelected={selectedTags}
-                allTags={allTags}
+          <div className="space-y-2 p-4">
+            <div className="text-xs text-eleven-muted">Progression</div>
+            <div className="text-sm">{formatPercent(progress?.progress ?? null)}</div>
+            <div className="h-2 w-full overflow-hidden rounded-eleven-pill bg-muted">
+              <div
+                className="h-full bg-foreground/80"
+                style={{
+                  width: `${Math.round(Math.max(0, Math.min(1, progress?.progress ?? 0)) * 100)}%`,
+                }}
               />
             </div>
+            <div className="text-xs text-eleven-muted">
+              Statut: <span className="text-foreground">{progress?.status ?? "not_started"}</span>
+            </div>
           </div>
-          <div className="md:col-span-2">
-            <div className="text-muted-foreground text-xs">Description</div>
-            <div className="text-sm">{book.description ?? "—"}</div>
+        </Card>
+
+        <div className="min-w-0 space-y-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-2">
+              <h1 className="eleven-display-section text-3xl">{book.title}</h1>
+              <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-eleven-secondary">
+                {authorList.length ? (
+                  authorList.map((a) => (
+                    <Link
+                      key={a}
+                      href={`/search?author=${encodeURIComponent(a)}`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {a}
+                    </Link>
+                  ))
+                ) : (
+                  <span>{formatAuthors(book.authors)}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {book.format === "epub" ? (
+                <Button asChild className="rounded-eleven-pill">
+                  <Link href={`/reader/${book.id}`}>Lire</Link>
+                </Button>
+              ) : null}
+              {book.format === "epub" ? (
+                <Button asChild variant="outline" className="rounded-eleven-pill">
+                  <a href={`/api/books/${book.id}/file`} download>
+                    Télécharger
+                  </a>
+                </Button>
+              ) : null}
+              <AddToShelfMenu bookId={book.id} shelves={shelfMenuItems} />
+              <Button asChild variant="outline" className="rounded-eleven-pill">
+                <Link href="/library">Retour</Link>
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <Card className="shadow-eleven-card">
+            <CardHeader className="border-b border-(--eleven-border-subtle)">
+              <CardTitle>Métadonnées</CardTitle>
+              <CardDescription>Données en base (DB).</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <div className="text-xs text-eleven-muted">Format</div>
+                <div className="text-sm">{book.format}</div>
+              </div>
+              <div>
+                <div className="text-xs text-eleven-muted">Langue</div>
+                <div className="text-sm">{book.language ?? "—"}</div>
+              </div>
+              <div>
+                <div className="text-xs text-eleven-muted">Éditeur</div>
+                <div className="text-sm">{book.publisher ?? "—"}</div>
+              </div>
+              <div>
+                <div className="text-xs text-eleven-muted">Date</div>
+                <div className="text-sm">{book.publishDate ?? "—"}</div>
+              </div>
+              <div>
+                <div className="text-xs text-eleven-muted">ISBN</div>
+                <div className="text-sm">{book.isbn13 ?? book.isbn10 ?? "—"}</div>
+              </div>
+              <div>
+                <div className="text-xs text-eleven-muted">Pages</div>
+                <div className="text-sm">{book.pageCount ?? "—"}</div>
+              </div>
+              <div className="md:col-span-2">
+                <div className="text-xs text-eleven-muted">Sujets</div>
+                <div className="text-sm">
+                  {Array.isArray(book.subjects) ? book.subjects.join(", ") : "—"}
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <div className="text-xs text-eleven-muted">Tags</div>
+                <div className="pt-1">
+                  <BookTagsPanel
+                    bookId={book.id}
+                    canEdit={isAdmin}
+                    initialSelected={selectedTags}
+                    allTags={allTags}
+                  />
+                </div>
+              </div>
+              <div className="md:col-span-2">
+                <div className="text-xs text-eleven-muted">Description</div>
+                <div className="text-sm">{book.description ?? "—"}</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-eleven-card">
+            <CardHeader className="border-b border-(--eleven-border-subtle)">
+              <CardTitle>Annotations</CardTitle>
+              <CardDescription>Vos highlights, notes et marque-pages sur ce livre.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {annotations.length ? (
+                <div className="space-y-3">
+                  {annotations.map((a) => (
+                    <div key={a.id} className="rounded-2xl border px-4 py-3">
+                      <div className="mb-1 flex items-center justify-between gap-3">
+                        <div className="text-xs text-eleven-muted">{a.type}</div>
+                        <div className="text-xs text-eleven-muted">
+                          {a.createdAt.toISOString().slice(0, 10)}
+                        </div>
+                      </div>
+                      {a.content ? <div className="text-sm">{a.content}</div> : null}
+                      {a.note ? <div className="mt-2 text-sm text-eleven-secondary">{a.note}</div> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-eleven-muted">Aucune annotation pour l’instant.</div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
       {isAdmin && (
         <>

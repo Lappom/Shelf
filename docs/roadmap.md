@@ -399,70 +399,70 @@
 ## Phase 16 — UI (design system, pages, responsive)
 
 ### 16.1 Design system (docs/SPECS.md §11.1)
-- [ ] Appliquer palette, typographies, ombres, radius, boutons pill.
-- [ ] Light par défaut + dark mode.
-- [ ] S’assurer accessibilité (contraste, focus ring, tailles).
+- [x] Appliquer palette, typographies, ombres, radius, boutons pill.
+- [x] Light par défaut + dark mode.
+- [x] S’assurer accessibilité (contraste, focus ring, tailles).
 
 ### 16.2 Pages principales (docs/SPECS.md §11.2)
 
 #### 16.2.1 Library `/library`
-- [ ] Vue grille (défaut) + vue liste (switch).
-- [ ] Grille : covers en cards + titre/auteur/badge format.
-- [ ] Liste : tableau colonnes triables.
-- [ ] Search bar persistante.
-- [ ] Panneau filtres latéral collapsible.
-- [ ] Pagination ou infinite scroll (selon préférence).
-- [ ] Indicateur progression sur chaque cover.
-- [ ] FAB ajout (admin).
+- [x] Vue grille (défaut) + vue liste (switch).
+- [x] Grille : covers en cards + titre/auteur/badge format.
+- [x] Liste : tableau colonnes triables.
+- [x] Search bar persistante.
+- [x] Panneau filtres latéral collapsible.
+- [x] Pagination ou infinite scroll (selon préférence).
+- [x] Indicateur progression sur chaque cover.
+- [x] FAB ajout (admin).
 
 #### 16.2.2 Book Detail `/book/[id]`
-- [ ] Layout cover + metadata.
-- [ ] Actions : Lire, Ajouter à étagère, Favori, Télécharger EPUB.
-- [ ] Afficher : titre, auteurs (liens), éditeur, date, ISBN, langue, pages, sujets/tags.
-- [ ] Afficher progression de lecture.
-- [ ] Liste annotations user.
-- [ ] Actions admin : Modifier, Supprimer, Re-sync métadonnées.
+- [x] Layout cover + metadata.
+- [x] Actions : Lire, Ajouter à étagère, Favori, Télécharger EPUB.
+- [x] Afficher : titre, auteurs (liens), éditeur, date, ISBN, langue, pages, sujets/tags.
+- [x] Afficher progression de lecture.
+- [x] Liste annotations user.
+- [x] Actions admin : Modifier, Supprimer, Re-sync métadonnées.
 
 #### 16.2.3 Reader `/reader/[id]`
-- [ ] Plein écran, chrome minimal.
-- [ ] Header fin : titre + retour + settings.
-- [ ] Panneau TOC gauche.
-- [ ] Panneau annotations droite.
-- [ ] Barre progression bas.
-- [ ] Mode focus.
+- [x] Plein écran, chrome minimal.
+- [x] Header fin : titre + retour + settings.
+- [x] Panneau TOC gauche.
+- [x] Panneau annotations droite.
+- [x] Barre progression bas.
+- [x] Mode focus.
 
 #### 16.2.4 Shelves `/shelves`
-- [ ] Liste étagères avec aperçu covers.
-- [ ] Système en haut (favoris/en cours).
-- [ ] Manuelles au milieu.
-- [ ] Dynamiques en bas (icône filtre).
+- [x] Liste étagères avec aperçu covers.
+- [x] Système en haut (favoris/en cours).
+- [x] Manuelles au milieu.
+- [x] Dynamiques en bas (icône filtre).
 
 #### 16.2.5 Shelf Detail `/shelves/[id]`
-- [ ] Vue grille/liste filtrée sur étagère.
-- [ ] Drag & drop reorder (manuelle).
-- [ ] Éditeur de règles (dynamique).
+- [x] Vue grille/liste filtrée sur étagère.
+- [x] Drag & drop reorder (manuelle).
+- [x] Éditeur de règles (dynamique).
 
 #### 16.2.6 Search `/search`
-- [ ] Recherche instantanée (debounced).
-- [ ] Filtres avancés.
-- [ ] Highlight des termes trouvés.
+- [x] Recherche instantanée (debounced).
+- [x] Filtres avancés.
+- [x] Highlight des termes trouvés.
 
 #### 16.2.7 Admin `/admin`
-- [ ] Users : liste + création + changement rôle + suppression.
-- [ ] Duplicates : scanner + paires + merge/ignore.
-- [ ] Import Calibre : upload metadata.db + chemin fichiers.
-- [ ] Storage : stats (espace, fichiers).
-- [ ] Settings : config instance (nom, OIDC, storage).
+- [x] Users : liste + création + changement rôle + suppression.
+- [x] Duplicates : scanner + paires + merge/ignore.
+- [x] Import Calibre : upload metadata.db + chemin fichiers.
+- [x] Storage : stats (espace, fichiers).
+- [x] Settings : config instance (nom, OIDC, storage).
 
 #### 16.2.8 Auth `/login`, `/register`
-- [ ] Form minimaliste centré.
-- [ ] Login local + bouton OIDC si configuré.
-- [ ] Register désactivable (invitation-only / toggle `REGISTRATION_ENABLED`).
+- [x] Form minimaliste centré.
+- [x] Login local + bouton OIDC si configuré.
+- [x] Register désactivable (invitation-only / toggle `REGISTRATION_ENABLED`).
 
 ### 16.3 Responsive (docs/SPECS.md §11.3)
-- [ ] Mobile : grille 2 colonnes, bottom nav, filtres modal, reader plein écran.
-- [ ] Tablet : 3-4 colonnes, sidebar collapsible.
-- [ ] Desktop : 5-6 colonnes, sidebar persistante, panels reader latéraux.
+- [x] Mobile : grille 2 colonnes, bottom nav, filtres modal, reader plein écran.
+- [x] Tablet : 3-4 colonnes, sidebar collapsible.
+- [x] Desktop : 5-6 colonnes, sidebar persistante, panels reader latéraux.
 
 ---
 

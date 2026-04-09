@@ -1,9 +1,8 @@
-import Link from "next/link";
-
 import { requireUser } from "@/lib/auth/rbac";
-import { Button } from "@/components/ui/button";
+import { prisma } from "@/lib/db/prisma";
 import { UploadEpubDialog } from "@/components/book/UploadEpubDialog";
 import { AddPhysicalBookDialog } from "@/components/book/AddPhysicalBookDialog";
+import { LibraryPageClient } from "@/components/library/LibraryPageClient";
 
 export default async function LibraryPage() {
   const user = await requireUser();
@@ -11,28 +10,52 @@ export default async function LibraryPage() {
   const role = (user as any).role as string | undefined;
   const isAdmin = role === "admin";
 
+  const [tags, shelves, pref] = await Promise.all([
+    prisma.tag.findMany({
+      select: { id: true, name: true, color: true },
+      orderBy: [{ name: "asc" }],
+      take: 1000,
+    }),
+    prisma.shelf.findMany({
+      where: { ownerId: user.id },
+      select: { id: true, name: true, type: true },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      take: 1000,
+    }),
+    prisma.userPreference.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        userId: user.id,
+        theme: "system",
+        libraryView: "grid",
+        booksPerPage: 24,
+        libraryInfiniteScroll: false,
+      },
+      select: { booksPerPage: true, libraryInfiniteScroll: true, libraryView: true },
+    }),
+  ]);
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
-      <div className="flex items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Bibliothèque</h1>
-          <p className="text-muted-foreground text-sm">
-            Base d’app prête (upload/reader/search arrivent).
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {isAdmin && (
-            <>
+      <LibraryPageClient
+        initialTags={tags}
+        initialShelves={shelves}
+        initialPrefs={{
+          booksPerPage: pref.booksPerPage,
+          libraryInfiniteScroll: pref.libraryInfiniteScroll,
+          libraryView: pref.libraryView ?? "grid",
+        }}
+        isAdmin={isAdmin}
+        adminFab={
+          isAdmin ? (
+            <div className="flex flex-wrap items-center gap-2">
               <AddPhysicalBookDialog />
               <UploadEpubDialog />
-            </>
-          )}
-          <Button asChild variant="outline">
-            <Link href="/reader/00000000-0000-0000-0000-000000000000">Ouvrir le reader</Link>
-          </Button>
-        </div>
-      </div>
+            </div>
+          ) : null
+        }
+      />
     </div>
   );
 }

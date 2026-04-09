@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-globals */
+ 
 
 const VERSION = "v1";
 const APP_SHELL_CACHE = `app-shell-${VERSION}`;

@@ -51,14 +51,13 @@ export default async function AdminDuplicatesPage() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
+    <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Admin — Doublons</h1>
+        <h2 className="text-xl font-semibold tracking-tight">Doublons</h2>
         <p className="text-muted-foreground text-sm">
           Scan hash (fichiers identiques) + scan fuzzy (titre+auteurs) pour proposer des fusions.
         </p>
       </div>
-
       <AdminDuplicatesClient initialRows={rows} />
     </div>
   );

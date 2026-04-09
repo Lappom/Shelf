@@ -6,6 +6,7 @@ import { updateSearchPreferencesAction } from "@/app/(app)/search/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { buildSearchUrlFromState, parseSearchUrlState } from "@/lib/search/searchUrlState";
 
 export type SearchTagOption = { id: string; name: string; color: string };
 export type SearchShelfOption = {
@@ -137,6 +138,7 @@ export function SearchPageClient({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastQueryKeyRef = useRef<string>("");
+  const initializedFromUrlRef = useRef(false);
 
   const tagsById = useMemo(() => new Map(initialTags.map((t) => [t.id, t])), [initialTags]);
   const terms = useMemo(() => splitQueryTerms(q), [q]);
@@ -177,6 +179,69 @@ export function SearchPageClient({
     pagesMin,
     pagesMax,
     booksPerPage,
+  ]);
+
+  // Initialize state from URL query params (deep-linking).
+  useEffect(() => {
+    if (initializedFromUrlRef.current) return;
+    initializedFromUrlRef.current = true;
+    const s = parseSearchUrlState(window.location.search);
+    if (s.q != null) setQ(s.q);
+    if (s.mode) setMode(s.mode);
+    if (s.sort) setSort(s.sort);
+    if (s.dir) setDir(s.dir);
+    if (s.formats) setFormats(s.formats);
+    if (s.languages) setLanguages(s.languages);
+    if (s.tagIds) setTagIds(s.tagIds);
+    if (s.statuses) setStatuses(s.statuses);
+    if (s.shelfId != null) setShelfId(s.shelfId);
+    if (s.author != null) setAuthor(s.author);
+    if (s.publisher != null) setPublisher(s.publisher);
+    if (s.addedFrom != null) setAddedFrom(s.addedFrom);
+    if (s.addedTo != null) setAddedTo(s.addedTo);
+    if (s.pagesMin != null) setPagesMin(s.pagesMin);
+    if (s.pagesMax != null) setPagesMax(s.pagesMax);
+  }, []);
+
+  // Keep URL in sync with current search state (shareable URLs).
+  useEffect(() => {
+    window.history.replaceState(
+      null,
+      "",
+      buildSearchUrlFromState({
+        q,
+        mode,
+        sort,
+        dir,
+        formats,
+        languages,
+        tagIds,
+        shelfId,
+        statuses,
+        author,
+        publisher,
+        addedFrom,
+        addedTo,
+        pagesMin,
+        pagesMax,
+      }),
+    );
+  }, [
+    q,
+    mode,
+    sort,
+    dir,
+    formats,
+    languages,
+    tagIds,
+    shelfId,
+    statuses,
+    author,
+    publisher,
+    addedFrom,
+    addedTo,
+    pagesMin,
+    pagesMax,
   ]);
 
   async function fetchPage(args: { cursor?: string | null; append: boolean }) {

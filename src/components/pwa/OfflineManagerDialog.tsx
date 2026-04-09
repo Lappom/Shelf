@@ -59,7 +59,7 @@ export function OfflineManagerDialog({ open, onOpenChange, current }: Props) {
     setRows(list);
     setStorage(estimate ? { usage: estimate.usage, quota: estimate.quota } : null);
     setCurrentCached(cached);
-  }, [current?.fileUrl]);
+  }, [current]);
 
   React.useEffect(() => {
     if (!open) return;

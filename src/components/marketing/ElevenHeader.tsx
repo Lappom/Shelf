@@ -1,0 +1,45 @@
+import Link from "next/link";
+
+import { LogoMark } from "@/components/LogoMark";
+import { Button } from "@/components/ui/button";
+
+export function ElevenHeader() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-(--eleven-border-subtle) bg-background/80 backdrop-blur">
+      <a
+        href="#content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-eleven-button-white"
+      >
+        Aller au contenu
+      </a>
+      <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-6">
+        <Link aria-label="Shelf" className="flex items-center gap-2" href="/">
+          <LogoMark className="h-6 w-6" title="" />
+          <span className="eleven-body-airy text-sm font-medium">Shelf</span>
+        </Link>
+
+        <nav className="hidden items-center gap-1 sm:flex" aria-label="Sections">
+          <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
+            <a href="#features">Fonctionnalités</a>
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
+            <a href="#workflow">Workflow</a>
+          </Button>
+          <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
+            <a href="#privacy">Données</a>
+          </Button>
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <Button asChild variant="whitePill" size="lg" className="hidden sm:inline-flex">
+            <Link href="/register">Créer un compte</Link>
+          </Button>
+          <Button asChild variant="warmStone" size="warm">
+            <Link href="/login">Connexion</Link>
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+}
+

@@ -2,23 +2,27 @@ import { describe, expect, it, vi } from "vitest";
 
 type StoreName = "offlineQueue" | "offlineProgress" | "offlineEpubIndex";
 
+function storeKeyFromValue(store: StoreName, value: unknown) {
+  const v = value as { bookId?: unknown; id?: unknown };
+  const raw =
+    store === "offlineProgress" || store === "offlineEpubIndex" ? v.bookId : v.id;
+  return String(raw ?? "");
+}
+
 function createMemoryDb() {
-  const stores: Record<StoreName, Map<string, any>> = {
+  const stores: Record<StoreName, Map<string, unknown>> = {
     offlineQueue: new Map(),
     offlineProgress: new Map(),
     offlineEpubIndex: new Map(),
   };
 
   return {
-    get: vi.fn(async (store: StoreName, key: any) => stores[store].get(String(key))),
-    put: vi.fn(async (store: StoreName, value: any) => {
-      const k =
-        store === "offlineProgress" || store === "offlineEpubIndex"
-          ? String(value.bookId)
-          : String(value.id);
+    get: vi.fn(async (store: StoreName, key: unknown) => stores[store].get(String(key))),
+    put: vi.fn(async (store: StoreName, value: unknown) => {
+      const k = storeKeyFromValue(store, value);
       stores[store].set(k, value);
     }),
-    delete: vi.fn(async (store: StoreName, key: any) => {
+    delete: vi.fn(async (store: StoreName, key: unknown) => {
       stores[store].delete(String(key));
     }),
     getAll: vi.fn(async (store: StoreName) => Array.from(stores[store].values())),

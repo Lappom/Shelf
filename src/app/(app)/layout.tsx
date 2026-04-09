@@ -1,47 +1,71 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { auth } from "@/auth";
+import { prisma } from "@/lib/db/prisma";
 import { LogoMark } from "@/components/LogoMark";
 import { Button } from "@/components/ui/button";
 import { SignOutButton } from "@/components/pwa/SignOutButton";
+import { ThemeProvider, type ThemePreference } from "@/components/theme/ThemeProvider";
+import { UserMenu } from "@/components/layout/UserMenu";
+import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
+  const userId = z.string().uuid().parse(session.user.id);
+  const pref = await prisma.userPreference.findUnique({
+    where: { userId },
+    select: { theme: true },
+  });
+  const initialTheme = (pref?.theme ?? "system") as ThemePreference;
+  const isAdmin = (session.user as unknown as { role?: string }).role === "admin";
+
   return (
-    <div className="min-h-screen">
-      <header className="border-b">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <Link
-              aria-label="Shelf"
-              className="flex items-center gap-2 font-semibold tracking-tight"
-              href="/library"
-            >
-              <LogoMark className="h-6 w-6" title="" />
-              <span>Shelf</span>
-            </Link>
+    <ThemeProvider initialTheme={initialTheme}>
+      <div className="min-h-screen">
+        <header className="border-b border-(--eleven-border-subtle) bg-background/80 backdrop-blur">
+          <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between px-6">
+            <div className="flex items-center gap-3">
+              <Link
+                aria-label="Shelf"
+                className="flex items-center gap-2 font-semibold tracking-tight"
+                href="/library"
+              >
+                <LogoMark className="h-6 w-6" title="" />
+                <span className="eleven-body-airy">Shelf</span>
+              </Link>
 
-            <nav className="hidden items-center gap-1 sm:flex" aria-label="Navigation">
-              <Button asChild size="sm" variant="ghost">
-                <Link href="/library">Bibliothèque</Link>
-              </Button>
-              <Button asChild size="sm" variant="ghost">
-                <Link href="/shelves">Étagères</Link>
-              </Button>
-            </nav>
+              <nav className="hidden items-center gap-1 sm:flex" aria-label="Navigation">
+                <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
+                  <Link href="/library">Bibliothèque</Link>
+                </Button>
+                <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
+                  <Link href="/shelves">Étagères</Link>
+                </Button>
+                <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
+                  <Link href="/search">Recherche</Link>
+                </Button>
+                {isAdmin ? (
+                  <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
+                    <Link href="/admin/books">Admin</Link>
+                  </Button>
+                ) : null}
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <UserMenu email={session.user.email ?? null} />
+              <SignOutButton />
+            </div>
           </div>
+        </header>
 
-          <div className="flex items-center gap-3">
-            <span className="text-muted-foreground text-sm">{session?.user?.email ?? ""}</span>
-            <SignOutButton />
-          </div>
-        </div>
-      </header>
-
-      <main>{children}</main>
-    </div>
+        <main className="pb-24 sm:pb-0">{children}</main>
+        <MobileBottomNav showAdmin={isAdmin} />
+      </div>
+    </ThemeProvider>
   );
 }
