@@ -67,52 +67,52 @@
 ## Phase 2 — Authentification & autorisation (security-critical)
 
 ### 2.1 Auth local (docs/SPECS.md §4.1)
-- [ ] Implémenter inscription email + mot de passe (min 8 chars) avec hash bcrypt.
-- [ ] Implémenter login credentials.
-- [ ] Gestion `password_hash` nullable pour users OIDC.
-- [ ] Appliquer “premier user inscrit → admin”.
+- [x] Implémenter inscription email + mot de passe (min 8 chars) avec hash bcrypt.
+- [x] Implémenter login credentials.
+- [x] Gestion `password_hash` nullable pour users OIDC.
+- [x] Appliquer “premier user inscrit → admin”.
 
 ### 2.2 OIDC configurable (docs/SPECS.md §4.1 + §13)
-- [ ] Support OIDC via variables d’environnement (`OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`).
-- [ ] Mapper `oidc_provider` + `oidc_sub` en DB.
-- [ ] UI login : bouton OIDC si configuré.
+- [x] Support OIDC via variables d’environnement (`OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`).
+- [x] Mapper `oidc_provider` + `oidc_sub` en DB.
+- [x] UI login : bouton OIDC si configuré.
 
 ### 2.3 Sessions (docs/SPECS.md §4.3)
-- [ ] JWT en cookie httpOnly.
-- [ ] Durée session 30 jours configurable.
-- [ ] Refresh silencieux.
+- [x] JWT en cookie httpOnly.
+- [x] Durée session 30 jours configurable.
+- [x] Refresh silencieux.
 
 ### 2.4 Autorisation par rôle (docs/SPECS.md §4.2)
-- [ ] Guard “admin-only” pour upload/édition/suppression/import/scan doublons/tags globaux/enrichissement.
-- [ ] Guard “reader” : lecture + annotations + étagères perso + recommandations + API keys MCP.
+- [x] Guard “admin-only” pour upload/édition/suppression/import/scan doublons/tags globaux/enrichissement.
+- [x] Guard “reader” : lecture + annotations + étagères perso + recommandations + API keys MCP.
 
 ### 2.5 Protection endpoints (docs/SPECS.md §14)
-- [ ] CSRF (selon patterns Auth.js + routes mutables).
-- [ ] Rate limiting auth (login/register) + upload + MCP.
-- [ ] CORS restrictif (origine app uniquement).
+- [x] CSRF (selon patterns Auth.js + routes mutables).
+- [x] Rate limiting auth (login/register) + upload + MCP.
+- [x] CORS restrictif (origine app uniquement).
 
 ---
 
 ## Phase 3 — Storage adapter & fichiers (security-critical)
 
 ### 3.1 Interface StorageAdapter (docs/SPECS.md §10.1)
-- [ ] Implémenter l’interface : upload/download/delete/exists/getUrl/getSize.
-- [ ] Définir stratégie d’erreurs (fichier manquant, permissions, timeouts).
+- [x] Implémenter l’interface : upload/download/delete/exists/getUrl/getSize.
+- [x] Définir stratégie d’erreurs (fichier manquant, permissions, timeouts).
 
 ### 3.2 Implémentation Local Storage (docs/SPECS.md §10.2)
-- [ ] `STORAGE_PATH` (défaut `/data/library`).
-- [ ] Convention de structure chemins : `/{format}/{author}/{filename}`.
-- [ ] Convention covers : `/covers/{book_id}.{ext}`.
+- [x] `STORAGE_PATH` (défaut `/data/library`).
+- [x] Convention de structure chemins : `/{format}/{author}/{filename}`.
+- [x] Convention covers : `/covers/{book_id}.{ext}`.
 
 ### 3.3 Implémentation S3/MinIO (docs/SPECS.md §10.3)
-- [ ] Support env `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION`.
-- [ ] Chemins identiques au local.
+- [x] Support env `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION`.
+- [x] Chemins identiques au local.
 - [ ] Presigned URLs (si nécessaire) mais **sans servir de fichier directement** : toujours via endpoint authentifié.
 
 ### 3.4 Endpoints de delivery fichiers (docs/SPECS.md §12.1 + §14)
-- [ ] Endpoint authentifié de streaming/download EPUB pour reader.
-- [ ] Vérifications d’accès (user connecté + autorisation + existence du book/file).
-- [ ] Interdire toute exposition directe du storage (pas de “public bucket direct link”).
+- [x] Endpoint authentifié de streaming/download EPUB pour reader.
+- [x] Vérifications d’accès (user connecté + autorisation + existence du book/file).
+- [x] Interdire toute exposition directe du storage (pas de “public bucket direct link”).
 
 ---
 

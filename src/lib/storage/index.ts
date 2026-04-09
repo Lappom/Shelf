@@ -9,7 +9,7 @@ export function getStorageAdapter(): StorageAdapter {
   const type = (process.env.STORAGE_TYPE?.trim() ?? "local") as StorageType;
 
   if (type === "local") {
-    const basePath = process.env.STORAGE_PATH?.trim() ?? "./data/library";
+    const basePath = process.env.STORAGE_PATH?.trim() ?? "/data/library";
     return new LocalStorageAdapter(basePath);
   }
 

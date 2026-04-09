@@ -18,9 +18,35 @@ type S3StorageConfig = {
   secretAccessKey: string;
 };
 
+type S3LikeError = {
+  name?: string;
+  message?: string;
+  $metadata?: {
+    httpStatusCode?: number;
+  };
+};
+
 function assertString(name: string, value: string | undefined) {
   if (!value?.trim()) throw new StorageError(`Missing env: ${name}`);
   return value.trim();
+}
+
+function toStorageError(e: unknown): StorageError {
+  if (e instanceof StorageError) return e;
+  const err = e as S3LikeError;
+  const status = err?.$metadata?.httpStatusCode;
+
+  if (status === 404 || err?.name === "NoSuchKey" || err?.name === "NotFound") {
+    return new StorageError("File not found.", "NOT_FOUND", { cause: e });
+  }
+  if (status === 403 || err?.name === "AccessDenied") {
+    return new StorageError("Permission denied.", "FORBIDDEN", { cause: e });
+  }
+  if (err?.name === "TimeoutError") {
+    return new StorageError("Storage timeout.", "TIMEOUT", { cause: e });
+  }
+
+  return new StorageError(err?.message ?? "Storage error.", "UNKNOWN", { cause: e });
 }
 
 export class S3StorageAdapter implements StorageAdapter {
@@ -51,39 +77,51 @@ export class S3StorageAdapter implements StorageAdapter {
   }
 
   async upload(file: Buffer, path: string) {
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: path,
-        Body: file,
-      }),
-    );
-    return path;
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: path,
+          Body: file,
+        }),
+      );
+      return path;
+    } catch (e) {
+      throw toStorageError(e);
+    }
   }
 
   async download(path: string) {
-    const res = await this.client.send(
-      new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: path,
-      }),
-    );
-    if (!res.Body) throw new StorageError("Missing object body.");
+    try {
+      const res = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: path,
+        }),
+      );
+      if (!res.Body) throw new StorageError("Missing object body.");
 
-    const chunks: Buffer[] = [];
-    for await (const chunk of res.Body as Readable) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      const chunks: Buffer[] = [];
+      for await (const chunk of res.Body as Readable) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+      return Buffer.concat(chunks);
+    } catch (e) {
+      throw toStorageError(e);
     }
-    return Buffer.concat(chunks);
   }
 
   async delete(path: string) {
-    await this.client.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: path,
-      }),
-    );
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: path,
+        }),
+      );
+    } catch (e) {
+      throw toStorageError(e);
+    }
   }
 
   async exists(path: string) {
@@ -95,8 +133,10 @@ export class S3StorageAdapter implements StorageAdapter {
         }),
       );
       return true;
-    } catch {
-      return false;
+    } catch (e) {
+      const se = toStorageError(e);
+      if (se.code === "NOT_FOUND") return false;
+      throw se;
     }
   }
 
@@ -106,12 +146,32 @@ export class S3StorageAdapter implements StorageAdapter {
   }
 
   async getSize(path: string) {
-    const res = await this.client.send(
-      new HeadObjectCommand({
-        Bucket: this.bucket,
-        Key: path,
-      }),
-    );
-    return res.ContentLength ?? 0;
+    try {
+      const res = await this.client.send(
+        new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: path,
+        }),
+      );
+      return res.ContentLength ?? 0;
+    } catch (e) {
+      throw toStorageError(e);
+    }
+  }
+
+  // Used for streaming (server-side).
+  async createReadStream(path: string) {
+    try {
+      const res = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: path,
+        }),
+      );
+      if (!res.Body) throw new StorageError("Missing object body.");
+      return res.Body as Readable;
+    } catch (e) {
+      throw toStorageError(e);
+    }
   }
 }
