@@ -707,15 +707,23 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 
 ### 13.1 Variables d'environnement
 
+Obligatoires en **production** (`NODE_ENV=production`) : `DATABASE_URL`, `NEXTAUTH_SECRET` (minimum 32 caractères), `NEXTAUTH_URL` (URL http(s) absolue).
+
+Si `STORAGE_TYPE=s3`, toutes les variables `S3_*` listées ci-dessous sont obligatoires.
+
+**OIDC** : définir les trois variables `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, ou aucune (auth par identifiants uniquement).
+
+**CI / build Docker** : `SKIP_ENV_VALIDATION=1` ou `true` désactive la validation au démarrage (utilisé pendant `next build` dans l’image ; ne pas activer en production runtime).
+
 ```env
 # Database
 DATABASE_URL=postgresql://shelf:password@localhost:5432/shelf
 
 # Auth
-NEXTAUTH_SECRET=<random-secret>
+NEXTAUTH_SECRET=<random-secret-min-32-chars>
 NEXTAUTH_URL=http://localhost:3000
 
-# OIDC (optional)
+# OIDC (optional — all three or none)
 OIDC_ISSUER=https://auth.example.com
 OIDC_CLIENT_ID=shelf
 OIDC_CLIENT_SECRET=<secret>
@@ -737,10 +745,21 @@ OPENLIBRARY_RATE_LIMIT=1    # requests per second
 # App
 APP_NAME=Shelf
 REGISTRATION_ENABLED=true
-DEFAULT_LOCALE=fr
+DEFAULT_LOCALE=fr           # BCP47-like: fr, en, en-US
 
 # Redis (optional)
 REDIS_URL=redis://localhost:6379
+
+# Optional tuning (read by the app; defaults apply if unset)
+SESSION_MAX_DAYS=30
+UPLOAD_MAX_BYTES=
+COVER_UPLOAD_MAX_BYTES=
+OPENLIBRARY_COVER_MAX_BYTES=
+OPENLIBRARY_TIMEOUT_MS=
+OPENLIBRARY_RETRIES=
+
+# Build / CI only
+# SKIP_ENV_VALIDATION=1
 ```
 
 ### 13.2 Docker Compose
@@ -757,7 +776,7 @@ services:
       - STORAGE_PATH=/data/library
     volumes:
       - library_data:/data/library
-      - shelf_covers:/data/covers
+      - shelf_covers:/data/library/covers
     depends_on:
       db:
         condition: service_healthy

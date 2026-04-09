@@ -12,6 +12,7 @@ RUN corepack enable
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm db:generate
+ENV SKIP_ENV_VALIDATION=1
 RUN pnpm build
 
 FROM base AS runner
@@ -21,8 +22,11 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
+COPY --from=build /app/prisma ./prisma
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && chown nextjs:nodejs /entrypoint.sh
 
 USER nextjs
 EXPOSE 3000
-CMD ["node", "node_modules/next/dist/bin/next", "start", "-p", "3000"]
+ENTRYPOINT ["/entrypoint.sh"]
 

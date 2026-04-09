@@ -8,13 +8,18 @@ services:
     environment:
       - DATABASE_URL=postgresql://shelf:password@db:5432/shelf
       - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=change-me
+      # Min 32 chars required in production (see validateServerEnv); replace in real deployments.
+      - NEXTAUTH_SECRET=change-me-replace-with-openssl-rand-hex-32
       - REGISTRATION_ENABLED=true
       - STORAGE_TYPE=local
       - STORAGE_PATH=/data/library
+      - OPENLIBRARY_RATE_LIMIT=1
+      - APP_NAME=Shelf
+      - DEFAULT_LOCALE=fr
       - REDIS_URL=redis://redis:6379
     volumes:
       - library_data:/data/library
+      - shelf_covers:/data/library/covers
     depends_on:
       db:
         condition: service_healthy
@@ -45,5 +50,6 @@ services:
 
 volumes:
   library_data:
+  shelf_covers:
   pg_data:
   redis_data:

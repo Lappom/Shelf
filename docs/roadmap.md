@@ -487,15 +487,15 @@
 ## Phase 18 — Configuration & déploiement self-hosted
 
 ### 18.1 Variables d’environnement (docs/SPECS.md §13.1)
-- [ ] Support complet : DB, Auth (secret/url), OIDC, Storage, S3, OpenLibrary rate limit, App (name/locale/registration), Redis.
-- [ ] Ajouter checks de démarrage : env manquantes → erreurs claires.
+- [x] Support complet : DB, Auth (secret/url), OIDC, Storage, S3, OpenLibrary rate limit, App (name/locale/registration), Redis.
+- [x] Ajouter checks de démarrage : env manquantes → erreurs claires.
 
 ### 18.2 Dockerfile & Compose (docs/SPECS.md §13.2)
-- [ ] Image multi-stage, build prod.
-- [ ] Compose : service `shelf`, `db` Postgres 16 + healthcheck.
-- [ ] Volumes : library_data, covers, pg_data.
-- [ ] Service `redis` optionnel.
-- [ ] Documentation “first run” (migrations, création admin).
+- [x] Image multi-stage, build prod.
+- [x] Compose : service `shelf`, `db` Postgres 16 + healthcheck.
+- [x] Volumes : library_data, covers, pg_data.
+- [x] Service `redis` optionnel.
+- [x] Documentation “first run” (migrations, création admin).
 
 ---
 
