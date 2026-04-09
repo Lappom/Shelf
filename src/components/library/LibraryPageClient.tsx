@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { LayoutGridIcon, ListIcon, SlidersHorizontalIcon, PlusIcon } from "lucide-react";
 
 import { updateSearchPreferencesAction } from "@/app/(app)/search/actions";
@@ -113,43 +113,47 @@ export function LibraryPageClient({
     });
   }, [q, formats, languages, tagIds, shelfId, statuses, booksPerPage]);
 
-  async function fetchPage(args: { cursor?: string | null; append: boolean }) {
-    setError(null);
-    setLoading(true);
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
+  const fetchPage = useCallback(
+    async (args: { cursor?: string | null; append: boolean }) => {
+      setError(null);
+      setLoading(true);
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
 
-    const params = new URLSearchParams();
-    if (q.trim()) params.set("q", q.trim());
-    params.set("mode", "websearch");
-    params.set("sort", q.trim() ? "relevance" : "added_at");
-    params.set("dir", "desc");
-    params.set("limit", String(booksPerPage));
-    if (args.cursor) params.set("cursor", args.cursor);
+      const params = new URLSearchParams();
+      if (q.trim()) params.set("q", q.trim());
+      params.set("mode", "websearch");
+      params.set("sort", q.trim() ? "relevance" : "added_at");
+      params.set("dir", "desc");
+      params.set("limit", String(booksPerPage));
+      if (args.cursor) params.set("cursor", args.cursor);
 
-    if (formats.length) params.set("formats", toCsv(formats));
-    if (languages.length) params.set("languages", toCsv(languages));
-    if (tagIds.length) params.set("tagIds", toCsv(tagIds));
-    if (shelfId) params.set("shelfId", shelfId);
-    if (statuses.length) params.set("statuses", toCsv(statuses));
+      if (formats.length) params.set("formats", toCsv(formats));
+      if (languages.length) params.set("languages", toCsv(languages));
+      if (tagIds.length) params.set("tagIds", toCsv(tagIds));
+      if (shelfId) params.set("shelfId", shelfId);
+      if (statuses.length) params.set("statuses", toCsv(statuses));
 
-    try {
-      const res = await fetch(`/api/search?${params.toString()}`, {
-        method: "GET",
-        credentials: "include",
-        signal: ac.signal,
-      });
-      if (!res.ok) throw new Error("FETCH_FAILED");
-      const json = (await res.json()) as ApiSearchResponse;
-      setItems((prev) => (args.append ? [...prev, ...json.results] : json.results));
-      setNextCursor(json.nextCursor);
-    } catch (e) {
-      if ((e as { name?: string }).name !== "AbortError") setError("Impossible de charger la bibliothèque.");
-    } finally {
-      setLoading(false);
-    }
-  }
+      try {
+        const res = await fetch(`/api/search?${params.toString()}`, {
+          method: "GET",
+          credentials: "include",
+          signal: ac.signal,
+        });
+        if (!res.ok) throw new Error("FETCH_FAILED");
+        const json = (await res.json()) as ApiSearchResponse;
+        setItems((prev) => (args.append ? [...prev, ...json.results] : json.results));
+        setNextCursor(json.nextCursor);
+      } catch (e) {
+        if ((e as { name?: string }).name !== "AbortError")
+          setError("Impossible de charger la bibliothèque.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [q, booksPerPage, formats, languages, tagIds, shelfId, statuses],
+  );
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -158,7 +162,7 @@ export function LibraryPageClient({
       void fetchPage({ append: false });
     }, 250);
     return () => window.clearTimeout(t);
-  }, [queryKey]);
+  }, [queryKey, fetchPage]);
 
   useEffect(() => {
     if (!infiniteScroll) return;
@@ -177,7 +181,7 @@ export function LibraryPageClient({
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [infiniteScroll, nextCursor, loading]);
+  }, [infiniteScroll, nextCursor, loading, fetchPage]);
 
   const applyView = (v: "grid" | "list") => {
     setView(v);
@@ -198,7 +202,7 @@ export function LibraryPageClient({
   const Filters = (
     <div className="space-y-5">
       <div className="space-y-2">
-        <div className="text-xs text-eleven-muted">Format</div>
+        <div className="text-eleven-muted text-xs">Format</div>
         <div className="grid grid-cols-2 gap-2">
           {["epub", "physical", "pdf", "cbz", "cbr", "audiobook"].map((f) => (
             <label key={f} className="flex items-center gap-2 text-sm">
@@ -206,7 +210,9 @@ export function LibraryPageClient({
                 type="checkbox"
                 checked={formats.includes(f)}
                 onChange={(e) =>
-                  setFormats((prev) => (e.target.checked ? [...prev, f] : prev.filter((x) => x !== f)))
+                  setFormats((prev) =>
+                    e.target.checked ? [...prev, f] : prev.filter((x) => x !== f),
+                  )
                 }
               />
               <span className="capitalize">{f}</span>
@@ -216,7 +222,7 @@ export function LibraryPageClient({
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs text-eleven-muted">Langue</div>
+        <div className="text-eleven-muted text-xs">Langue</div>
         <Input
           placeholder="ex: fr,en (CSV)"
           value={languages.join(",")}
@@ -233,9 +239,9 @@ export function LibraryPageClient({
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs text-eleven-muted">Étagère</div>
+        <div className="text-eleven-muted text-xs">Étagère</div>
         <select
-          className="w-full rounded-xl border bg-background px-3 py-2 text-sm"
+          className="bg-background w-full rounded-xl border px-3 py-2 text-sm"
           value={shelfId}
           onChange={(e) => setShelfId(e.target.value)}
         >
@@ -249,7 +255,7 @@ export function LibraryPageClient({
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs text-eleven-muted">Tags</div>
+        <div className="text-eleven-muted text-xs">Tags</div>
         <div className="flex flex-wrap gap-2">
           {initialTags.slice(0, 50).map((t) => {
             const on = tagIds.includes(t.id);
@@ -257,10 +263,14 @@ export function LibraryPageClient({
               <button
                 key={t.id}
                 type="button"
-                onClick={() => setTagIds((prev) => (on ? prev.filter((x) => x !== t.id) : [...prev, t.id]))}
+                onClick={() =>
+                  setTagIds((prev) => (on ? prev.filter((x) => x !== t.id) : [...prev, t.id]))
+                }
                 className={cn(
                   "rounded-eleven-pill border px-3 py-1 text-xs transition",
-                  on ? "bg-secondary shadow-eleven-card" : "text-eleven-muted hover:text-foreground",
+                  on
+                    ? "bg-secondary shadow-eleven-card"
+                    : "text-eleven-muted hover:text-foreground",
                 )}
                 style={{ borderColor: t.color }}
               >
@@ -272,7 +282,7 @@ export function LibraryPageClient({
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs text-eleven-muted">Statut de lecture</div>
+        <div className="text-eleven-muted text-xs">Statut de lecture</div>
         <div className="grid grid-cols-2 gap-2">
           {["not_started", "reading", "finished", "abandoned"].map((s) => (
             <label key={s} className="flex items-center gap-2 text-sm">
@@ -280,7 +290,9 @@ export function LibraryPageClient({
                 type="checkbox"
                 checked={statuses.includes(s)}
                 onChange={(e) =>
-                  setStatuses((prev) => (e.target.checked ? [...prev, s] : prev.filter((x) => x !== s)))
+                  setStatuses((prev) =>
+                    e.target.checked ? [...prev, s] : prev.filter((x) => x !== s),
+                  )
                 }
               />
               <span>{s}</span>
@@ -290,10 +302,10 @@ export function LibraryPageClient({
       </div>
 
       <div className="space-y-2">
-        <div className="text-xs text-eleven-muted">Pagination</div>
+        <div className="text-eleven-muted text-xs">Pagination</div>
         <div className="flex items-center gap-2">
           <select
-            className="rounded-xl border bg-background px-3 py-2 text-sm"
+            className="bg-background rounded-xl border px-3 py-2 text-sm"
             value={String(booksPerPage)}
             onChange={(e) => updatePrefs({ booksPerPage: Number(e.target.value) })}
           >
@@ -319,13 +331,13 @@ export function LibraryPageClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h1 className="eleven-display-section text-3xl">Bibliothèque</h1>
-          <p className="text-sm text-eleven-secondary">
+          <p className="text-eleven-secondary text-sm">
             Vue grille/liste, recherche, filtres et progression de lecture.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center rounded-eleven-pill border shadow-eleven-card">
+          <div className="rounded-eleven-pill shadow-eleven-card flex items-center border">
             <Button
               type="button"
               variant={view === "grid" ? "secondary" : "ghost"}
@@ -360,9 +372,7 @@ export function LibraryPageClient({
             Filtres
           </Button>
 
-          {isAdmin ? (
-            <div className="hidden sm:block">{adminFab ?? null}</div>
-          ) : null}
+          {isAdmin ? <div className="hidden sm:block">{adminFab ?? null}</div> : null}
 
           {isAdmin ? (
             <Button
@@ -379,12 +389,12 @@ export function LibraryPageClient({
 
       <div className="flex flex-col gap-4 sm:flex-row">
         <aside className="hidden w-full max-w-xs shrink-0 sm:block">
-          <Card className="p-4 shadow-eleven-card">
+          <Card className="shadow-eleven-card p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-sm font-medium">Filtres</div>
               <button
                 type="button"
-                className="text-xs text-eleven-muted hover:text-foreground"
+                className="text-eleven-muted hover:text-foreground text-xs"
                 onClick={() => {
                   setFormats([]);
                   setLanguages([]);
@@ -414,7 +424,7 @@ export function LibraryPageClient({
           </div>
 
           {error ? (
-            <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm">
+            <div className="border-destructive/30 bg-destructive/10 rounded-2xl border px-4 py-3 text-sm">
               {error}
             </div>
           ) : null}
@@ -423,18 +433,19 @@ export function LibraryPageClient({
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
               {items.map((b) => (
                 <Link key={b.id} href={`/book/${b.id}`} className="group">
-                  <Card className="overflow-hidden shadow-eleven-card transition hover:shadow-eleven-button-white">
-                    <div className="relative aspect-2/3 w-full bg-muted">
+                  <Card className="shadow-eleven-card hover:shadow-eleven-button-white overflow-hidden transition">
+                    <div className="bg-muted relative aspect-2/3 w-full">
                       {b.coverUrl ? (
                         <Image
                           src={`/api/books/${b.id}/cover`}
                           alt=""
                           fill
+                          unoptimized
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 20vw, 12vw"
                           className="object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs text-eleven-muted">
+                        <div className="text-eleven-muted flex h-full w-full items-center justify-center text-xs">
                           Couverture
                         </div>
                       )}
@@ -442,7 +453,7 @@ export function LibraryPageClient({
                         const pct = formatPercent(b.progress);
                         if (!pct) return null;
                         return (
-                          <div className="absolute bottom-2 left-2 rounded-eleven-pill bg-background/85 px-2 py-1 text-[11px] shadow-eleven-card">
+                          <div className="rounded-eleven-pill bg-background/85 shadow-eleven-card absolute bottom-2 left-2 px-2 py-1 text-[11px]">
                             {pct}
                           </div>
                         );
@@ -450,8 +461,10 @@ export function LibraryPageClient({
                     </div>
                     <div className="space-y-1 p-3">
                       <div className="line-clamp-2 text-sm font-medium">{b.title}</div>
-                      <div className="line-clamp-1 text-xs text-eleven-muted">{authorsToString(b.authors) || "—"}</div>
-                      <div className="text-[11px] text-eleven-muted">
+                      <div className="text-eleven-muted line-clamp-1 text-xs">
+                        {authorsToString(b.authors) || "—"}
+                      </div>
+                      <div className="text-eleven-muted text-[11px]">
                         {b.format.toUpperCase()}
                         {b.language ? ` · ${b.language}` : ""}
                       </div>
@@ -461,10 +474,10 @@ export function LibraryPageClient({
               ))}
             </div>
           ) : (
-            <Card className="overflow-hidden shadow-eleven-card">
+            <Card className="shadow-eleven-card overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-muted/40 text-left text-xs text-eleven-muted">
+                  <thead className="bg-muted/40 text-eleven-muted text-left text-xs">
                     <tr>
                       <th className="px-4 py-3">Titre</th>
                       <th className="px-4 py-3">Auteur</th>
@@ -480,9 +493,13 @@ export function LibraryPageClient({
                             {b.title}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-eleven-muted">{authorsToString(b.authors) || "—"}</td>
-                        <td className="px-4 py-3 text-eleven-muted">{b.format}</td>
-                        <td className="px-4 py-3 text-eleven-muted">{formatPercent(b.progress) ?? "—"}</td>
+                        <td className="text-eleven-muted px-4 py-3">
+                          {authorsToString(b.authors) || "—"}
+                        </td>
+                        <td className="text-eleven-muted px-4 py-3">{b.format}</td>
+                        <td className="text-eleven-muted px-4 py-3">
+                          {formatPercent(b.progress) ?? "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -521,4 +538,3 @@ export function LibraryPageClient({
     </div>
   );
 }
-

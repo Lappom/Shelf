@@ -38,9 +38,7 @@ export function ThemeProvider({ initialTheme, children }: Props) {
     return () => mql.removeEventListener("change", onChange);
   }, [theme]);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 }
 
 type ThemeContextValue = {
@@ -55,4 +53,3 @@ export function useTheme() {
   if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
   return ctx;
 }
-

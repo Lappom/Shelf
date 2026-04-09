@@ -73,9 +73,7 @@ export async function getOfflineDb(): Promise<OfflineDb> {
     async put<T>(store: IdbStoreName, value: T, key?: IDBValidKey): Promise<void> {
       const tx = db.transaction(store, "readwrite");
       const req =
-        key == null
-          ? tx.objectStore(store).put(value)
-          : tx.objectStore(store).put(value, key);
+        key == null ? tx.objectStore(store).put(value) : tx.objectStore(store).put(value, key);
       await new Promise<void>((resolve, reject) => {
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error ?? new Error("IDB_PUT_FAILED"));

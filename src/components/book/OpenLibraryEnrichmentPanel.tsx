@@ -13,27 +13,22 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
-import type { OpenLibraryCandidate } from "@/app/(app)/book/[id]/openlibraryActions";
+import type {
+  OpenLibraryCandidate,
+  OpenLibraryEnrichment,
+} from "@/app/(app)/book/[id]/openlibraryActions";
 import {
   openLibraryApplyEnrichmentAction,
   openLibraryPreviewIsbnAction,
   openLibrarySearchForBookAction,
 } from "@/app/(app)/book/[id]/openlibraryActions";
 
-type Enrichment =
-  Awaited<ReturnType<typeof openLibraryPreviewIsbnAction>> extends {
-    ok: true;
-    enrichment: infer E;
-  }
-    ? E
-    : never;
-
 type UiState =
   | { type: "idle" }
   | { type: "searching" }
   | { type: "candidates"; items: OpenLibraryCandidate[] }
   | { type: "previewing" }
-  | { type: "ready"; isbn: string; enrichment: Enrichment }
+  | { type: "ready"; isbn: string; enrichment: OpenLibraryEnrichment }
   | { type: "applying" }
   | { type: "done"; coverUpdated: boolean }
   | { type: "error"; message: string };
@@ -58,10 +53,7 @@ export function OpenLibraryEnrichmentPanel({
     () => !pending && Boolean(isbn.trim()) && state.type !== "applying",
     [pending, isbn, state.type],
   );
-  const canApply = useMemo(
-    () => !pending && state.type === "ready" && state.type !== "applying",
-    [pending, state.type],
-  );
+  const canApply = useMemo(() => !pending && state.type === "ready", [pending, state.type]);
 
   function onSearch() {
     if (!canSearch) return;

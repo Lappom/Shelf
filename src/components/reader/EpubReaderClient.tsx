@@ -542,7 +542,7 @@ export function EpubReaderClient({
           <div className="absolute inset-0">
             <div ref={containerRef} className="h-full w-full" />
           </div>
-          <div className="absolute right-3 top-3 z-50 flex items-center gap-2">
+          <div className="absolute top-3 right-3 z-50 flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"

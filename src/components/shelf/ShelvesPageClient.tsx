@@ -207,7 +207,9 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
     const inDynamic = oldIndexDynamic >= 0 && newIndexDynamic >= 0;
     if (!inManual && !inDynamic) return;
 
-    const nextManual = inManual ? arrayMove(manualShelves, oldIndexManual, newIndexManual) : manualShelves;
+    const nextManual = inManual
+      ? arrayMove(manualShelves, oldIndexManual, newIndexManual)
+      : manualShelves;
     const nextDynamic = inDynamic
       ? arrayMove(dynamicShelves, oldIndexDynamic, newIndexDynamic)
       : dynamicShelves;
@@ -293,7 +295,7 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <div className="space-y-6">
           <div className="space-y-3">
-            <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">
+            <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">
               Système
             </div>
             <div className="grid grid-cols-1 gap-3">
@@ -310,10 +312,13 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
           </div>
 
           <div className="space-y-3">
-            <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">
+            <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">
               Manuelles
             </div>
-            <SortableContext items={manualShelves.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext
+              items={manualShelves.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
               <div className="grid grid-cols-1 gap-3">
                 {manualShelves.map((s) => (
                   <SortableShelfRow
@@ -340,7 +345,7 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
           </div>
 
           <div className="space-y-3">
-            <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">
+            <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">
               Dynamiques
             </div>
             <SortableContext

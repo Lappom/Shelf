@@ -27,7 +27,7 @@ export default async function LoginPage({
   const error = sp?.error ? errorMessages[sp.error] : null;
   return (
     <div className="space-y-6">
-      <Button asChild className="-ml-1 w-fit rounded-eleven-pill" size="sm" variant="ghost">
+      <Button asChild className="rounded-eleven-pill -ml-1 w-fit" size="sm" variant="ghost">
         <Link href="/">
           <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
           <span>Retour</span>
@@ -35,9 +35,9 @@ export default async function LoginPage({
       </Button>
 
       <div className="space-y-1">
-        <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">Shelf</div>
+        <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">Shelf</div>
         <h1 className="eleven-display-section text-3xl">Connexion</h1>
-        <p className="text-sm text-eleven-secondary">Accédez à votre bibliothèque Shelf.</p>
+        <p className="text-eleven-secondary text-sm">Accédez à votre bibliothèque Shelf.</p>
       </div>
 
       {error ? (
@@ -67,14 +67,14 @@ export default async function LoginPage({
           />
         </div>
 
-        <Button className="w-full rounded-eleven-pill" type="submit">
+        <Button className="rounded-eleven-pill w-full" type="submit">
           Se connecter
         </Button>
       </form>
 
       {oidcEnabled ? (
         <form action={oidcSignInAction}>
-          <Button className="w-full rounded-eleven-pill" type="submit" variant="outline">
+          <Button className="rounded-eleven-pill w-full" type="submit" variant="outline">
             Continuer avec OIDC
           </Button>
         </form>

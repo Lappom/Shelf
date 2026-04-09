@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 
 export function ElevenHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-(--eleven-border-subtle) bg-background/80 backdrop-blur">
+    <header className="bg-background/80 sticky top-0 z-40 border-b border-(--eleven-border-subtle) backdrop-blur">
       <a
         href="#content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-background focus:px-3 focus:py-2 focus:text-sm focus:shadow-eleven-button-white"
+        className="focus:bg-background focus:shadow-eleven-button-white sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:px-3 focus:py-2 focus:text-sm"
       >
         Aller au contenu
       </a>
@@ -42,4 +42,3 @@ export function ElevenHeader() {
     </header>
   );
 }
-

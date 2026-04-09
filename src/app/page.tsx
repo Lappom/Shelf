@@ -9,7 +9,7 @@ export default async function Home() {
   if (session?.user?.id) redirect("/library");
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <ElevenHeader />
       <HomeHero />
     </div>

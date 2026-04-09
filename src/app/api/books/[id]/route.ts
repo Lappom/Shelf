@@ -3,8 +3,8 @@ import { z } from "zod";
 
 import { requireAdmin } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
-import { handleCorsPreflight, addCorsHeaders } from "@/lib/security/cors";
-import { assertSameOriginFromHeaders } from "@/lib/security/origin";
+import { runApiRoute } from "@/lib/api/route";
+import { corsPreflight, getClientIp } from "@/lib/api/http";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const ParamsSchema = z.object({
@@ -12,52 +12,49 @@ const ParamsSchema = z.object({
 });
 
 export async function OPTIONS(req: Request) {
-  const preflight = handleCorsPreflight(req);
-  return preflight ?? new Response(null, { status: 204 });
+  return corsPreflight(req);
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const preflight = handleCorsPreflight(req);
-  if (preflight) return preflight;
+  return runApiRoute(
+    req,
+    {
+      sameOrigin: true,
+      auth: requireAdmin,
+      rateLimit: async ({ req, user }) => {
+        const ip = getClientIp(req);
+        const adminId = (user as { id?: string } | null)?.id ?? "unknown";
+        await rateLimitOrThrow({
+          key: `books:soft_delete:${adminId}:${ip}`,
+          limit: 30,
+          windowMs: 60_000,
+        });
+      },
+    },
+    async () => {
+      const params = await ctx.params;
+      const parsed = ParamsSchema.safeParse(params);
+      if (!parsed.success) {
+        return NextResponse.json({ error: "Invalid book id" }, { status: 400 });
+      }
 
-  assertSameOriginFromHeaders({
-    origin: req.headers.get("origin"),
-    host: req.headers.get("host"),
-  });
+      const book = await prisma.book.findFirst({
+        where: { id: parsed.data.id },
+        select: { id: true, deletedAt: true },
+      });
+      if (!book) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
 
-  const admin = await requireAdmin();
-  const params = await ctx.params;
-  const parsed = ParamsSchema.safeParse(params);
-  if (!parsed.success) {
-    return addCorsHeaders(NextResponse.json({ error: "Invalid book id" }, { status: 400 }), req);
-  }
+      if (!book.deletedAt) {
+        await prisma.book.update({
+          where: { id: book.id },
+          data: { deletedAt: new Date() },
+          select: { id: true },
+        });
+      }
 
-  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
-  try {
-    await rateLimitOrThrow({
-      key: `books:soft_delete:${admin.id}:${ip}`,
-      limit: 30,
-      windowMs: 60_000,
-    });
-  } catch {
-    return addCorsHeaders(NextResponse.json({ error: "Too many requests" }, { status: 429 }), req);
-  }
-
-  const book = await prisma.book.findFirst({
-    where: { id: parsed.data.id },
-    select: { id: true, deletedAt: true },
-  });
-  if (!book) {
-    return addCorsHeaders(NextResponse.json({ error: "Not found" }, { status: 404 }), req);
-  }
-
-  if (!book.deletedAt) {
-    await prisma.book.update({
-      where: { id: book.id },
-      data: { deletedAt: new Date() },
-      select: { id: true },
-    });
-  }
-
-  return addCorsHeaders(NextResponse.json({ ok: true }, { status: 200 }), req);
+      return NextResponse.json({ ok: true }, { status: 200 });
+    },
+  );
 }

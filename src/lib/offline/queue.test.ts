@@ -2,10 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 type StoreName = "offlineQueue" | "offlineProgress" | "offlineEpubIndex";
 
+type OfflineProgressRow = { bookId: string };
+
 function storeKeyFromValue(store: StoreName, value: unknown) {
   const v = value as { bookId?: unknown; id?: unknown };
-  const raw =
-    store === "offlineProgress" || store === "offlineEpubIndex" ? v.bookId : v.id;
+  const raw = store === "offlineProgress" || store === "offlineEpubIndex" ? v.bookId : v.id;
   return String(raw ?? "");
 }
 
@@ -43,10 +44,9 @@ vi.mock("@/lib/offline/idb", () => {
 describe("offline queue", () => {
   it("queues progress update when fetch fails", async () => {
     const { offlineOrQueueProgress } = await import("./queue");
-    // @ts-expect-error test override
-    globalThis.fetch = vi.fn(async () => {
+    (globalThis as unknown as { fetch: typeof fetch }).fetch = vi.fn(async () => {
       throw new TypeError("Failed to fetch");
-    });
+    }) as unknown as typeof fetch;
 
     const res = await offlineOrQueueProgress({
       bookId: "b1",
@@ -59,13 +59,14 @@ describe("offline queue", () => {
     const db = await getOfflineDb();
     const rows = await db.getAll("offlineProgress");
     expect(rows).toHaveLength(1);
-    expect(rows[0].bookId).toBe("b1");
+    expect((rows as OfflineProgressRow[])[0]?.bookId).toBe("b1");
   });
 
   it("flushes queued progress and deletes it on success", async () => {
     const { queueProgressUpdate, flushOfflineQueue } = await import("./queue");
-    // @ts-expect-error test override
-    globalThis.fetch = vi.fn(async () => new Response("{}", { status: 200 }));
+    (globalThis as unknown as { fetch: typeof fetch }).fetch = vi.fn(
+      async () => new Response("{}", { status: 200 }),
+    ) as unknown as typeof fetch;
 
     await queueProgressUpdate({
       bookId: "b2",
@@ -90,8 +91,7 @@ describe("offline queue", () => {
         throw new TypeError("Failed to fetch");
       })
       .mockImplementationOnce(async () => new Response("{}", { status: 201 }));
-    // @ts-expect-error test override
-    globalThis.fetch = fetchMock;
+    (globalThis as unknown as { fetch: typeof fetch }).fetch = fetchMock as unknown as typeof fetch;
 
     const res = await offlineOrQueueAnnotationCreate({
       bookId: "b3",

@@ -49,6 +49,8 @@ export type OpenLibraryCandidate = {
   isbns: string[];
 };
 
+export type OpenLibraryEnrichment = Awaited<ReturnType<typeof enrichFromOpenLibraryByIsbn>>;
+
 export async function openLibrarySearchForBookAction(args: z.infer<typeof SearchSchema>): Promise<
   | {
       ok: true;

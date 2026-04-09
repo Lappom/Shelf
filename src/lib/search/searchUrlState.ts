@@ -97,4 +97,3 @@ export function buildSearchUrlFromState(state: Partial<SearchUrlState>): string 
   const qs = params.toString();
   return qs ? `/search?${qs}` : "/search";
 }
-

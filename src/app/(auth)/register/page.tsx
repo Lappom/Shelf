@@ -22,7 +22,7 @@ export default async function RegisterPage({
   const error = sp?.error ? errorMessages[sp.error] : null;
   return (
     <div className="space-y-6">
-      <Button asChild className="-ml-1 w-fit rounded-eleven-pill" size="sm" variant="ghost">
+      <Button asChild className="rounded-eleven-pill -ml-1 w-fit" size="sm" variant="ghost">
         <Link href="/">
           <ArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
           <span>Retour</span>
@@ -30,9 +30,9 @@ export default async function RegisterPage({
       </Button>
 
       <div className="space-y-1">
-        <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">Shelf</div>
+        <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">Shelf</div>
         <h1 className="eleven-display-section text-3xl">Créer un compte</h1>
-        <p className="text-sm text-eleven-secondary">Le premier compte devient administrateur.</p>
+        <p className="text-eleven-secondary text-sm">Le premier compte devient administrateur.</p>
       </div>
 
       {error ? (
@@ -69,7 +69,7 @@ export default async function RegisterPage({
           />
         </div>
 
-        <Button className="w-full rounded-eleven-pill" type="submit">
+        <Button className="rounded-eleven-pill w-full" type="submit">
           Créer le compte
         </Button>
       </form>

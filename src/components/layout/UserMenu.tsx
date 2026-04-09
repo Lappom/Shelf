@@ -47,9 +47,12 @@ export function UserMenu({ email }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
-        <DropdownMenuLabel className="text-xs text-eleven-muted">Préférences</DropdownMenuLabel>
+        <DropdownMenuLabel className="text-eleven-muted text-xs">Préférences</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup value={theme} onValueChange={(v) => onThemeChange(v as ThemePreference)}>
+        <DropdownMenuRadioGroup
+          value={theme}
+          onValueChange={(v) => onThemeChange(v as ThemePreference)}
+        >
           <DropdownMenuRadioItem value="light" className="gap-2">
             <SunIcon className="h-4 w-4" />
             Clair
@@ -64,11 +67,10 @@ export function UserMenu({ email }: Props) {
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled className="text-xs text-eleven-muted">
+        <DropdownMenuItem disabled className="text-eleven-muted text-xs">
           {busy ? "Mise à jour…" : " "}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
-

@@ -6,8 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 function HeroBadge() {
   return (
-    <div className="inline-flex items-center gap-2 rounded-full border border-(--eleven-border-subtle) bg-background px-3 py-1 shadow-eleven-button-white">
-      <SparklesIcon className="h-3.5 w-3.5 text-eleven-muted" aria-hidden="true" />
+    <div className="bg-background shadow-eleven-button-white inline-flex items-center gap-2 rounded-full border border-(--eleven-border-subtle) px-3 py-1">
+      <SparklesIcon className="text-eleven-muted h-3.5 w-3.5" aria-hidden="true" />
       <span className="eleven-body-airy text-eleven-muted text-xs font-medium">
         Self-hosted, lecteur EPUB, recherche rapide
       </span>
@@ -25,7 +25,9 @@ function FakeShelfPanel() {
             <div className="h-2 w-2 rounded-full bg-black/35 dark:bg-white/35" />
             <div className="h-2 w-2 rounded-full bg-black/20 dark:bg-white/20" />
           </div>
-          <div className="eleven-body-airy text-eleven-muted text-[11px] font-medium">Bibliothèque</div>
+          <div className="eleven-body-airy text-eleven-muted text-[11px] font-medium">
+            Bibliothèque
+          </div>
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -39,7 +41,7 @@ function FakeShelfPanel() {
           ].map((x) => (
             <div
               key={x.t}
-              className="rounded-2xl border border-(--eleven-border-subtle) bg-background/80 p-3 shadow-[var(--eleven-shadow-inset-border),var(--eleven-shadow-soft)]"
+              className="bg-background/80 rounded-2xl border border-(--eleven-border-subtle) p-3 shadow-[var(--eleven-shadow-inset-border),var(--eleven-shadow-soft)]"
             >
               <div className="font-heading eleven-body-airy text-sm font-light">{x.t}</div>
               <div className="eleven-body-airy text-eleven-muted mt-1 text-xs">{x.s}</div>
@@ -50,13 +52,17 @@ function FakeShelfPanel() {
           ))}
         </div>
 
-        <div className="mt-4 rounded-2xl border border-(--eleven-border-subtle) bg-background/70 p-3">
+        <div className="bg-background/70 mt-4 rounded-2xl border border-(--eleven-border-subtle) p-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <SearchIcon className="h-4 w-4 text-eleven-muted" aria-hidden="true" />
-              <div className="eleven-body-airy text-eleven-muted text-xs">Rechercher un titre, un auteur, un tag…</div>
+              <SearchIcon className="text-eleven-muted h-4 w-4" aria-hidden="true" />
+              <div className="eleven-body-airy text-eleven-muted text-xs">
+                Rechercher un titre, un auteur, un tag…
+              </div>
             </div>
-            <div className="rounded-full bg-black px-2.5 py-1 text-[10px] font-medium text-white">⌘K</div>
+            <div className="rounded-full bg-black px-2.5 py-1 text-[10px] font-medium text-white">
+              ⌘K
+            </div>
           </div>
         </div>
       </div>
@@ -66,18 +72,18 @@ function FakeShelfPanel() {
 
 export function HomeHero() {
   return (
-    <main id="content" className="mx-auto w-full max-w-5xl px-6 pb-20 pt-14 sm:pb-24 sm:pt-20">
+    <main id="content" className="mx-auto w-full max-w-5xl px-6 pt-14 pb-20 sm:pt-20 sm:pb-24">
       <section className="grid items-start gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
         <div className="space-y-6">
           <HeroBadge />
 
           <div className="space-y-4">
-            <h1 className="eleven-display-hero text-balance text-5xl text-foreground sm:text-6xl">
+            <h1 className="eleven-display-hero text-foreground text-5xl text-balance sm:text-6xl">
               La bibliothèque personnelle qui reste légère.
             </h1>
             <p className="eleven-body-airy text-eleven-secondary max-w-prose text-lg leading-relaxed">
-              Importez vos EPUB, organisez en étagères, lisez sans distraction et retrouvez n’importe quel passage
-              grâce à une recherche pensée pour durer.
+              Importez vos EPUB, organisez en étagères, lisez sans distraction et retrouvez
+              n’importe quel passage grâce à une recherche pensée pour durer.
             </p>
           </div>
 
@@ -97,7 +103,7 @@ export function HomeHero() {
             <Card className="shadow-eleven-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BookOpenIcon className="h-4 w-4 text-eleven-muted" aria-hidden="true" />
+                  <BookOpenIcon className="text-eleven-muted h-4 w-4" aria-hidden="true" />
                   Reader intégré
                 </CardTitle>
                 <CardDescription className="eleven-body-airy text-eleven-secondary">
@@ -114,7 +120,7 @@ export function HomeHero() {
             <Card className="shadow-eleven-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <SearchIcon className="h-4 w-4 text-eleven-muted" aria-hidden="true" />
+                  <SearchIcon className="text-eleven-muted h-4 w-4" aria-hidden="true" />
                   Recherche rapide
                 </CardTitle>
                 <CardDescription className="eleven-body-airy text-eleven-secondary">
@@ -131,7 +137,7 @@ export function HomeHero() {
             <Card className="shadow-eleven-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <LockIcon className="h-4 w-4 text-eleven-muted" aria-hidden="true" />
+                  <LockIcon className="text-eleven-muted h-4 w-4" aria-hidden="true" />
                   Contrôle
                 </CardTitle>
                 <CardDescription className="eleven-body-airy text-eleven-secondary">
@@ -151,10 +157,10 @@ export function HomeHero() {
           <FakeShelfPanel />
           <div
             id="workflow"
-            className="mt-5 rounded-2xl border border-(--eleven-border-subtle) bg-background/70 p-4 shadow-[var(--eleven-shadow-inset-border),var(--eleven-shadow-soft)]"
+            className="bg-background/70 mt-5 rounded-2xl border border-(--eleven-border-subtle) p-4 shadow-[var(--eleven-shadow-inset-border),var(--eleven-shadow-soft)]"
           >
             <div className="eleven-body-airy text-eleven-muted text-xs font-medium">Workflow</div>
-            <div className="font-heading mt-2 text-[1.15rem] font-light leading-snug">
+            <div className="font-heading mt-2 text-[1.15rem] leading-snug font-light">
               Import → étagères → lecture → recherche
             </div>
             <p className="eleven-body-airy text-eleven-secondary mt-2 text-sm leading-relaxed">
@@ -164,11 +170,12 @@ export function HomeHero() {
 
           <div
             id="privacy"
-            className="mt-3 rounded-2xl border border-(--eleven-border-subtle) bg-muted/40 p-4 shadow-[var(--eleven-shadow-inset-border),var(--eleven-shadow-soft)]"
+            className="bg-muted/40 mt-3 rounded-2xl border border-(--eleven-border-subtle) p-4 shadow-[var(--eleven-shadow-inset-border),var(--eleven-shadow-soft)]"
           >
             <div className="eleven-body-airy text-eleven-muted text-xs font-medium">Données</div>
             <p className="eleven-body-airy text-eleven-secondary mt-2 text-sm leading-relaxed">
-              Shelf est conçu pour tourner chez vous. Vous gardez la main sur la base et les fichiers.
+              Shelf est conçu pour tourner chez vous. Vous gardez la main sur la base et les
+              fichiers.
             </p>
           </div>
         </div>
@@ -176,4 +183,3 @@ export function HomeHero() {
     </main>
   );
 }
-

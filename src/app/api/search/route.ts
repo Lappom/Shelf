@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/rbac";
+import { runApiRoute } from "@/lib/api/route";
+import { getClientIp, corsPreflight } from "@/lib/api/http";
+import { asUuidOrThrow } from "@/lib/api/errors";
 import { prisma } from "@/lib/db/prisma";
 import { join, sql, type Sql } from "@/lib/db/sql";
-import { handleCorsPreflight, addCorsHeaders } from "@/lib/security/cors";
-import { assertSameOriginFromHeaders } from "@/lib/security/origin";
+import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const SortSchema = z.enum([
   "relevance",
@@ -171,241 +173,248 @@ function buildFiltersSql(args: {
   return sql`${join(conditions, " AND ")}`;
 }
 
+export async function OPTIONS(req: Request) {
+  return corsPreflight(req);
+}
+
 export async function GET(req: Request) {
-  const preflight = handleCorsPreflight(req);
-  if (preflight) return preflight;
+  return runApiRoute(
+    req,
+    {
+      // Search is a sensitive endpoint; rate-limit it.
+      auth: requireUser,
+      rateLimit: async ({ req, user }) => {
+        const ip = getClientIp(req);
+        const userId = asUuidOrThrow((user as { id?: unknown } | null)?.id);
+        await rateLimitOrThrow({ key: `search:${userId}:${ip}`, limit: 120, windowMs: 60_000 });
+      },
+    },
+    async ({ req, user }) => {
+      const userId = z
+        .string()
+        .uuid()
+        .parse((user as { id?: unknown }).id);
 
-  assertSameOriginFromHeaders({
-    origin: req.headers.get("origin"),
-    host: req.headers.get("host"),
-  });
+      const url = new URL(req.url);
+      const parsed = QuerySchema.safeParse({
+        q: url.searchParams.get("q") ?? undefined,
+        limit: url.searchParams.get("limit") ?? undefined,
+        cursor: url.searchParams.get("cursor") ?? undefined,
+        mode: url.searchParams.get("mode") ?? undefined,
+        sort: url.searchParams.get("sort") ?? undefined,
+        dir: url.searchParams.get("dir") ?? undefined,
 
-  const user = await requireUser();
-  const userId = z
-    .string()
-    .uuid()
-    .parse((user as { id?: unknown }).id);
+        formats: url.searchParams.get("formats") ?? undefined,
+        languages: url.searchParams.get("languages") ?? undefined,
+        tagIds: url.searchParams.get("tagIds") ?? undefined,
+        shelfId: url.searchParams.get("shelfId") ?? undefined,
+        statuses: url.searchParams.get("statuses") ?? undefined,
 
-  const url = new URL(req.url);
-  const parsed = QuerySchema.safeParse({
-    q: url.searchParams.get("q") ?? undefined,
-    limit: url.searchParams.get("limit") ?? undefined,
-    cursor: url.searchParams.get("cursor") ?? undefined,
-    mode: url.searchParams.get("mode") ?? undefined,
-    sort: url.searchParams.get("sort") ?? undefined,
-    dir: url.searchParams.get("dir") ?? undefined,
+        author: url.searchParams.get("author") ?? undefined,
+        publisher: url.searchParams.get("publisher") ?? undefined,
 
-    formats: url.searchParams.get("formats") ?? undefined,
-    languages: url.searchParams.get("languages") ?? undefined,
-    tagIds: url.searchParams.get("tagIds") ?? undefined,
-    shelfId: url.searchParams.get("shelfId") ?? undefined,
-    statuses: url.searchParams.get("statuses") ?? undefined,
+        addedFrom: url.searchParams.get("addedFrom") ?? undefined,
+        addedTo: url.searchParams.get("addedTo") ?? undefined,
+        pagesMin: url.searchParams.get("pagesMin") ?? undefined,
+        pagesMax: url.searchParams.get("pagesMax") ?? undefined,
+      });
+      if (!parsed.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
 
-    author: url.searchParams.get("author") ?? undefined,
-    publisher: url.searchParams.get("publisher") ?? undefined,
+      const {
+        q: qRaw,
+        limit,
+        cursor: cursorRaw,
+        mode,
+        sort,
+        dir,
+        formats,
+        languages,
+        tagIds,
+        shelfId,
+        statuses,
+        author,
+        publisher,
+        addedFrom,
+        addedTo,
+        pagesMin,
+        pagesMax,
+      } = parsed.data;
 
-    addedFrom: url.searchParams.get("addedFrom") ?? undefined,
-    addedTo: url.searchParams.get("addedTo") ?? undefined,
-    pagesMin: url.searchParams.get("pagesMin") ?? undefined,
-    pagesMax: url.searchParams.get("pagesMax") ?? undefined,
-  });
-  if (!parsed.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+      const q = (qRaw ?? "").trim();
 
-  const {
-    q: qRaw,
-    limit,
-    cursor: cursorRaw,
-    mode,
-    sort,
-    dir,
-    formats,
-    languages,
-    tagIds,
-    shelfId,
-    statuses,
-    author,
-    publisher,
-    addedFrom,
-    addedTo,
-    pagesMin,
-    pagesMax,
-  } = parsed.data;
+      const formatsList = splitCsvList(formats);
+      const languagesList = splitCsvList(languages).map((x) => x.toLowerCase());
+      const tagIdsList = splitCsvList(tagIds);
+      const statusesList = splitCsvList(statuses);
 
-  const q = (qRaw ?? "").trim();
+      const addedFromDate = addedFrom ? new Date(addedFrom) : undefined;
+      const addedToDate = addedTo ? new Date(addedTo) : undefined;
+      if (addedFromDate && !Number.isFinite(addedFromDate.getTime()))
+        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+      if (addedToDate && !Number.isFinite(addedToDate.getTime()))
+        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+      if (pagesMin != null && pagesMax != null && pagesMin > pagesMax)
+        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
 
-  const formatsList = splitCsvList(formats);
-  const languagesList = splitCsvList(languages).map((x) => x.toLowerCase());
-  const tagIdsList = splitCsvList(tagIds);
-  const statusesList = splitCsvList(statuses);
+      const whereFiltersSql = buildFiltersSql({
+        userId,
+        formats: formatsList,
+        languages: languagesList,
+        tagIds: tagIdsList,
+        shelfId,
+        statuses: statusesList,
+        author,
+        publisher,
+        addedFrom: addedFromDate,
+        addedTo: addedToDate,
+        pagesMin,
+        pagesMax,
+      });
 
-  const addedFromDate = addedFrom ? new Date(addedFrom) : undefined;
-  const addedToDate = addedTo ? new Date(addedTo) : undefined;
-  if (addedFromDate && !Number.isFinite(addedFromDate.getTime()))
-    return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-  if (addedToDate && !Number.isFinite(addedToDate.getTime()))
-    return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-  if (pagesMin != null && pagesMax != null && pagesMin > pagesMax)
-    return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+      const hasQuery = q.length > 0;
+      const tsQuerySql = hasQuery ? buildSearchQuerySql(mode, q) : sql`NULL`;
+      const rankSql = hasQuery
+        ? sql`ts_rank_cd(COALESCE(b.search_vector, to_tsvector('simple', '')), ${tsQuerySql})`
+        : sql`0`;
 
-  const whereFiltersSql = buildFiltersSql({
-    userId,
-    formats: formatsList,
-    languages: languagesList,
-    tagIds: tagIdsList,
-    shelfId,
-    statuses: statusesList,
-    author,
-    publisher,
-    addedFrom: addedFromDate,
-    addedTo: addedToDate,
-    pagesMin,
-    pagesMax,
-  });
+      const ftsMatchSql = hasQuery
+        ? sql`COALESCE(b.search_vector, to_tsvector('simple', '')) @@ ${tsQuerySql}`
+        : sql`TRUE`;
 
-  const hasQuery = q.length > 0;
-  const tsQuerySql = hasQuery ? buildSearchQuerySql(mode, q) : sql`NULL`;
-  const rankSql = hasQuery
-    ? sql`ts_rank_cd(COALESCE(b.search_vector, to_tsvector('simple', '')), ${tsQuerySql})`
-    : sql`0`;
+      const fuzzyMatchSql = hasQuery ? sql`similarity(b.title, ${q}) > 0.2` : sql`FALSE`;
 
-  const ftsMatchSql = hasQuery
-    ? sql`COALESCE(b.search_vector, to_tsvector('simple', '')) @@ ${tsQuerySql}`
-    : sql`TRUE`;
-
-  const fuzzyMatchSql = hasQuery ? sql`similarity(b.title, ${q}) > 0.2` : sql`FALSE`;
-
-  // Cursor decoding depends on sort.
-  let cursorCondSql: Sql = sql`TRUE`;
-  let cursorDecoded: unknown = null;
-  if (cursorRaw) {
-    try {
-      cursorDecoded = base64UrlDecodeJson(cursorRaw);
-    } catch {
-      return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-    }
-  }
-
-  const dirSql = dir === "asc" ? sql`ASC` : sql`DESC`;
-
-  let orderBySql: Sql;
-  let sortValueSql: Sql = sql`NULL`;
-
-  if (sort === "relevance") {
-    // If no query, fall back to recent.
-    if (!hasQuery) {
-      sortValueSql = sql`b.created_at`;
-      orderBySql = sql`b.created_at ${dirSql}, b.id ASC`;
-      if (cursorDecoded) {
-        const c = CursorValueSchema.safeParse(cursorDecoded);
-        if (!c.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-        cursorCondSql =
-          dir === "asc"
-            ? sql`(b.created_at > ${String(c.data.v)}::timestamptz OR (b.created_at = ${String(c.data.v)}::timestamptz AND b.id > ${c.data.id}::uuid))`
-            : sql`(b.created_at < ${String(c.data.v)}::timestamptz OR (b.created_at = ${String(c.data.v)}::timestamptz AND b.id > ${c.data.id}::uuid))`;
+      // Cursor decoding depends on sort.
+      let cursorCondSql: Sql = sql`TRUE`;
+      let cursorDecoded: unknown = null;
+      if (cursorRaw) {
+        try {
+          cursorDecoded = base64UrlDecodeJson(cursorRaw);
+        } catch {
+          return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+        }
       }
-    } else {
-      sortValueSql = rankSql;
-      orderBySql = sql`${rankSql} DESC, b.id ASC`;
-      if (cursorDecoded) {
-        const c = CursorRelevanceSchema.safeParse(cursorDecoded);
-        if (!c.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-        cursorCondSql = sql`(${rankSql} < ${c.data.rank} OR (${rankSql} = ${c.data.rank} AND b.id > ${c.data.id}::uuid))`;
-      }
-    }
-  } else if (sort === "title") {
-    sortValueSql = sql`LOWER(COALESCE(b.title, ''))`;
-    orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
-    if (cursorDecoded) {
-      const c = CursorValueSchema.safeParse(cursorDecoded);
-      if (!c.success || typeof c.data.v !== "string")
-        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-      cursorCondSql =
-        dir === "asc"
-          ? sql`(${sortValueSql} > LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))`
-          : sql`(${sortValueSql} < LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))`;
-    }
-  } else if (sort === "added_at") {
-    sortValueSql = sql`b.created_at`;
-    orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
-    if (cursorDecoded) {
-      const c = CursorValueSchema.safeParse(cursorDecoded);
-      if (!c.success || typeof c.data.v !== "string")
-        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-      cursorCondSql =
-        dir === "asc"
-          ? sql`(b.created_at > ${c.data.v}::timestamptz OR (b.created_at = ${c.data.v}::timestamptz AND b.id > ${c.data.id}::uuid))`
-          : sql`(b.created_at < ${c.data.v}::timestamptz OR (b.created_at = ${c.data.v}::timestamptz AND b.id > ${c.data.id}::uuid))`;
-    }
-  } else if (sort === "publish_date") {
-    // Publish date is a free-form string in V1; stable sort via lowercased string with NULLs last.
-    const nullFlagSql = sql`(b.publish_date IS NULL)`;
-    sortValueSql = sql`LOWER(COALESCE(b.publish_date, ''))`;
-    orderBySql = sql`${nullFlagSql} ASC, ${sortValueSql} ${dirSql}, b.id ASC`;
-    if (cursorDecoded) {
-      const c = CursorValueSchema.safeParse(cursorDecoded);
-      if (!c.success || typeof c.data.v !== "string")
-        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-      cursorCondSql =
-        dir === "asc"
-          ? sql`(${nullFlagSql} > FALSE OR (${nullFlagSql} = FALSE AND (${sortValueSql} > LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))))`
-          : sql`(${nullFlagSql} > FALSE OR (${nullFlagSql} = FALSE AND (${sortValueSql} < LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))))`;
-    }
-  } else if (sort === "author") {
-    sortValueSql = sql`LOWER(COALESCE(b.authors->>0, ''))`;
-    orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
-    if (cursorDecoded) {
-      const c = CursorValueSchema.safeParse(cursorDecoded);
-      if (!c.success || typeof c.data.v !== "string")
-        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-      cursorCondSql =
-        dir === "asc"
-          ? sql`(${sortValueSql} > LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))`
-          : sql`(${sortValueSql} < LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))`;
-    }
-  } else if (sort === "progress") {
-    sortValueSql = sql`COALESCE(ubp.progress, 0)`;
-    orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
-    if (cursorDecoded) {
-      const c = CursorValueSchema.safeParse(cursorDecoded);
-      if (!c.success || typeof c.data.v !== "number")
-        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-      cursorCondSql =
-        dir === "asc"
-          ? sql`(${sortValueSql} > ${c.data.v} OR (${sortValueSql} = ${c.data.v} AND b.id > ${c.data.id}::uuid))`
-          : sql`(${sortValueSql} < ${c.data.v} OR (${sortValueSql} = ${c.data.v} AND b.id > ${c.data.id}::uuid))`;
-    }
-  } else {
-    // page_count
-    sortValueSql = sql`COALESCE(b.page_count, 0)`;
-    orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
-    if (cursorDecoded) {
-      const c = CursorValueSchema.safeParse(cursorDecoded);
-      if (!c.success || typeof c.data.v !== "number")
-        return NextResponse.json({ error: "Invalid query" }, { status: 400 });
-      cursorCondSql =
-        dir === "asc"
-          ? sql`(${sortValueSql} > ${c.data.v} OR (${sortValueSql} = ${c.data.v} AND b.id > ${c.data.id}::uuid))`
-          : sql`(${sortValueSql} < ${c.data.v} OR (${sortValueSql} = ${c.data.v} AND b.id > ${c.data.id}::uuid))`;
-    }
-  }
 
-  const results = await prisma.$queryRaw<
-    Array<{
-      id: string;
-      title: string;
-      authors: unknown;
-      description: string | null;
-      coverUrl: string | null;
-      format: string;
-      language: string | null;
-      pageCount: number | null;
-      createdAt: Date;
-      publishDate: string | null;
-      progress: number | null;
-      rank: number;
-      sortValue: unknown;
-    }>
-  >`
+      const dirSql = dir === "asc" ? sql`ASC` : sql`DESC`;
+
+      let orderBySql: Sql;
+      let sortValueSql: Sql = sql`NULL`;
+
+      if (sort === "relevance") {
+        // If no query, fall back to recent.
+        if (!hasQuery) {
+          sortValueSql = sql`b.created_at`;
+          orderBySql = sql`b.created_at ${dirSql}, b.id ASC`;
+          if (cursorDecoded) {
+            const c = CursorValueSchema.safeParse(cursorDecoded);
+            if (!c.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+            cursorCondSql =
+              dir === "asc"
+                ? sql`(b.created_at > ${String(c.data.v)}::timestamptz OR (b.created_at = ${String(c.data.v)}::timestamptz AND b.id > ${c.data.id}::uuid))`
+                : sql`(b.created_at < ${String(c.data.v)}::timestamptz OR (b.created_at = ${String(c.data.v)}::timestamptz AND b.id > ${c.data.id}::uuid))`;
+          }
+        } else {
+          sortValueSql = rankSql;
+          orderBySql = sql`${rankSql} DESC, b.id ASC`;
+          if (cursorDecoded) {
+            const c = CursorRelevanceSchema.safeParse(cursorDecoded);
+            if (!c.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+            cursorCondSql = sql`(${rankSql} < ${c.data.rank} OR (${rankSql} = ${c.data.rank} AND b.id > ${c.data.id}::uuid))`;
+          }
+        }
+      } else if (sort === "title") {
+        sortValueSql = sql`LOWER(COALESCE(b.title, ''))`;
+        orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
+        if (cursorDecoded) {
+          const c = CursorValueSchema.safeParse(cursorDecoded);
+          if (!c.success || typeof c.data.v !== "string")
+            return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+          cursorCondSql =
+            dir === "asc"
+              ? sql`(${sortValueSql} > LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))`
+              : sql`(${sortValueSql} < LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))`;
+        }
+      } else if (sort === "added_at") {
+        sortValueSql = sql`b.created_at`;
+        orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
+        if (cursorDecoded) {
+          const c = CursorValueSchema.safeParse(cursorDecoded);
+          if (!c.success || typeof c.data.v !== "string")
+            return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+          cursorCondSql =
+            dir === "asc"
+              ? sql`(b.created_at > ${c.data.v}::timestamptz OR (b.created_at = ${c.data.v}::timestamptz AND b.id > ${c.data.id}::uuid))`
+              : sql`(b.created_at < ${c.data.v}::timestamptz OR (b.created_at = ${c.data.v}::timestamptz AND b.id > ${c.data.id}::uuid))`;
+        }
+      } else if (sort === "publish_date") {
+        // Publish date is a free-form string in V1; stable sort via lowercased string with NULLs last.
+        const nullFlagSql = sql`(b.publish_date IS NULL)`;
+        sortValueSql = sql`LOWER(COALESCE(b.publish_date, ''))`;
+        orderBySql = sql`${nullFlagSql} ASC, ${sortValueSql} ${dirSql}, b.id ASC`;
+        if (cursorDecoded) {
+          const c = CursorValueSchema.safeParse(cursorDecoded);
+          if (!c.success || typeof c.data.v !== "string")
+            return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+          cursorCondSql =
+            dir === "asc"
+              ? sql`(${nullFlagSql} > FALSE OR (${nullFlagSql} = FALSE AND (${sortValueSql} > LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))))`
+              : sql`(${nullFlagSql} > FALSE OR (${nullFlagSql} = FALSE AND (${sortValueSql} < LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))))`;
+        }
+      } else if (sort === "author") {
+        sortValueSql = sql`LOWER(COALESCE(b.authors->>0, ''))`;
+        orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
+        if (cursorDecoded) {
+          const c = CursorValueSchema.safeParse(cursorDecoded);
+          if (!c.success || typeof c.data.v !== "string")
+            return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+          cursorCondSql =
+            dir === "asc"
+              ? sql`(${sortValueSql} > LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))`
+              : sql`(${sortValueSql} < LOWER(${c.data.v}) OR (${sortValueSql} = LOWER(${c.data.v}) AND b.id > ${c.data.id}::uuid))`;
+        }
+      } else if (sort === "progress") {
+        sortValueSql = sql`COALESCE(ubp.progress, 0)`;
+        orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
+        if (cursorDecoded) {
+          const c = CursorValueSchema.safeParse(cursorDecoded);
+          if (!c.success || typeof c.data.v !== "number")
+            return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+          cursorCondSql =
+            dir === "asc"
+              ? sql`(${sortValueSql} > ${c.data.v} OR (${sortValueSql} = ${c.data.v} AND b.id > ${c.data.id}::uuid))`
+              : sql`(${sortValueSql} < ${c.data.v} OR (${sortValueSql} = ${c.data.v} AND b.id > ${c.data.id}::uuid))`;
+        }
+      } else {
+        // page_count
+        sortValueSql = sql`COALESCE(b.page_count, 0)`;
+        orderBySql = sql`${sortValueSql} ${dirSql}, b.id ASC`;
+        if (cursorDecoded) {
+          const c = CursorValueSchema.safeParse(cursorDecoded);
+          if (!c.success || typeof c.data.v !== "number")
+            return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+          cursorCondSql =
+            dir === "asc"
+              ? sql`(${sortValueSql} > ${c.data.v} OR (${sortValueSql} = ${c.data.v} AND b.id > ${c.data.id}::uuid))`
+              : sql`(${sortValueSql} < ${c.data.v} OR (${sortValueSql} = ${c.data.v} AND b.id > ${c.data.id}::uuid))`;
+        }
+      }
+
+      const results = await prisma.$queryRaw<
+        Array<{
+          id: string;
+          title: string;
+          authors: unknown;
+          description: string | null;
+          coverUrl: string | null;
+          format: string;
+          language: string | null;
+          pageCount: number | null;
+          createdAt: Date;
+          publishDate: string | null;
+          progress: number | null;
+          rank: number;
+          sortValue: unknown;
+        }>
+      >`
     SELECT
       b.id,
       b.title,
@@ -433,32 +442,34 @@ export async function GET(req: Request) {
     LIMIT ${limit};
   `;
 
-  let nextCursor: string | null = null;
-  if (results.length === limit) {
-    const last = results[results.length - 1];
-    if (last) {
-      if (sort === "relevance" && hasQuery) {
-        nextCursor = base64UrlEncodeJson({ kind: "relevance", rank: last.rank, id: last.id });
-      } else {
-        nextCursor = base64UrlEncodeJson({ kind: "value", v: last.sortValue, id: last.id });
+      let nextCursor: string | null = null;
+      if (results.length === limit) {
+        const last = results[results.length - 1];
+        if (last) {
+          if (sort === "relevance" && hasQuery) {
+            nextCursor = base64UrlEncodeJson({ kind: "relevance", rank: last.rank, id: last.id });
+          } else {
+            nextCursor = base64UrlEncodeJson({ kind: "value", v: last.sortValue, id: last.id });
+          }
+        }
       }
-    }
-  }
 
-  // Strip internal fields from response
-  const publicResults = results.map((r: (typeof results)[number]) => ({
-    id: r.id,
-    title: r.title,
-    authors: r.authors,
-    description: r.description,
-    coverUrl: r.coverUrl,
-    format: r.format,
-    language: r.language,
-    pageCount: r.pageCount,
-    createdAt: r.createdAt.toISOString(),
-    publishDate: r.publishDate,
-    progress: r.progress,
-  }));
+      // Strip internal fields from response
+      const publicResults = results.map((r: (typeof results)[number]) => ({
+        id: r.id,
+        title: r.title,
+        authors: r.authors,
+        description: r.description,
+        coverUrl: r.coverUrl,
+        format: r.format,
+        language: r.language,
+        pageCount: r.pageCount,
+        createdAt: r.createdAt.toISOString(),
+        publishDate: r.publishDate,
+        progress: r.progress,
+      }));
 
-  return addCorsHeaders(NextResponse.json({ results: publicResults, nextCursor }), req);
+      return NextResponse.json({ results: publicResults, nextCursor }, { status: 200 });
+    },
+  );
 }

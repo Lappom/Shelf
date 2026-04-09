@@ -8,6 +8,10 @@ import { enrichFromOpenLibraryByIsbn } from "@/lib/metadata/openlibrary";
 import { mergeOpenLibraryIntoBookMetadata } from "@/lib/metadata/openlibraryMerge";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
 
+type PrismaTransactionArg0 = Parameters<(typeof prisma)["$transaction"]>[0];
+type PrismaInteractiveTransactionFn = Exclude<PrismaTransactionArg0, readonly unknown[]>;
+type PrismaTransactionClient = Parameters<PrismaInteractiveTransactionFn>[0];
+
 export type IngestEpubResult =
   | { ok: true; bookId: string; restored: boolean }
   | { ok: false; code: "DUPLICATE_ACTIVE"; existingBookId: string }
@@ -129,7 +133,7 @@ export async function ingestEpub(args: {
       await adapter.upload(meta.cover.bytes, coverPath);
     }
 
-    await prisma.$transaction(async (tx: typeof prisma) => {
+    await prisma.$transaction(async (tx: PrismaTransactionClient) => {
       await tx.book.update({
         where: { id: bookId },
         data: {
@@ -238,7 +242,7 @@ export async function ingestEpub(args: {
     });
   }
 
-  await prisma.$transaction(async (tx: typeof prisma) => {
+  await prisma.$transaction(async (tx: PrismaTransactionClient) => {
     await tx.bookFile.create({
       data: {
         bookId,

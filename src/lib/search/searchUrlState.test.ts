@@ -47,4 +47,3 @@ describe("searchUrlState", () => {
     expect(url).not.toContain("addedFrom=");
   });
 });
-

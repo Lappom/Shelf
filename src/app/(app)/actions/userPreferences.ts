@@ -32,7 +32,10 @@ async function assertActionSecurity(suffix: string) {
 export async function patchUserPreferencesAction(input: unknown) {
   await assertActionSecurity("patch_user_prefs");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
 
   const parsed = PatchPrefsSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
@@ -60,4 +63,3 @@ export async function patchUserPreferencesAction(input: unknown) {
 
   return { ok: true as const, prefs: updated };
 }
-

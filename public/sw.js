@@ -1,6 +1,4 @@
- 
-
-const VERSION = "v1";
+const VERSION = "v2";
 const APP_SHELL_CACHE = `app-shell-${VERSION}`;
 const EPUB_CACHE = `epub-${VERSION}`;
 
@@ -21,7 +19,6 @@ function isSameOrigin(url) {
 function isStaticAssetRequest(url) {
   if (!isSameOrigin(url)) return false;
   return (
-    url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/pwa/") ||
     url.pathname.endsWith(".svg") ||
     url.pathname.endsWith(".png") ||
@@ -30,6 +27,12 @@ function isStaticAssetRequest(url) {
     url.pathname.endsWith(".webp") ||
     url.pathname.endsWith(".ico")
   );
+}
+
+function isNextStaticChunkRequest(url, request) {
+  if (!isSameOrigin(url)) return false;
+  if (request.method !== "GET") return false;
+  return url.pathname.startsWith("/_next/static/");
 }
 
 function isEpubApiRequest(url, request) {
@@ -71,6 +74,19 @@ async function cacheFirst(request, cacheName) {
   return res;
 }
 
+async function networkFirst(request, cacheName) {
+  const cache = await caches.open(cacheName);
+  try {
+    const res = await fetch(request);
+    if (res && res.ok) await cache.put(request, res.clone());
+    return res;
+  } catch {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw new Error("NETWORK_FAILED");
+  }
+}
+
 async function staleWhileRevalidate(request, cacheName) {
   const cache = await caches.open(cacheName);
   const cached = await cache.match(request);
@@ -107,6 +123,12 @@ self.addEventListener("fetch", (event) => {
         }
       })(),
     );
+    return;
+  }
+
+  // IMPORTANT: never serve stale Next.js chunks (can break module loading).
+  if (isNextStaticChunkRequest(url, request)) {
+    event.respondWith(networkFirst(request, APP_SHELL_CACHE));
     return;
   }
 

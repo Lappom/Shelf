@@ -40,7 +40,10 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = (user as any).role as string | undefined;
   const isAdmin = role === "admin";
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
 
   const parsed = ParamsSchema.safeParse(await params);
   if (!parsed.success) return <div className="p-6">Livre invalide.</div>;
@@ -118,34 +121,35 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr]">
-        <Card className="overflow-hidden shadow-eleven-card">
-          <div className="relative aspect-2/3 w-full bg-muted">
+        <Card className="shadow-eleven-card overflow-hidden">
+          <div className="bg-muted relative aspect-2/3 w-full">
             {book.coverUrl ? (
               <Image
                 src={`/api/books/${book.id}/cover`}
                 alt=""
                 fill
+                unoptimized
                 className="object-cover"
                 sizes="(max-width: 768px) 60vw, 240px"
               />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-xs text-eleven-muted">
+              <div className="text-eleven-muted flex h-full w-full items-center justify-center text-xs">
                 Couverture
               </div>
             )}
           </div>
           <div className="space-y-2 p-4">
-            <div className="text-xs text-eleven-muted">Progression</div>
+            <div className="text-eleven-muted text-xs">Progression</div>
             <div className="text-sm">{formatPercent(progress?.progress ?? null)}</div>
-            <div className="h-2 w-full overflow-hidden rounded-eleven-pill bg-muted">
+            <div className="rounded-eleven-pill bg-muted h-2 w-full overflow-hidden">
               <div
-                className="h-full bg-foreground/80"
+                className="bg-foreground/80 h-full"
                 style={{
                   width: `${Math.round(Math.max(0, Math.min(1, progress?.progress ?? 0)) * 100)}%`,
                 }}
               />
             </div>
-            <div className="text-xs text-eleven-muted">
+            <div className="text-eleven-muted text-xs">
               Statut: <span className="text-foreground">{progress?.status ?? "not_started"}</span>
             </div>
           </div>
@@ -155,7 +159,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-2">
               <h1 className="eleven-display-section text-3xl">{book.title}</h1>
-              <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-eleven-secondary">
+              <div className="text-eleven-secondary flex flex-wrap gap-x-2 gap-y-1 text-sm">
                 {authorList.length ? (
                   authorList.map((a) => (
                     <Link
@@ -199,37 +203,37 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <div className="text-xs text-eleven-muted">Format</div>
+                <div className="text-eleven-muted text-xs">Format</div>
                 <div className="text-sm">{book.format}</div>
               </div>
               <div>
-                <div className="text-xs text-eleven-muted">Langue</div>
+                <div className="text-eleven-muted text-xs">Langue</div>
                 <div className="text-sm">{book.language ?? "—"}</div>
               </div>
               <div>
-                <div className="text-xs text-eleven-muted">Éditeur</div>
+                <div className="text-eleven-muted text-xs">Éditeur</div>
                 <div className="text-sm">{book.publisher ?? "—"}</div>
               </div>
               <div>
-                <div className="text-xs text-eleven-muted">Date</div>
+                <div className="text-eleven-muted text-xs">Date</div>
                 <div className="text-sm">{book.publishDate ?? "—"}</div>
               </div>
               <div>
-                <div className="text-xs text-eleven-muted">ISBN</div>
+                <div className="text-eleven-muted text-xs">ISBN</div>
                 <div className="text-sm">{book.isbn13 ?? book.isbn10 ?? "—"}</div>
               </div>
               <div>
-                <div className="text-xs text-eleven-muted">Pages</div>
+                <div className="text-eleven-muted text-xs">Pages</div>
                 <div className="text-sm">{book.pageCount ?? "—"}</div>
               </div>
               <div className="md:col-span-2">
-                <div className="text-xs text-eleven-muted">Sujets</div>
+                <div className="text-eleven-muted text-xs">Sujets</div>
                 <div className="text-sm">
                   {Array.isArray(book.subjects) ? book.subjects.join(", ") : "—"}
                 </div>
               </div>
               <div className="md:col-span-2">
-                <div className="text-xs text-eleven-muted">Tags</div>
+                <div className="text-eleven-muted text-xs">Tags</div>
                 <div className="pt-1">
                   <BookTagsPanel
                     bookId={book.id}
@@ -240,7 +244,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                 </div>
               </div>
               <div className="md:col-span-2">
-                <div className="text-xs text-eleven-muted">Description</div>
+                <div className="text-eleven-muted text-xs">Description</div>
                 <div className="text-sm">{book.description ?? "—"}</div>
               </div>
             </CardContent>
@@ -257,18 +261,20 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                   {annotations.map((a) => (
                     <div key={a.id} className="rounded-2xl border px-4 py-3">
                       <div className="mb-1 flex items-center justify-between gap-3">
-                        <div className="text-xs text-eleven-muted">{a.type}</div>
-                        <div className="text-xs text-eleven-muted">
+                        <div className="text-eleven-muted text-xs">{a.type}</div>
+                        <div className="text-eleven-muted text-xs">
                           {a.createdAt.toISOString().slice(0, 10)}
                         </div>
                       </div>
                       {a.content ? <div className="text-sm">{a.content}</div> : null}
-                      {a.note ? <div className="mt-2 text-sm text-eleven-secondary">{a.note}</div> : null}
+                      {a.note ? (
+                        <div className="text-eleven-secondary mt-2 text-sm">{a.note}</div>
+                      ) : null}
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-sm text-eleven-muted">Aucune annotation pour l’instant.</div>
+                <div className="text-eleven-muted text-sm">Aucune annotation pour l’instant.</div>
               )}
             </CardContent>
           </Card>

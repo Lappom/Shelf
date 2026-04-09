@@ -469,18 +469,18 @@
 ## Phase 17 — API interne & structure REST future
 
 ### 17.1 Server Actions vs API Routes (docs/SPECS.md §12.1)
-- [ ] Server Actions pour interactions UI standard.
-- [ ] API Routes pour : streaming EPUB, webhooks OIDC, accès programmatique.
+- [x] Server Actions pour interactions UI standard.
+- [x] API Routes pour : streaming EPUB, webhooks OIDC, accès programmatique.
 
 ### 17.2 Préparer structure REST (docs/SPECS.md §12.2)
-- [ ] Concevoir handlers/routers pour routes listées (books/shelves/progress/annotations/search/admin).
-- [ ] S’assurer compat auth + RBAC identiques.
-- [ ] Réutiliser la logique de filtres/tri/pagination de la Library.
+- [x] Concevoir handlers/routers pour routes listées (books/shelves/progress/annotations/search/admin).
+- [x] S’assurer compat auth + RBAC identiques.
+- [x] Réutiliser la logique de filtres/tri/pagination de la Library.
 
 ### 17.3 Sécurité API (docs/SPECS.md §14)
-- [ ] Validation inputs côté serveur (schémas stricts).
-- [ ] Rate limiting endpoints sensibles (upload/auth/admin/search).
-- [ ] Sanitize sorties (reader content/annotations export).
+- [x] Validation inputs côté serveur (schémas stricts).
+- [x] Rate limiting endpoints sensibles (upload/auth/admin/search).
+- [x] Sanitize sorties (reader content/annotations export).
 
 ---
 

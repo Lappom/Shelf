@@ -6,9 +6,10 @@ import { LibraryPageClient } from "@/components/library/LibraryPageClient";
 
 export default async function LibraryPage() {
   const user = await requireUser();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const role = (user as any).role as string | undefined;
-  const isAdmin = role === "admin";
+  if (!user.id) throw new Error("User id is missing");
+  const userId = user.id;
+  const role = (user as { role?: unknown }).role;
+  const isAdmin = (typeof role === "string" ? role : undefined) === "admin";
 
   const [tags, shelves, pref] = await Promise.all([
     prisma.tag.findMany({
@@ -17,16 +18,16 @@ export default async function LibraryPage() {
       take: 1000,
     }),
     prisma.shelf.findMany({
-      where: { ownerId: user.id },
+      where: { ownerId: userId },
       select: { id: true, name: true, type: true },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       take: 1000,
     }),
     prisma.userPreference.upsert({
-      where: { userId: user.id },
+      where: { userId },
       update: {},
       create: {
-        userId: user.id,
+        userId,
         theme: "system",
         libraryView: "grid",
         booksPerPage: 24,

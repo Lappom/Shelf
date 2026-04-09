@@ -28,7 +28,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
-          <div className="text-xs font-medium tracking-wide text-eleven-muted uppercase">Admin</div>
+          <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">Admin</div>
           <h1 className="eleven-display-section text-3xl">Console</h1>
         </div>
         <AdminNav />
@@ -37,4 +37,3 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     </div>
   );
 }
-
