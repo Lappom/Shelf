@@ -28,4 +28,4 @@
 
 ## Hypothèses & contraintes
 
-- **Sécurité** : tout ce qui touche à auth/upload/storage/reader/MCP est security-critical.\n+  - Aucun fichier du storage n’est servi directement : toujours via endpoint authentifié + checks d’accès.\n+  - Validation systématique des inputs côté serveur.\n+- **Performance** : streaming des EPUB, lazy-load du reader, indexes DB prévus par la spec.\n+
+- **Sécurité** : tout ce qui touche à auth/upload/storage/reader/MCP est security-critical.\n+ - Aucun fichier du storage n’est servi directement : toujours via endpoint authentifié + checks d’accès.\n+ - Validation systématique des inputs côté serveur.\n+- **Performance** : streaming des EPUB, lazy-load du reader, indexes DB prévus par la spec.\n+

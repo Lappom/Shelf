@@ -1,0 +1,49 @@
+services:
+  shelf:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://shelf:password@db:5432/shelf
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=change-me
+      - REGISTRATION_ENABLED=true
+      - STORAGE_TYPE=local
+      - STORAGE_PATH=/data/library
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - library_data:/data/library
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: shelf
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: shelf
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shelf"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Optional
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  library_data:
+  pg_data:
+  redis_data:

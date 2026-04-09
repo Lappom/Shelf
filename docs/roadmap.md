@@ -8,25 +8,25 @@
 ## Phase 0 — Cadrage, repo, DX (fondations)
 
 ### 0.1 Vision & périmètre produit (docs/SPECS.md §1)
-- [ ] Formaliser le périmètre V1 (gestion bibliothèque + reader + multi-users + recommandations + MCP).
-- [ ] Énoncer explicitement les principes : self-hosted first, offline-capable, metadata-rich, beautiful by default.
-- [ ] Définir “done” V1 (critères de complétude par domaine : upload, recherche, reader, admin, etc.).
+- [x] Formaliser le périmètre V1 (gestion bibliothèque + reader + multi-users + recommandations + MCP).
+- [x] Énoncer explicitement les principes : self-hosted first, offline-capable, metadata-rich, beautiful by default.
+- [x] Définir “done” V1 (critères de complétude par domaine : upload, recherche, reader, admin, etc.).
 
 ### 0.2 Stack & conventions techniques (docs/SPECS.md §2)
-- [ ] Initialiser Next.js 16+ App Router (structure `src/app`, `src/components`, `src/lib`).
-- [ ] Mettre en place Tailwind CSS 4 + shadcn/ui (tokens cohérents avec `DESIGN.md`).
-- [ ] Choisir state client (Zustand ou Context) et documenter l’usage (reader + préférences).
-- [ ] Mettre Prisma + PostgreSQL 16 (migrations, client, patterns de requêtes).
-- [ ] Mettre Auth.js v5 (NextAuth.js) (credentials + OIDC configurable).
-- [ ] Mettre l’abstraction storage adapter (local + S3/MinIO).
-- [ ] Mettre l’EPUB reader (epub.js ou Foliate.js) et isoler le bundle (lazy import).
-- [ ] Prévoir recherche PostgreSQL (tsvector + pg_trgm) sans infra externe.
-- [ ] Prévoir Redis optionnel (sessions + cache OpenLibrary).
-- [ ] Préparer Docker + Compose + CI GitHub Actions (lint/tests/build).
+- [x] Initialiser Next.js 16+ App Router (structure `src/app`, `src/components`, `src/lib`).
+- [x] Mettre en place Tailwind CSS 4 + shadcn/ui (tokens cohérents avec `DESIGN.md`).
+- [x] Choisir state client (Zustand ou Context) et documenter l’usage (reader + préférences).
+- [x] Mettre Prisma + PostgreSQL 16 (migrations, client, patterns de requêtes).
+- [x] Mettre Auth.js v5 (NextAuth.js) (credentials + OIDC configurable).
+- [x] Mettre l’abstraction storage adapter (local + S3/MinIO).
+- [x] Mettre l’EPUB reader (epub.js ou Foliate.js) et isoler le bundle (lazy import).
+- [x] Prévoir recherche PostgreSQL (tsvector + pg_trgm) sans infra externe.
+- [x] Prévoir Redis optionnel (sessions + cache OpenLibrary).
+- [x] Préparer Docker + Compose + CI GitHub Actions (lint/tests/build).
 
 ### 0.3 Arborescence projet (docs/SPECS.md §2)
-- [ ] Créer/aligner l’arborescence cible (routes App Router, `lib/db`, `lib/storage`, `lib/epub`, `lib/metadata`, `lib/auth`).
-- [ ] Définir conventions de nommage et limites de responsabilité par dossier (UI vs lib).
+- [x] Créer/aligner l’arborescence cible (routes App Router, `lib/db`, `lib/storage`, `lib/epub`, `lib/metadata`, `lib/auth`).
+- [x] Définir conventions de nommage et limites de responsabilité par dossier (UI vs lib).
 
 ---
 

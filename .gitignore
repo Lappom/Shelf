@@ -9,9 +9,12 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.npmrc.local
 
 # testing
 /coverage
+/test-results
+/playwright-report
 
 # next.js
 /.next/
@@ -19,10 +22,18 @@
 
 # production
 /build
+/dist
 
 # misc
 .DS_Store
 *.pem
+*.log
+
+# local tooling
+/.turbo
+/.swc
+.eslintcache
+.stylelintcache
 
 # debug
 npm-debug.log*
@@ -35,6 +46,11 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# prisma (local dev artifacts)
+prisma/*.db
+prisma/*.db-journal
+prisma/migrations
 
 # typescript
 *.tsbuildinfo
