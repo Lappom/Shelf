@@ -9,5 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    setupFiles: ["./vitest.setup.dom.ts"],
+    exclude: ["**/node_modules/**", "**/e2e/**", "**/.next/**"],
   },
 });

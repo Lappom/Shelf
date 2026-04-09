@@ -193,6 +193,7 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
                   size="sm"
                   className="text-eleven-muted hover:text-foreground h-8 w-full rounded-xl text-xs"
                   disabled={busy}
+                  data-testid="reco-dismiss"
                   onClick={() => onDismiss(item.bookId)}
                 >
                   Pas intéressé

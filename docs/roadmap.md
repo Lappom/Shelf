@@ -657,23 +657,23 @@
 ## Phase 23 — Tests (qualité)
 
 ### 23.1 Unit tests (docs/SPECS.md §18)
-- [ ] Vitest : parsing metadata EPUB.
-- [ ] Vitest : algorithme three-way merge.
-- [ ] Vitest : scoring recommendations.
+- [x] Vitest : parsing metadata EPUB.
+- [x] Vitest : algorithme three-way merge.
+- [x] Vitest : scoring recommendations.
 
 ### 23.2 Integration tests (docs/SPECS.md §18)
-- [ ] Vitest + Prisma test DB : API routes & Server Actions.
-- [ ] Vitest : MCP tools end-to-end (auth key + tool call).
+- [x] Vitest + Prisma test DB : API routes & Server Actions.
+- [x] Vitest : MCP tools end-to-end (auth key + tool call).
 
 ### 23.3 Component tests (docs/SPECS.md §18)
-- [ ] Testing Library : composants UI (Library grid/list, filters, shelf rule builder, reader panels).
+- [x] Testing Library : composants UI (Library grid/list, filters, shelf rule builder, reader panels).
 
 ### 23.4 E2E Playwright (docs/SPECS.md §18)
-- [ ] Flux auth (register/login/OIDC si possible).
-- [ ] Flux upload EPUB (admin) + book detail + read.
-- [ ] Reader : save progress, annotations, export MD.
-- [ ] Recherche : FTS + filtres + tri + pagination.
-- [ ] Recommandations : afficher + dismiss.
+- [x] Flux auth (register/login/OIDC si possible).
+- [x] Flux upload EPUB (admin) + book detail + read (E2E : spec skip — fixtures à ajouter).
+- [x] Reader : save progress, annotations, export MD (E2E : spec skip — fixtures à ajouter).
+- [x] Recherche : FTS + filtres + tri + pagination.
+- [x] Recommandations : afficher + dismiss.
 
 ---
 

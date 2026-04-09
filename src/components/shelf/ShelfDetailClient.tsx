@@ -18,8 +18,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVerticalIcon, SaveIcon, SparklesIcon } from "lucide-react";
+import { GripVerticalIcon, SaveIcon } from "lucide-react";
 
+import { ShelfRuleMatchControls } from "@/components/shelf/ShelfRuleMatchControls";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -416,50 +417,26 @@ export function ShelfDetailClient({
             <CardDescription>Construit une requête dynamique (JSONB en base).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 py-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="text-muted-foreground text-xs">Match</div>
-              <SmallSelect
-                value={ruleDraft.match}
-                onChange={(v) =>
-                  setRuleDraft((d) => ({ ...d, match: v === "any" ? "any" : "all" }))
-                }
-                options={[
-                  { value: "all", label: "all (AND)" },
-                  { value: "any", label: "any (OR)" },
-                ]}
-                disabled={busy}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setRuleDraft((d) => ({
-                    ...d,
-                    conditions: [
-                      ...d.conditions,
-                      {
-                        field: "language",
-                        operator: "eq",
-                        value: defaultValueFor("language", "eq"),
-                      },
-                    ],
-                  }))
-                }
-                disabled={busy || ruleDraft.conditions.length >= 50}
-              >
-                + Condition
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => refreshPreview(ruleDraft)}
-                disabled={busy}
-              >
-                <SparklesIcon />
-                Prévisualiser
-              </Button>
-            </div>
+            <ShelfRuleMatchControls
+              match={ruleDraft.match}
+              onMatchChange={(m) => setRuleDraft((d) => ({ ...d, match: m }))}
+              onAddCondition={() =>
+                setRuleDraft((d) => ({
+                  ...d,
+                  conditions: [
+                    ...d.conditions,
+                    {
+                      field: "language",
+                      operator: "eq",
+                      value: defaultValueFor("language", "eq"),
+                    },
+                  ],
+                }))
+              }
+              onPreview={() => refreshPreview(ruleDraft)}
+              busy={busy}
+              conditionCount={ruleDraft.conditions.length}
+            />
 
             <div className="space-y-2">
               {ruleDraft.conditions.map((c, idx) => (

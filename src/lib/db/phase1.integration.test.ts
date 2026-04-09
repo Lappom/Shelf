@@ -1,18 +1,10 @@
 import { describe, expect, test, beforeAll, afterAll, beforeEach } from "vitest";
 
 import { prisma } from "@/lib/db/prisma";
+import { assertIntegrationDatabaseOrThrow } from "@/lib/db/integrationDb";
 import { ensureSystemShelves } from "@/lib/shelves/system";
 
 let dbAvailable = false;
-
-async function tryConnect() {
-  try {
-    await prisma.$queryRaw`SELECT 1;`;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 async function cleanupAll() {
   // Order matters due to FK constraints.
@@ -35,7 +27,7 @@ async function cleanupAll() {
 
 describe("Phase 1 (DB integration)", () => {
   beforeAll(async () => {
-    dbAvailable = await tryConnect();
+    dbAvailable = await assertIntegrationDatabaseOrThrow();
     if (dbAvailable) await cleanupAll();
   });
 

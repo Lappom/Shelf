@@ -3,21 +3,13 @@ import { describe, expect, test, beforeAll, afterAll, beforeEach } from "vitest"
 import { generateApiKeyMaterial } from "@/lib/apiKeys/crypto";
 import { resolveApiKeyUser } from "@/lib/apiKeys/resolveApiKeyUser";
 import { prisma } from "@/lib/db/prisma";
+import { assertIntegrationDatabaseOrThrow } from "@/lib/db/integrationDb";
 
 let dbAvailable = false;
 
-async function tryConnect() {
-  try {
-    await prisma.$queryRaw`SELECT 1;`;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 describe("MCP API key (integration)", () => {
   beforeAll(async () => {
-    dbAvailable = await tryConnect();
+    dbAvailable = await assertIntegrationDatabaseOrThrow();
   });
 
   afterAll(async () => {

@@ -37,6 +37,33 @@ async function buildMinimalEpub() {
 }
 
 describe("extractEpubMetadata", () => {
+  it("returns null title when dc:title is absent", async () => {
+    const zip = new JSZip();
+    zip.file(
+      "META-INF/container.xml",
+      `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml" />
+  </rootfiles>
+</container>`,
+    );
+    zip.file(
+      "OEBPS/content.opf",
+      `<?xml version="1.0" encoding="UTF-8"?>
+<package version="3.0" xmlns="http://www.idpf.org/2007/opf">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:language>fr</dc:language>
+  </metadata>
+  <manifest></manifest>
+</package>`,
+    );
+    const epub = Buffer.from(await zip.generateAsync({ type: "uint8array" }));
+    const meta = await extractEpubMetadata(epub);
+    expect(meta.title).toBeNull();
+    expect(meta.language).toBe("fr");
+  });
+
   it("extracts basic metadata + cover", async () => {
     const epub = await buildMinimalEpub();
     const meta = await extractEpubMetadata(epub);

@@ -1,18 +1,10 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "vitest";
 
 import { prisma } from "@/lib/db/prisma";
+import { assertIntegrationDatabaseOrThrow } from "@/lib/db/integrationDb";
 import { ensureSystemShelves } from "@/lib/shelves/system";
 
 let dbAvailable = false;
-
-async function tryConnect() {
-  try {
-    await prisma.$queryRaw`SELECT 1;`;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 async function cleanupAll() {
   await prisma.adminAuditLog.deleteMany({});
@@ -34,7 +26,7 @@ async function cleanupAll() {
 
 describe("Phase 10 (Shelves integration)", () => {
   beforeAll(async () => {
-    dbAvailable = await tryConnect();
+    dbAvailable = await assertIntegrationDatabaseOrThrow();
     if (dbAvailable) await cleanupAll();
   });
 

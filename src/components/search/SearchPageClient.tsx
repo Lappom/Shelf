@@ -375,6 +375,7 @@ export function SearchPageClient({
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="Rechercher (titre, auteurs, sujets, description)…"
                 aria-label="Recherche"
+                data-testid="search-query"
               />
             </div>
 

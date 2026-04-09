@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { LayoutGridIcon, ListIcon, SlidersHorizontalIcon, PlusIcon } from "lucide-react";
+import { SlidersHorizontalIcon, PlusIcon } from "lucide-react";
 
 import { updateSearchPreferencesAction } from "@/app/(app)/search/actions";
 import { patchUserPreferencesAction } from "@/app/(app)/actions/userPreferences";
@@ -11,6 +11,7 @@ import {
   RecommendationsCarousel,
   type CarouselRecoItem,
 } from "@/components/recommendations/RecommendationsCarousel";
+import { LibraryViewToggle } from "@/components/library/LibraryViewToggle";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -353,30 +354,7 @@ export function LibraryPageClient({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="rounded-eleven-pill shadow-eleven-card flex items-center border">
-            <Button
-              type="button"
-              variant={view === "grid" ? "secondary" : "ghost"}
-              size="sm"
-              className="rounded-eleven-pill"
-              onClick={() => applyView("grid")}
-              disabled={busyPrefs}
-            >
-              <LayoutGridIcon className="h-4 w-4" />
-              <span className="sr-only">Grille</span>
-            </Button>
-            <Button
-              type="button"
-              variant={view === "list" ? "secondary" : "ghost"}
-              size="sm"
-              className="rounded-eleven-pill"
-              onClick={() => applyView("list")}
-              disabled={busyPrefs}
-            >
-              <ListIcon className="h-4 w-4" />
-              <span className="sr-only">Liste</span>
-            </Button>
-          </div>
+          <LibraryViewToggle view={view} onViewChange={applyView} disabled={busyPrefs} />
 
           <Button
             type="button"

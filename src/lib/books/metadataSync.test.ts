@@ -60,6 +60,17 @@ describe("threeWayMergeAllFields", () => {
     expect(res.mergedDb.language).toBe("fr");
   });
 
+  it("authors array: EPUB changed, DB not -> take_epub", () => {
+    const snap = baseMeta({ authors: ["Old Author"] });
+    const epub = baseMeta({ authors: ["New Epub Author"] });
+    const db = baseMeta({ authors: ["Old Author"] });
+    const res = threeWayMergeAllFields({ epub, db, snapshot: snap });
+    const authors = res.fields.find((f) => f.field === "authors");
+    expect(authors?.decision).toBe("take_epub");
+    expect(res.mergedDb.authors).toEqual(["New Epub Author"]);
+    expect(res.requiresWriteback).toBe(false);
+  });
+
   it("db-only fields do not require writeback", () => {
     const snap = baseMeta({ pageCount: 100, openLibraryId: "/works/OL1W" });
     const epub = baseMeta({ pageCount: null, openLibraryId: null });
