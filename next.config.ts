@@ -20,6 +20,8 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Playwright / E2E often uses 127.0.0.1 while dev defaults may use localhost.
+  allowedDevOrigins: ["127.0.0.1"],
   async headers() {
     return [
       {

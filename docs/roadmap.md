@@ -709,6 +709,7 @@
 ### 26.1 Fonctionnel
 - [ ] Upload EPUB admin + extraction + OpenLibrary + search vector.
 - [ ] Création livre physique + cover.
+- [x] Création livre physique : scan ISBN (caméra BarcodeDetector / repli ZXing) + douchette USB (champ ISBN).
 - [ ] Library/search/shelves/reader/admin conformes aux specs UI.
 - [ ] Annotations + export Markdown.
 - [ ] PWA offline : cache EPUB + sync.

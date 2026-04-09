@@ -1,8 +1,11 @@
 import { z } from "zod";
 
+import { normalizeIsbn } from "@/lib/books/isbn";
 import { prisma } from "@/lib/db/prisma";
 import { enrichFromOpenLibraryByIsbn } from "@/lib/metadata/openlibrary";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
+
+export { normalizeIsbn };
 
 export const CreatePhysicalBookInputSchema = z.object({
   title: z.string().min(1).max(500),
@@ -18,16 +21,6 @@ export const CreatePhysicalBookInputSchema = z.object({
 });
 
 export type CreatePhysicalBookInput = z.infer<typeof CreatePhysicalBookInputSchema>;
-
-export function normalizeIsbn(raw: string | null | undefined) {
-  const s = (raw ?? "").trim();
-  if (!s) return null;
-  const compact = s.replace(/[\s-]+/g, "").toUpperCase();
-  if (/^[0-9]{10}$/.test(compact)) return compact;
-  if (/^[0-9]{9}X$/.test(compact)) return compact;
-  if (/^[0-9]{13}$/.test(compact)) return compact;
-  return null;
-}
 
 export async function createPhysicalBook(args: {
   addedByUserId: string;

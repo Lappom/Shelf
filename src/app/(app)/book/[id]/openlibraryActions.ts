@@ -13,6 +13,7 @@ import { mergeOpenLibraryIntoBookMetadata } from "@/lib/metadata/openlibraryMerg
 import { fetchOpenLibraryCoverByIsbn } from "@/lib/metadata/openlibraryCover";
 import { getStorageAdapter } from "@/lib/storage";
 import { buildCoverStoragePath } from "@/lib/storage/paths";
+import { normalizeIsbn } from "@/lib/books/isbn";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
 
 const SearchSchema = z.object({
@@ -31,15 +32,6 @@ const ApplySchema = z.object({
   // If true, ignore existing cover and refresh it (admin-only).
   forceCover: z.boolean().optional(),
 });
-
-function normalizeIsbn(raw: string) {
-  const s = raw.trim();
-  const compact = s.replace(/[\s-]+/g, "").toUpperCase();
-  if (/^[0-9]{10}$/.test(compact)) return compact;
-  if (/^[0-9]{9}X$/.test(compact)) return compact;
-  if (/^[0-9]{13}$/.test(compact)) return compact;
-  return null;
-}
 
 export type OpenLibraryCandidate = {
   key: string;

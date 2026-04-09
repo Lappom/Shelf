@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { IsbnBarcodeScanner } from "@/components/book/IsbnBarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -66,6 +67,7 @@ export function AddPhysicalBookDialog({
   const [description, setDescription] = useState("");
   const [applyOpenLibrary, setApplyOpenLibrary] = useState(true);
   const [cover, setCover] = useState<File | null>(null);
+  const [barcodeHint, setBarcodeHint] = useState<string | null>(null);
 
   const canSearch = useMemo(
     () => Boolean(title.trim()) && Boolean(authorsCsv.trim()) && state.type !== "creating",
@@ -90,6 +92,7 @@ export function AddPhysicalBookDialog({
     setDescription("");
     setApplyOpenLibrary(true);
     setCover(null);
+    setBarcodeHint(null);
   }
 
   async function previewByIsbn(isbnToUse: string) {
@@ -220,7 +223,7 @@ export function AddPhysicalBookDialog({
         {triggerText}
       </Button>
 
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Ajouter un livre physique</DialogTitle>
           <DialogDescription className="text-eleven-secondary eleven-body-airy">
@@ -247,13 +250,50 @@ export function AddPhysicalBookDialog({
                 placeholder="Ex: Isaac Asimov"
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-2 sm:col-span-2">
               <div className="text-muted-foreground text-xs">ISBN (optionnel)</div>
-              <Input
-                value={isbn}
-                onChange={(e) => setIsbn(e.target.value)}
-                placeholder="10/13 chiffres, tirets OK"
-              />
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <Input
+                    value={isbn}
+                    onChange={(e) => {
+                      setIsbn(e.target.value);
+                      setBarcodeHint(null);
+                    }}
+                    placeholder="10/13 chiffres, tirets OK"
+                    autoComplete="off"
+                  />
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    Douchette USB : place le curseur dans ce champ puis scanne (saisie clavier). Caméra
+                    : HTTPS recommandé ; certains codes (magazines ISSN, anciens formats) ne sont pas des
+                    ISBN reconnus ici.
+                  </p>
+                  {barcodeHint && (
+                    <p className="text-amber-800 text-xs leading-relaxed">{barcodeHint}</p>
+                  )}
+                </div>
+                <div className="shrink-0 lg:max-w-[min(100%,280px)] lg:pt-0">
+                  <IsbnBarcodeScanner
+                    disabled={state.type === "creating"}
+                    onIsbnDecoded={async (normalized) => {
+                      setBarcodeHint(null);
+                      setIsbn(normalized);
+                      if (applyOpenLibrary) {
+                        await previewByIsbn(normalized);
+                      }
+                    }}
+                    onRawNotIsbn={() =>
+                      setBarcodeHint(
+                        "Code détecté mais pas un ISBN valide (ISSN, code interne, etc.). Tu peux corriger ou saisir l’ISBN à la main.",
+                      )
+                    }
+                    onScanError={(message) => {
+                      setBarcodeHint(null);
+                      setState({ type: "error", message });
+                    }}
+                  />
+                </div>
+              </div>
             </div>
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Langue</div>

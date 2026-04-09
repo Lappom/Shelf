@@ -325,7 +325,7 @@ Contrainte unique : `(user_id, book_id)`
 
 ### 5.2 Ajout d'un livre physique
 
-1. L'admin remplit manuellement un formulaire (titre, auteurs, ISBN, etc.).
+1. L'admin remplit manuellement un formulaire (titre, auteurs, ISBN, etc.). L'ISBN peut être saisi au clavier, **lu par une douchette USB** (saisie clavier dans le champ), ou **scanné via la caméra** (API navigateur `BarcodeDetector` lorsqu'elle est disponible, sinon repli bibliothèque ZXing côté client ; contexte sécurisé HTTPS recommandé). Les codes qui ne correspondent pas à un ISBN-10/13 normalisé (ex. ISSN, codes internes) restent une saisie manuelle.
 2. Si un ISBN est fourni, proposition d'auto-complétion via Open Library.
 3. Upload optionnel d'une photo de couverture.
 4. Le `format` est `physical`, pas de `BookFile` associé, pas de `content_hash`.

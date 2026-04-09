@@ -1,6 +1,7 @@
 import { defineConfig } from "vitest/config";
 import { fileURLToPath } from "node:url";
 
+/** Component tests only (CLI glob filter is unreliable on Windows + Vitest 4). */
 export default defineConfig({
   resolve: {
     alias: {
@@ -10,7 +11,7 @@ export default defineConfig({
   test: {
     environment: "node",
     setupFiles: ["./vitest.setup.dom.ts"],
-    include: ["**/*.{test,spec}.?(c|m)[jt]s?(x)", "**/*.component.test.tsx"],
+    include: ["**/*.component.test.tsx"],
     exclude: ["**/node_modules/**", "**/e2e/**", "**/.next/**"],
   },
 });
