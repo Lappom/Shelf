@@ -525,18 +525,18 @@
 ## Phase 20 — Performance (priorités)
 
 ### 20.1 Rendering (docs/SPECS.md §15)
-- [ ] Shell pages SSR/ISR, data dynamiques en RSC.
-- [ ] Optimiser images covers via `<Image>` (lazy, WebP/AVIF).
+- [x] Shell pages SSR/ISR, data dynamiques en RSC.
+- [x] Optimiser images covers via `<Image>` (lazy, WebP/AVIF).
 
 ### 20.2 DB perf (docs/SPECS.md §15)
-- [ ] Cursor pagination partout (library/search/shelves).
-- [ ] Indexes (GIN search_vector, hashes, pivots).
+- [x] Cursor pagination partout (library/search/shelves).
+- [x] Indexes (GIN search_vector, hashes, pivots).
 
 ### 20.3 Streaming (docs/SPECS.md §15)
-- [ ] Stream EPUB (ne pas charger en mémoire).
+- [x] Stream EPUB (ne pas charger en mémoire).
 
 ### 20.4 Bundle splitting (docs/SPECS.md §15)
-- [ ] Lazy load reader + libs epub.
+- [x] Lazy load reader + libs epub.
 
 ---
 

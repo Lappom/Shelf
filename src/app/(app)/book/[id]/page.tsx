@@ -10,6 +10,7 @@ import { ResyncMetadataPanel } from "@/components/book/ResyncMetadataPanel";
 import { OpenLibraryEnrichmentPanel } from "@/components/book/OpenLibraryEnrichmentPanel";
 import { BookTagsPanel, type BookTagItem } from "@/components/book/BookTagsPanel";
 import { AddToShelfMenu, type AddToShelfMenuShelf } from "@/components/shelf/AddToShelfMenu";
+import { createCoverAccessToken } from "@/lib/cover/coverToken";
 
 const ParamsSchema = z.object({
   id: z.string().uuid(),
@@ -117,18 +118,24 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
   }));
 
   const authorList = normalizeAuthors(book.authors);
+  const coverToken = book.coverUrl ? createCoverAccessToken(book.id) : null;
+  const coverSrc = book.coverUrl
+    ? coverToken
+      ? `/api/books/${book.id}/cover?t=${encodeURIComponent(coverToken)}`
+      : `/api/books/${book.id}/cover`
+    : null;
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr]">
         <Card className="shadow-eleven-card overflow-hidden">
           <div className="bg-muted relative aspect-2/3 w-full">
-            {book.coverUrl ? (
+            {coverSrc ? (
               <Image
-                src={`/api/books/${book.id}/cover`}
+                src={coverSrc}
                 alt=""
                 fill
-                unoptimized
+                unoptimized={!coverToken}
                 className="object-cover"
                 sizes="(max-width: 768px) 60vw, 240px"
               />

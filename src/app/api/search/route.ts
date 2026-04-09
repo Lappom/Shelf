@@ -8,6 +8,7 @@ import { asUuidOrThrow } from "@/lib/api/errors";
 import { prisma } from "@/lib/db/prisma";
 import { join, sql, type Sql } from "@/lib/db/sql";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
+import { createCoverAccessToken } from "@/lib/cover/coverToken";
 
 const SortSchema = z.enum([
   "relevance",
@@ -455,19 +456,23 @@ export async function GET(req: Request) {
       }
 
       // Strip internal fields from response
-      const publicResults = results.map((r: (typeof results)[number]) => ({
-        id: r.id,
-        title: r.title,
-        authors: r.authors,
-        description: r.description,
-        coverUrl: r.coverUrl,
-        format: r.format,
-        language: r.language,
-        pageCount: r.pageCount,
-        createdAt: r.createdAt.toISOString(),
-        publishDate: r.publishDate,
-        progress: r.progress,
-      }));
+      const publicResults = results.map((r: (typeof results)[number]) => {
+        const coverToken = r.coverUrl ? createCoverAccessToken(r.id) : null;
+        return {
+          id: r.id,
+          title: r.title,
+          authors: r.authors,
+          description: r.description,
+          coverUrl: r.coverUrl,
+          coverToken,
+          format: r.format,
+          language: r.language,
+          pageCount: r.pageCount,
+          createdAt: r.createdAt.toISOString(),
+          publishDate: r.publishDate,
+          progress: r.progress,
+        };
+      });
 
       return NextResponse.json({ results: publicResults, nextCursor }, { status: 200 });
     },

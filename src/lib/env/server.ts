@@ -28,6 +28,7 @@ export function pickServerEnvVars(env: NodeJS.ProcessEnv) {
     OPENLIBRARY_RATE_LIMIT: trimmedOptionalString(env, "OPENLIBRARY_RATE_LIMIT"),
     APP_NAME: trimmedOptionalString(env, "APP_NAME"),
     DEFAULT_LOCALE: trimmedOptionalString(env, "DEFAULT_LOCALE"),
+    COVER_TOKEN_SECRET: trimmedOptionalString(env, "COVER_TOKEN_SECRET"),
   };
 }
 
@@ -63,6 +64,7 @@ const serverEnvSchema = z
     OPENLIBRARY_RATE_LIMIT: z.string().optional(),
     APP_NAME: z.string().optional(),
     DEFAULT_LOCALE: z.string().optional(),
+    COVER_TOKEN_SECRET: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.STORAGE_TYPE !== "local" && data.STORAGE_TYPE !== "s3") {

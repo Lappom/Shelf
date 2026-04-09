@@ -683,7 +683,7 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | DELETE | `/api/books/:id` | Soft delete |
 | POST | `/api/books/:id/upload` | Upload fichier |
 | GET | `/api/books/:id/file` | Télécharger le fichier |
-| GET | `/api/books/:id/cover` | Couverture |
+| GET | `/api/books/:id/cover` | Couverture (session ou `?t=` jeton HMAC court, voir §13.1) |
 | GET | `/api/shelves` | Étagères de l'utilisateur |
 | POST | `/api/shelves` | Créer une étagère |
 | PATCH | `/api/shelves/:id` | Modifier |
@@ -709,6 +709,8 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 ### 13.1 Variables d'environnement
 
 Obligatoires en **production** (`NODE_ENV=production`) : `DATABASE_URL`, `NEXTAUTH_SECRET` (minimum 32 caractères), `NEXTAUTH_URL` (URL http(s) absolue).
+
+- **`COVER_TOKEN_SECRET`** (optionnel) : secret dédié aux jetons HMAC pour `GET /api/books/:id/cover?t=…` (optimisation d’images Next.js sans cookie sur le fetch interne). Si absent, la signature réutilise `NEXTAUTH_SECRET`. TTL des jetons : 5 minutes ; le jeton est lié à l’`id` du livre. Sans session ni jeton valide : accès refusé.
 
 Si `STORAGE_TYPE=s3`, toutes les variables `S3_*` listées ci-dessous sont obligatoires.
 
@@ -831,8 +833,8 @@ volumes:
 
 ## 15. Performance
 
-- **ISR/SSR** : pages statiques pour le shell, données dynamiques en RSC.
-- **Image optimization** : Next.js `<Image>` pour les couvertures avec lazy loading et formats modernes (WebP/AVIF).
+- **ISR/SSR** : pages statiques pour le shell, données dynamiques en RSC (fichiers `loading.tsx` sur les segments lourds lorsque le layout reste dynamique pour l’auth).
+- **Image optimization** : Next.js `<Image>` pour les couvertures avec lazy loading et formats modernes (WebP/AVIF) ; jeton `t` sur `GET /api/books/:id/cover` pour l’optimiseur (voir §13.1).
 - **Pagination cursor-based** : pas d'OFFSET, performances constantes.
 - **Index DB** : `search_vector` (GIN), `content_hash`, `isbn_13`, `(user_id, book_id)` sur les tables de jointure.
 - **Streaming** : les fichiers EPUB sont streamés, pas chargés intégralement en mémoire.

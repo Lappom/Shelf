@@ -303,6 +303,7 @@ model UserAnnotation {
   book Book @relation(fields: [bookId], references: [id])
 
   @@index([bookId])
+  @@index([userId, bookId])
   @@map("user_annotations")
 }
 

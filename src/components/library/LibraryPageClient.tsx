@@ -31,6 +31,8 @@ type ApiBookRow = {
   authors: unknown;
   description: string | null;
   coverUrl: string | null;
+  /** HMAC token for Next/Image optimizer (optional if server has no signing secret). */
+  coverToken: string | null;
   format: string;
   language: string | null;
   pageCount: number | null;
@@ -42,6 +44,13 @@ type ApiSearchResponse = { results: ApiBookRow[]; nextCursor: string | null };
 
 function normalizeWhitespace(s: string) {
   return s.replace(/\s+/g, " ").trim();
+}
+
+function coverImageSrc(bookId: string, coverUrl: string | null, coverToken: string | null) {
+  if (!coverUrl) return null;
+  if (coverToken)
+    return `/api/books/${bookId}/cover?t=${encodeURIComponent(coverToken)}`;
+  return `/api/books/${bookId}/cover`;
 }
 
 function authorsToString(authors: unknown) {
@@ -437,10 +446,10 @@ export function LibraryPageClient({
                     <div className="bg-muted relative aspect-2/3 w-full">
                       {b.coverUrl ? (
                         <Image
-                          src={`/api/books/${b.id}/cover`}
+                          src={coverImageSrc(b.id, b.coverUrl, b.coverToken) ?? `/api/books/${b.id}/cover`}
                           alt=""
                           fill
-                          unoptimized
+                          unoptimized={!b.coverToken}
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 20vw, 12vw"
                           className="object-cover"
                         />

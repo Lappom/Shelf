@@ -26,11 +26,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  loadMoreShelfBooksAction,
   previewShelfRuleAction,
   reorderShelfBooksAction,
   updateShelfAction,
   updateShelfRuleAction,
 } from "@/app/(app)/shelves/actions";
+import type { ShelfDetailBookRow } from "@/lib/shelves/shelfBooksPage";
+
+export type { ShelfDetailBookRow };
 
 export type ShelfDetailShelf = {
   id: string;
@@ -40,16 +44,6 @@ export type ShelfDetailShelf = {
   type: "manual" | "dynamic" | "favorites" | "reading";
   createdAt: string;
   rules: unknown | null;
-};
-
-export type ShelfDetailBookRow = {
-  id: string;
-  title: string;
-  authors: string[];
-  format: "epub" | "physical" | "pdf" | "cbz" | "cbr" | "audiobook";
-  addedAt: string;
-  createdAt: string;
-  shelfSortOrder: number;
 };
 
 type RuleMatch = "all" | "any";
@@ -225,19 +219,24 @@ function defaultValueFor(field: RuleField, op: RuleOp): unknown {
 export function ShelfDetailClient({
   shelf,
   initialBooks,
+  initialNextCursor,
 }: {
   shelf: ShelfDetailShelf;
   initialBooks: ShelfDetailBookRow[];
+  initialNextCursor: string | null;
 }) {
   const router = useRouter();
   const [busy, startTransition] = React.useTransition();
 
   const [books, setBooks] = React.useState<ShelfDetailBookRow[]>(initialBooks);
+  const [nextCursor, setNextCursor] = React.useState<string | null>(initialNextCursor);
+  const [loadingMore, setLoadingMore] = React.useState(false);
   const [sortMode, setSortMode] = React.useState<"custom" | "az" | "added">("custom");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const canReorderBooks = shelf.type === "manual";
+  const reorderBlockedByPagination = canReorderBooks && nextCursor !== null;
   const canEditMeta = shelf.type === "manual" || shelf.type === "dynamic";
   const canEditRules = shelf.type === "dynamic";
 
@@ -252,6 +251,38 @@ export function ShelfDetailClient({
     count: number;
     examples: Array<{ id: string; title: string }>;
   } | null>(null);
+
+  async function loadMoreBooks() {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await loadMoreShelfBooksAction({ shelfId: shelf.id, cursor: nextCursor });
+      if (!res.ok) return;
+      setBooks((prev) => [...prev, ...res.books]);
+      setNextCursor(res.nextCursor);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  async function loadAllBooksForReorder() {
+    let cur = nextCursor;
+    if (!cur) return;
+    setLoadingMore(true);
+    try {
+      const acc: ShelfDetailBookRow[] = [];
+      while (cur) {
+        const res = await loadMoreShelfBooksAction({ shelfId: shelf.id, cursor: cur });
+        if (!res.ok) break;
+        acc.push(...res.books);
+        cur = res.nextCursor;
+      }
+      setBooks((prev) => [...prev, ...acc]);
+      setNextCursor(null);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   function applySort(mode: "az" | "added") {
     const sorted = [...books].sort((a, b) => {
@@ -569,6 +600,7 @@ export function ShelfDetailClient({
             <CardTitle>Livres</CardTitle>
             <CardDescription>
               {books.length} livre{books.length > 1 ? "s" : ""}
+              {nextCursor ? " (chargement partiel)" : ""}
               {shelf.type === "reading" ? " (status reading)" : ""}
             </CardDescription>
           </div>
@@ -599,6 +631,20 @@ export function ShelfDetailClient({
         </CardHeader>
 
         <CardContent className="space-y-2 py-4">
+          {reorderBlockedByPagination ? (
+            <div className="bg-muted/40 mb-3 rounded-xl border border-(--eleven-border-subtle) px-3 py-2 text-sm">
+              Le réordonnancement nécessite la liste complète.{" "}
+              <button
+                type="button"
+                className="text-foreground font-medium underline underline-offset-4"
+                disabled={loadingMore}
+                onClick={() => void loadAllBooksForReorder()}
+              >
+                Tout charger
+              </button>
+            </div>
+          ) : null}
+
           {canReorderBooks ? (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
               <SortableContext
@@ -606,7 +652,7 @@ export function ShelfDetailClient({
                 strategy={verticalListSortingStrategy}
               >
                 {books.map((b) => (
-                  <SortableBookRow key={b.id} book={b} />
+                  <SortableBookRow key={b.id} book={b} disabled={reorderBlockedByPagination} />
                 ))}
               </SortableContext>
             </DndContext>
@@ -617,6 +663,20 @@ export function ShelfDetailClient({
               ))}
             </div>
           )}
+
+          {nextCursor ? (
+            <div className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loadingMore}
+                onClick={() => void loadMoreBooks()}
+              >
+                {loadingMore ? "Chargement…" : "Charger plus"}
+              </Button>
+            </div>
+          ) : null}
 
           {!books.length && <div className="text-muted-foreground text-sm">Aucun livre.</div>}
         </CardContent>

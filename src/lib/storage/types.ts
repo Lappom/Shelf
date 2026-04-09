@@ -1,3 +1,5 @@
+import type { Readable } from "node:stream";
+
 export interface StorageAdapter {
   upload(file: Buffer, path: string): Promise<string>;
   download(path: string): Promise<Buffer>;
@@ -5,6 +7,8 @@ export interface StorageAdapter {
   exists(path: string): Promise<boolean>;
   getUrl(path: string): Promise<string>;
   getSize(path: string): Promise<number>;
+  /** Stream file bytes when supported (EPUB/cover delivery). */
+  createReadStream(path: string): Readable | Promise<Readable>;
 }
 
 export type StorageErrorCode = "INVALID_PATH" | "NOT_FOUND" | "FORBIDDEN" | "TIMEOUT" | "UNKNOWN";

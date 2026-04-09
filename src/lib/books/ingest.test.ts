@@ -12,6 +12,7 @@ vi.mock("@/lib/storage", () => ({
     exists: vi.fn(),
     getUrl: vi.fn(),
     getSize: vi.fn(),
+    createReadStream: vi.fn(),
   })),
 }));
 

@@ -66,17 +66,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
         "Cache-Control": "private, max-age=0, no-store",
       });
 
-      const anyAdapter = adapter as unknown as {
-        createReadStream?: (path: string) => Readable | Promise<Readable>;
-      };
-      if (anyAdapter.createReadStream) {
-        const nodeStream = await anyAdapter.createReadStream(file.storagePath);
-        const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
-        return new NextResponse(webStream, { headers });
-      }
-
-      const buf = await adapter.download(file.storagePath);
-      return new NextResponse(new Uint8Array(buf), { headers });
+      const nodeStream = await adapter.createReadStream(file.storagePath);
+      const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
+      return new NextResponse(webStream, { headers });
     } catch (e) {
       if (e instanceof StorageError) {
         return NextResponse.json({ error: e.message }, { status: storageErrorToStatus(e) });

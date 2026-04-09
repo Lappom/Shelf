@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { purgeBookAction } from "./actions";
+import { loadMoreAdminBooksAction, purgeBookAction } from "./actions";
 
 export type AdminBookRow = {
   id: string;
@@ -34,8 +34,15 @@ function formatAuthors(authors: string[]) {
   return authors.length ? authors.join(", ") : "—";
 }
 
-export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] }) {
+export function AdminBooksClient({
+  initialRows,
+  initialNextCursor,
+}: {
+  initialRows: AdminBookRow[];
+  initialNextCursor: string | null;
+}) {
   const [rows, setRows] = useState<AdminBookRow[]>(initialRows);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [busy, startTransition] = useTransition();
   const [confirm, setConfirm] = useState<
     null | { type: "soft_delete"; book: AdminBookRow } | { type: "purge"; book: AdminBookRow }
@@ -86,6 +93,20 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
 
   const confirmActionText =
     confirm?.type === "soft_delete" ? "Soft delete" : confirm?.type === "purge" ? "Purger" : "OK";
+
+  function loadMore() {
+    if (!nextCursor || busy) return;
+    startTransition(async () => {
+      setError(null);
+      const res = await loadMoreAdminBooksAction({ cursor: nextCursor });
+      if (!res.ok) {
+        setError(res.error === "INVALID_CURSOR" ? "Pagination invalide." : "Chargement impossible.");
+        return;
+      }
+      setRows((prev) => [...prev, ...res.rows]);
+      setNextCursor(res.nextCursor);
+    });
+  }
 
   async function onConfirm() {
     if (!confirm) return;
@@ -211,6 +232,14 @@ export function AdminBooksClient({ initialRows }: { initialRows: AdminBookRow[] 
           </table>
         </div>
       </section>
+
+      {nextCursor ? (
+        <div className="flex justify-center">
+          <Button type="button" variant="outline" disabled={busy} onClick={loadMore}>
+            {busy ? "Chargement…" : "Charger plus"}
+          </Button>
+        </div>
+      ) : null}
 
       <Dialog open={Boolean(confirm)} onOpenChange={(v) => (!v ? setConfirm(null) : undefined)}>
         <DialogContent>

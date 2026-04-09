@@ -9,6 +9,7 @@ import { requireUser } from "@/lib/auth/rbac";
 import { assertSameOriginFromHeaders } from "@/lib/security/origin";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 import { parseShelfRuleJson, buildShelfRuleWhereSql } from "@/lib/shelves/rules";
+import { loadShelfBooksPage } from "@/lib/shelves/shelfBooksPage";
 
 const ShelfIdSchema = z.string().uuid();
 const BookIdSchema = z.string().uuid();
@@ -347,4 +348,36 @@ export async function previewShelfRuleAction(input: unknown) {
     count,
     examples: rows.map((r) => ({ id: r.id, title: r.title, authors: r.authors })),
   };
+}
+
+const LoadMoreShelfBooksSchema = z.object({
+  shelfId: ShelfIdSchema,
+  cursor: z.string().trim().min(1).max(512),
+});
+
+export async function loadMoreShelfBooksAction(input: unknown) {
+  await assertActionSecurity("shelf_books_more");
+  const user = await requireUser();
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
+  const parsed = LoadMoreShelfBooksSchema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
+
+  const shelf = await prisma.shelf.findFirst({
+    where: { id: parsed.data.shelfId, ownerId: userId },
+    select: { id: true, type: true, rule: { select: { rules: true } } },
+  });
+  if (!shelf) return { ok: false as const, error: "NOT_FOUND" as const };
+
+  const { books, nextCursor } = await loadShelfBooksPage({
+    userId,
+    shelfId: shelf.id,
+    shelfType: shelf.type,
+    rulesJson: shelf.type === "dynamic" ? (shelf.rule?.rules ?? null) : null,
+    cursor: parsed.data.cursor,
+  });
+
+  return { ok: true as const, books, nextCursor };
 }

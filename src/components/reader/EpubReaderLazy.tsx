@@ -33,7 +33,8 @@ type Props = {
 };
 
 const EpubReaderClient = dynamic(
-  () => import("./EpubReaderClient").then((m) => m.EpubReaderClient),
+  () =>
+    import(/* webpackChunkName: "epub-reader" */ "./EpubReaderClient").then((m) => m.EpubReaderClient),
   { ssr: false, loading: () => <div className="p-6">Chargement du reader…</div> },
 );
 

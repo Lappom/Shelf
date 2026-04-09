@@ -7,6 +7,12 @@ export const AUTH_ERROR = {
   FORBIDDEN: "FORBIDDEN",
 } as const;
 
+export async function getOptionalSessionUser() {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  return session.user;
+}
+
 export async function requireUser() {
   const session = await auth();
   if (!session?.user?.id) throw new Error(AUTH_ERROR.UNAUTHENTICATED);

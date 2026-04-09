@@ -1,16 +1,16 @@
 import { prisma } from "@/lib/db/prisma";
 import { requireAdmin } from "@/lib/auth/rbac";
+import {
+  ADMIN_BOOKS_PAGE,
+  encodeAdminBooksCursor,
+  toAdminBookRow,
+} from "./actions";
 import { AdminBooksClient, type AdminBookRow } from "./ui";
-
-function normalizeAuthors(authors: unknown): string[] {
-  if (!Array.isArray(authors)) return [];
-  return authors.filter((a): a is string => typeof a === "string").slice(0, 5);
-}
 
 export default async function AdminBooksPage() {
   await requireAdmin();
 
-  const books = await prisma.book.findMany({
+  const fetched = await prisma.book.findMany({
     select: {
       id: true,
       title: true,
@@ -19,28 +19,28 @@ export default async function AdminBooksPage() {
       deletedAt: true,
       createdAt: true,
     },
-    orderBy: [{ deletedAt: "asc" }, { createdAt: "desc" }],
-    take: 500,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: ADMIN_BOOKS_PAGE + 1,
   });
 
-  const rows: AdminBookRow[] = books.map((b) => ({
-    id: b.id,
-    title: b.title,
-    authors: normalizeAuthors(b.authors),
-    format: b.format,
-    deletedAt: b.deletedAt ? b.deletedAt.toISOString() : null,
-    createdAt: b.createdAt.toISOString(),
-  }));
+  const hasMore = fetched.length > ADMIN_BOOKS_PAGE;
+  const page = hasMore ? fetched.slice(0, ADMIN_BOOKS_PAGE) : fetched;
+  const rows: AdminBookRow[] = page.map(toAdminBookRow);
+
+  const last = page[page.length - 1];
+  const initialNextCursor =
+    hasMore && last ? encodeAdminBooksCursor(last.createdAt, last.id) : null;
 
   return (
     <div className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-xl font-semibold tracking-tight">Livres</h2>
         <p className="text-muted-foreground text-sm">
-          Soft delete garde les fichiers en storage. Purge définitive supprime storage + DB.
+          Soft delete garde les fichiers en storage. Purge définitive supprime storage + DB. Tri :
+          plus récemment créés en premier.
         </p>
       </div>
-      <AdminBooksClient initialRows={rows} />
+      <AdminBooksClient initialRows={rows} initialNextCursor={initialNextCursor} />
     </div>
   );
 }

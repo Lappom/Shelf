@@ -22,6 +22,7 @@ type ApiSearchResult = {
   authors: unknown;
   description: string | null;
   coverUrl: string | null;
+  coverToken: string | null;
   format: string;
   language: string | null;
   pageCount: number | null;
