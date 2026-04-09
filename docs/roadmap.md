@@ -167,21 +167,21 @@
 ## Phase 6 — Synchronisation métadonnées (three-way merge) & writeback EPUB (security-critical)
 
 ### 6.1 Modèle de snapshot (docs/SPECS.md §5.3 + §3.2)
-- [ ] Définir JSON schema des champs synchronisés (titre, auteurs, description, langue, isbn, sujets, etc.).
-- [ ] Stocker `db_metadata` dans snapshot lors de sync.
+- [x] Définir JSON schema des champs synchronisés (titre, auteurs, description, langue, isbn, sujets, etc.).
+- [x] Stocker `db_metadata` dans snapshot lors de sync.
 
 ### 6.2 Algorithme three-way merge (docs/SPECS.md §5.3)
-- [ ] Implémenter la logique champ par champ (cas 1/2/3/4 du pseudo-code).
-- [ ] Politique conflit : “le fichier gagne” (EPUB prioritaire en conflit).
+- [x] Implémenter la logique champ par champ (cas 1/2/3/4 du pseudo-code).
+- [x] Politique conflit : “le fichier gagne” (EPUB prioritaire en conflit).
 
 ### 6.3 Écriture retour dans l’EPUB (docs/SPECS.md §5.3)
-- [ ] Quand DB source de vérité (cas 3) : écrire dans OPF metadata.
-- [ ] Re-hasher le fichier, mettre à jour `content_hash`, et gérer impact dédup.
-- [ ] Mettre à jour `BookFile` et chemins si nécessaire.
+- [x] Quand DB source de vérité (cas 3) : écrire dans OPF metadata.
+- [x] Re-hasher le fichier, mettre à jour `content_hash`, et gérer impact dédup.
+- [x] Mettre à jour `BookFile` et chemins si nécessaire.
 
 ### 6.4 UI Admin “Re-sync métadonnées” (docs/SPECS.md §11.2 Book Detail)
-- [ ] Bouton admin dans Book Detail.
-- [ ] Afficher résultat : champs modifiés, conflits résolus.
+- [x] Bouton admin dans Book Detail.
+- [x] Afficher résultat : champs modifiés, conflits résolus.
 
 ---
 

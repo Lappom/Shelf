@@ -89,9 +89,56 @@ async function readBinary(zip: JSZip, path: string) {
   return Buffer.from(arr);
 }
 
-export async function extractEpubMetadata(epubBytes: Buffer): Promise<EpubMetadata> {
-  const zip = await JSZip.loadAsync(epubBytes);
+function escapeXmlText(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
 
+function replaceOrInsertSingleTag(args: {
+  metadataXml: string;
+  tag: string; // without namespace, e.g. "title"
+  value: string | null;
+}) {
+  const { metadataXml, tag, value } = args;
+  if (value == null) return metadataXml;
+
+  const escaped = escapeXmlText(value);
+  const re = new RegExp(`<(dc:)?${tag}\\b[^>]*>[\\s\\S]*?<\\/(dc:)?${tag}>`, "i");
+  if (re.test(metadataXml)) {
+    return metadataXml.replace(re, `<dc:${tag}>${escaped}</dc:${tag}>`);
+  }
+
+  // Insert near the start of metadata for predictable ordering.
+  const insertAfter = /<metadata\b[^>]*>/i;
+  if (insertAfter.test(metadataXml)) {
+    return metadataXml.replace(insertAfter, (m) => `${m}\n    <dc:${tag}>${escaped}</dc:${tag}>`);
+  }
+
+  return metadataXml;
+}
+
+function removeAllTags(args: { metadataXml: string; tag: string }) {
+  const { metadataXml, tag } = args;
+  const re = new RegExp(`\\s*<(dc:)?${tag}\\b[^>]*>[\\s\\S]*?<\\/(dc:)?${tag}>\\s*`, "gi");
+  return metadataXml.replace(re, "\n");
+}
+
+function insertMultipleTags(args: { metadataXml: string; tag: string; values: string[] }) {
+  const { metadataXml, tag, values } = args;
+  if (!values.length) return metadataXml;
+  const insertAfter = /<metadata\b[^>]*>/i;
+  if (!insertAfter.test(metadataXml)) return metadataXml;
+  const xml = values
+    .map((v) => `    <dc:${tag}>${escapeXmlText(v)}</dc:${tag}>`)
+    .join("\n");
+  return metadataXml.replace(insertAfter, (m) => `${m}\n${xml}`);
+}
+
+async function getOpfPathAndXml(zip: JSZip) {
   const containerXml = await readText(zip, "META-INF/container.xml");
   if (!containerXml) {
     throw new Error("Invalid EPUB: missing META-INF/container.xml");
@@ -116,6 +163,20 @@ export async function extractEpubMetadata(epubBytes: Buffer): Promise<EpubMetada
 
   const opfXml = await readText(zip, opfPath);
   if (!opfXml) throw new Error("Invalid EPUB: missing OPF file");
+
+  return { opfPath, opfXml };
+}
+
+export async function extractEpubMetadata(epubBytes: Buffer): Promise<EpubMetadata> {
+  const zip = await JSZip.loadAsync(epubBytes);
+
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@_",
+    removeNSPrefix: true,
+  });
+
+  const { opfPath, opfXml } = await getOpfPathAndXml(zip);
 
   const opf = parser.parse(opfXml) as OpfPackage;
   const metadata = (opf.package as Record<string, unknown> | undefined)?.metadata as
@@ -180,4 +241,64 @@ export async function extractEpubMetadata(epubBytes: Buffer): Promise<EpubMetada
     isbn13,
     cover,
   };
+}
+
+export async function writeEpubOpfMetadata(
+  epubBytes: Buffer,
+  updates: {
+    title: string | null;
+    authors: string[];
+    language: string | null;
+    description: string | null;
+    isbn10: string | null;
+    isbn13: string | null;
+    publisher: string | null;
+    publishDate: string | null;
+    subjects: string[];
+  },
+): Promise<Buffer> {
+  const zip = await JSZip.loadAsync(epubBytes);
+  const { opfPath, opfXml } = await getOpfPathAndXml(zip);
+
+  const metaMatch = /<metadata\b[^>]*>[\s\S]*?<\/metadata>/i.exec(opfXml);
+  if (!metaMatch) throw new Error("Invalid EPUB: missing <metadata> in OPF");
+
+  let metadataXml = metaMatch[0];
+
+  metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "title", value: updates.title });
+  metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "language", value: updates.language });
+  metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "description", value: updates.description });
+  metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "publisher", value: updates.publisher });
+  metadataXml = replaceOrInsertSingleTag({ metadataXml, tag: "date", value: updates.publishDate });
+
+  // Multi-value tags: remove and re-insert.
+  metadataXml = removeAllTags({ metadataXml, tag: "creator" });
+  metadataXml = removeAllTags({ metadataXml, tag: "subject" });
+  metadataXml = removeAllTags({ metadataXml, tag: "identifier" });
+
+  metadataXml = insertMultipleTags({
+    metadataXml,
+    tag: "creator",
+    values: updates.authors.map(normalizeWhitespace).filter(Boolean),
+  });
+  metadataXml = insertMultipleTags({
+    metadataXml,
+    tag: "subject",
+    values: updates.subjects.map(normalizeWhitespace).filter(Boolean),
+  });
+
+  const identifiers: string[] = [];
+  if (updates.isbn13) identifiers.push(updates.isbn13);
+  if (updates.isbn10) identifiers.push(updates.isbn10);
+  metadataXml = insertMultipleTags({
+    metadataXml,
+    tag: "identifier",
+    values: identifiers.map(normalizeWhitespace).filter(Boolean),
+  });
+
+  const updatedOpfXml = opfXml.replace(metaMatch[0], metadataXml);
+  zip.file(opfPath, updatedOpfXml);
+
+  const arr = await zip.generateAsync({ type: "uint8array" });
+  return Buffer.from(arr);
 }

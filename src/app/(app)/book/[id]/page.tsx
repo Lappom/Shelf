@@ -1,0 +1,115 @@
+import Link from "next/link";
+import { z } from "zod";
+
+import { requireUser } from "@/lib/auth/rbac";
+import { prisma } from "@/lib/db/prisma";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ResyncMetadataPanel } from "@/components/book/ResyncMetadataPanel";
+
+const ParamsSchema = z.object({
+  id: z.string().uuid(),
+});
+
+function formatAuthors(authors: unknown) {
+  if (!Array.isArray(authors)) return "—";
+  const s = authors.filter((a): a is string => typeof a === "string").join(", ");
+  return s || "—";
+}
+
+export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await requireUser();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const role = (user as any).role as string | undefined;
+  const isAdmin = role === "admin";
+
+  const parsed = ParamsSchema.safeParse(await params);
+  if (!parsed.success) return <div className="p-6">Livre invalide.</div>;
+
+  const book = await prisma.book.findFirst({
+    where: { id: parsed.data.id, deletedAt: null },
+    select: {
+      id: true,
+      title: true,
+      authors: true,
+      language: true,
+      description: true,
+      isbn10: true,
+      isbn13: true,
+      publisher: true,
+      publishDate: true,
+      subjects: true,
+      pageCount: true,
+      openLibraryId: true,
+      format: true,
+    },
+  });
+
+  if (!book) return <div className="p-6">Introuvable.</div>;
+
+  return (
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{book.title}</h1>
+          <p className="text-muted-foreground text-sm">{formatAuthors(book.authors)}</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {book.format === "epub" && (
+            <Button asChild>
+              <Link href={`/reader/${book.id}`}>Lire</Link>
+            </Button>
+          )}
+          <Button asChild variant="outline">
+            <Link href="/library">Retour</Link>
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Métadonnées</CardTitle>
+          <CardDescription>Données en base (DB).</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div>
+            <div className="text-muted-foreground text-xs">Langue</div>
+            <div className="text-sm">{book.language ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">Éditeur</div>
+            <div className="text-sm">{book.publisher ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">Date</div>
+            <div className="text-sm">{book.publishDate ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">ISBN</div>
+            <div className="text-sm">{book.isbn13 ?? book.isbn10 ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">Pages</div>
+            <div className="text-sm">{book.pageCount ?? "—"}</div>
+          </div>
+          <div>
+            <div className="text-muted-foreground text-xs">Open Library</div>
+            <div className="text-sm">{book.openLibraryId ?? "—"}</div>
+          </div>
+          <div className="md:col-span-2">
+            <div className="text-muted-foreground text-xs">Sujets</div>
+            <div className="text-sm">{Array.isArray(book.subjects) ? book.subjects.join(", ") : "—"}</div>
+          </div>
+          <div className="md:col-span-2">
+            <div className="text-muted-foreground text-xs">Description</div>
+            <div className="text-sm">{book.description ?? "—"}</div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {isAdmin && <ResyncMetadataPanel bookId={book.id} />}
+    </div>
+  );
+}
+

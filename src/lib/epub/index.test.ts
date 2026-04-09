@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
 
-import { extractEpubMetadata } from "./index";
+import { extractEpubMetadata, writeEpubOpfMetadata } from "./index";
 
 async function buildMinimalEpub() {
   const zip = new JSZip();
@@ -49,5 +49,34 @@ describe("extractEpubMetadata", () => {
     expect(meta.cover?.mimeType).toBe("image/jpeg");
     expect(meta.cover?.ext).toBe("jpg");
     expect(meta.cover?.bytes.length).toBeGreaterThan(0);
+  });
+});
+
+describe("writeEpubOpfMetadata", () => {
+  it("updates OPF metadata and keeps a valid ZIP", async () => {
+    const epub = await buildMinimalEpub();
+    const updated = await writeEpubOpfMetadata(epub, {
+      title: "New Title",
+      authors: ["Alice", "Bob"],
+      language: "fr",
+      description: "New Desc",
+      isbn10: "0306406152",
+      isbn13: "9781234567890",
+      publisher: "Pub",
+      publishDate: "2024-01-01",
+      subjects: ["S1", "S2"],
+    });
+
+    const zip = await JSZip.loadAsync(updated);
+    const opf = await zip.file("OEBPS/content.opf")?.async("text");
+    expect(typeof opf).toBe("string");
+    expect(opf).toMatch(/<dc:title>New Title<\/dc:title>/);
+    expect(opf).toMatch(/<dc:language>fr<\/dc:language>/);
+    expect(opf).toMatch(/<dc:publisher>Pub<\/dc:publisher>/);
+    expect(opf).toMatch(/<dc:date>2024-01-01<\/dc:date>/);
+    expect(opf).toMatch(/<dc:creator>Alice<\/dc:creator>/);
+    expect(opf).toMatch(/<dc:creator>Bob<\/dc:creator>/);
+    expect(opf).toMatch(/<dc:subject>S1<\/dc:subject>/);
+    expect(opf).toMatch(/<dc:subject>S2<\/dc:subject>/);
   });
 });
