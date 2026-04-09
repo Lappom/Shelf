@@ -188,16 +188,16 @@
 ## Phase 7 — Soft delete, purge, intégrité
 
 ### 7.1 Soft delete standard (docs/SPECS.md §5.4)
-- [ ] Soft delete `Book.deleted_at` (et cohérence BookFile).
-- [ ] Le fichier reste dans storage.
+- [x] Soft delete `Book.deleted_at` (et cohérence BookFile).
+- [x] Le fichier reste dans storage.
 
 ### 7.2 Restauration (docs/SPECS.md §5.4)
-- [ ] Restore sur ré-upload (hash/filename).
-- [ ] Restaurer relations nécessaires (shelves, tags, progress, annotations) si conservées.
+- [x] Restore sur ré-upload (hash/filename).
+- [x] Restaurer relations nécessaires (shelves, tags, progress, annotations) si conservées.
 
 ### 7.3 Purge définitive (docs/SPECS.md §5.4)
-- [ ] Action admin : suppression storage + suppression DB (ou hard delete contrôlé).
-- [ ] Empêcher purge si contraintes métier (ou implémenter cascade contrôlée).
+- [x] Action admin : suppression storage + suppression DB (ou hard delete contrôlé).
+- [x] Empêcher purge si contraintes métier (ou implémenter cascade contrôlée).
 
 ---
 

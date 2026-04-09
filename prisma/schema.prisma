@@ -123,6 +123,7 @@ model Book {
 
   @@index([contentHash])
   @@index([isbn13])
+  @@index([deletedAt])
   @@map("books")
 }
 
