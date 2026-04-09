@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
 import { signIn } from "@/auth";
+import { ensureSystemShelves } from "@/lib/shelves/system";
 
 const RegisterSchema = z.object({
   email: z.string().email(),
@@ -41,14 +42,18 @@ export async function registerAction(formData: FormData) {
   const usersCount = await prisma.user.count({ where: { deletedAt: null } });
   const role = usersCount === 0 ? "admin" : "reader";
 
-  await prisma.user.create({
+  const createdUser = await prisma.user.create({
     data: {
       email,
       username: parsed.data.username,
       passwordHash,
       role,
     },
+    select: { id: true },
   });
+
+  // Provision system shelves for new users.
+  await ensureSystemShelves(createdUser.id);
 
   try {
     await signIn("credentials", {

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";
 import { verifyPassword } from "@/lib/auth/password";
+import { ensureSystemShelves } from "@/lib/shelves/system";
 
 function getOptionalOidcProvider() {
   const issuer = process.env.OIDC_ISSUER?.trim();
@@ -72,13 +73,85 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...(getOptionalOidcProvider() ? [getOptionalOidcProvider()!] : []),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
         // Persist role for RBAC in session.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (token as any).role = (user as any).role;
         token.sub = user.id;
       }
+
+      if (account?.provider === "oidc" && profile && !token.sub) {
+        const sub = (profile as { sub?: string }).sub;
+        const email = (profile as { email?: string }).email?.toLowerCase();
+        const preferredUsername =
+          (profile as { preferred_username?: string }).preferred_username ??
+          (profile as { name?: string }).name ??
+          (email ? email.split("@")[0] : undefined);
+
+        if (sub) {
+          const existing = await prisma.user.findFirst({
+            where: { oidcProvider: "oidc", oidcSub: sub, deletedAt: null },
+            select: { id: true, role: true },
+          });
+
+          const dbUser =
+            existing ??
+            (await (async () => {
+              const usersCount = await prisma.user.count({ where: { deletedAt: null } });
+              const role = usersCount === 0 ? "admin" : "reader";
+
+              const baseUsername = (preferredUsername ?? "user")
+                .trim()
+                .slice(0, 80)
+                .replace(/\s+/g, "-")
+                .replace(/[^a-zA-Z0-9_-]/g, "")
+                .toLowerCase();
+
+              for (let attempt = 0; attempt < 5; attempt++) {
+                const candidate =
+                  attempt === 0 ? baseUsername : `${baseUsername}-${Math.random().toString(16).slice(2, 6)}`;
+                const taken = await prisma.user.findFirst({
+                  where: { OR: [{ email: email ?? "__missing__" }, { username: candidate }] },
+                  select: { id: true },
+                });
+                if (taken) continue;
+
+                const created = await prisma.user.create({
+                  data: {
+                    email: email ?? `${sub}@oidc.local`,
+                    username: candidate,
+                    role,
+                    oidcProvider: "oidc",
+                    oidcSub: sub,
+                  },
+                  select: { id: true, role: true },
+                });
+                await ensureSystemShelves(created.id);
+                return created;
+              }
+
+              const created = await prisma.user.create({
+                data: {
+                  email: email ?? `${sub}@oidc.local`,
+                  username: `user-${sub.slice(0, 8)}`,
+                  role,
+                  oidcProvider: "oidc",
+                  oidcSub: sub,
+                },
+                select: { id: true, role: true },
+              });
+              await ensureSystemShelves(created.id);
+              return created;
+            })());
+
+          await ensureSystemShelves(dbUser.id);
+          token.sub = dbUser.id;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (token as any).role = dbUser.role;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {

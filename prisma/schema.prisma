@@ -171,6 +171,7 @@ model Shelf {
   rule        ShelfRule?
   books       BookShelf[]
 
+  @@unique([ownerId, type])
   @@index([ownerId])
   @@map("shelves")
 }

@@ -33,34 +33,34 @@
 ## Phase 1 — Données & base (modèle, migrations, indexes)
 
 ### 1.1 Modèle relationnel (docs/SPECS.md §3.1)
-- [ ] Implémenter les relations : User ↔ progress/annotations/preferences/shelves/recommendations/apiKeys.
-- [ ] Implémenter Book ↔ progress/annotations/bookFiles/shelves/tags/snapshot.
+- [x] Implémenter les relations : User ↔ progress/annotations/preferences/shelves/recommendations/apiKeys.
+- [x] Implémenter Book ↔ progress/annotations/bookFiles/shelves/tags/snapshot.
 
 ### 1.2 Prisma schema (docs/SPECS.md §3.2)
-- [ ] Table `User` (rôle admin/reader, soft delete, champs OIDC).
-- [ ] Table `Book` (métadonnées, `format`, `content_hash`, `open_library_id`, `metadata_source`, `added_by`, soft delete, `search_vector`).
-- [ ] Table `BookFile` (chemin storage, taille, mime, hash).
-- [ ] Table `BookMetadataSnapshot` (epub_metadata + db_metadata + synced_at).
-- [ ] Table `Shelf` (type manual/dynamic/favorites/reading, owner, public, icon, sort_order).
-- [ ] Table `ShelfRule` (rules JSONB).
-- [ ] Pivot `BookShelf` (added_at, sort_order).
-- [ ] Table `Tag` (name unique, color).
-- [ ] Pivot `BookTag`.
-- [ ] Table `UserBookProgress` (status, progress 0..1, current_cfi, timestamps, contrainte unique user+book).
-- [ ] Table `UserAnnotation` (highlight/note/bookmark, cfi_range, color, note, timestamps).
-- [ ] Table `UserPreference` (theme + reader prefs + library prefs, unique user).
-- [ ] Table `UserRecommendation` (score, reasons JSONB, seen/dismissed, computed_at, unique user+book).
-- [ ] Table `ApiKey` (hash, prefix, last_used, expires, revoked, timestamps).
+- [x] Table `User` (rôle admin/reader, soft delete, champs OIDC).
+- [x] Table `Book` (métadonnées, `format`, `content_hash`, `open_library_id`, `metadata_source`, `added_by`, soft delete, `search_vector`).
+- [x] Table `BookFile` (chemin storage, taille, mime, hash).
+- [x] Table `BookMetadataSnapshot` (epub_metadata + db_metadata + synced_at).
+- [x] Table `Shelf` (type manual/dynamic/favorites/reading, owner, public, icon, sort_order).
+- [x] Table `ShelfRule` (rules JSONB).
+- [x] Pivot `BookShelf` (added_at, sort_order).
+- [x] Table `Tag` (name unique, color).
+- [x] Pivot `BookTag`.
+- [x] Table `UserBookProgress` (status, progress 0..1, current_cfi, timestamps, contrainte unique user+book).
+- [x] Table `UserAnnotation` (highlight/note/bookmark, cfi_range, color, note, timestamps).
+- [x] Table `UserPreference` (theme + reader prefs + library prefs, unique user).
+- [x] Table `UserRecommendation` (score, reasons JSONB, seen/dismissed, computed_at, unique user+book).
+- [x] Table `ApiKey` (hash, prefix, last_used, expires, revoked, timestamps).
 
 ### 1.3 Indexes & contraintes (docs/SPECS.md §15 + §3)
-- [ ] Index GIN sur `Book.search_vector`.
-- [ ] Activer/installer extension `pg_trgm` et index trigram nécessaires (titre/auteurs si requis).
-- [ ] Index unique/lookup : `Book.content_hash`, `Book.isbn_13`, `UserBookProgress(user_id, book_id)`, `UserRecommendation(user_id, book_id)`, etc.
-- [ ] Vérifier contraintes de soft delete (unicité conditionnelle si nécessaire).
+- [x] Index GIN sur `Book.search_vector`.
+- [x] Activer/installer extension `pg_trgm` et index trigram nécessaires (titre/auteurs si requis).
+- [x] Index unique/lookup : `Book.content_hash`, `Book.isbn_13`, `UserBookProgress(user_id, book_id)`, `UserRecommendation(user_id, book_id)`, etc.
+- [x] Vérifier contraintes de soft delete (unicité conditionnelle si nécessaire).
 
 ### 1.4 Données de départ
-- [ ] Stratégie “premier utilisateur = admin”.
-- [ ] Création automatique des étagères système par utilisateur (favoris + en cours).
+- [x] Stratégie “premier utilisateur = admin”.
+- [x] Création automatique des étagères système par utilisateur (favoris + en cours).
 
 ---
 
