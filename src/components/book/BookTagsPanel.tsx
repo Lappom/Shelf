@@ -53,7 +53,11 @@ export function BookTagsPanel({
       try {
         const res = await addBookTagAction({ bookId, tagId });
         if (res.ok) {
-          setSelected((prev) => [...prev, tag].sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" })));
+          setSelected((prev) =>
+            [...prev, tag].sort((a, b) =>
+              a.name.localeCompare(b.name, "fr", { sensitivity: "base" }),
+            ),
+          );
           setPick("");
         }
       } catch (e) {
@@ -93,7 +97,7 @@ export function BookTagsPanel({
           selected.map((t) => (
             <span
               key={t.id}
-              className="inline-flex items-center gap-2 rounded-full border border-(--eleven-border-subtle) bg-muted/20 px-2.5 py-1 text-sm"
+              className="bg-muted/20 inline-flex items-center gap-2 rounded-full border border-(--eleven-border-subtle) px-2.5 py-1 text-sm"
             >
               <ColorDot color={t.color} />
               <span className="font-medium">{t.name}</span>
@@ -138,4 +142,3 @@ export function BookTagsPanel({
     </div>
   );
 }
-

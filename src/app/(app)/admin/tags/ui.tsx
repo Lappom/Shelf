@@ -42,7 +42,9 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
 
   const [error, setError] = useState<string | null>(null);
   const [createDraft, setCreateDraft] = useState({ name: "", color: "#777169" });
-  const [editDraft, setEditDraft] = useState<null | { id: string; name: string; color: string }>(null);
+  const [editDraft, setEditDraft] = useState<null | { id: string; name: string; color: string }>(
+    null,
+  );
   const [confirmDelete, setConfirmDelete] = useState<null | { id: string; name: string }>(null);
 
   const sortedRows = useMemo(() => {
@@ -288,4 +290,3 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
     </div>
   );
 }
-

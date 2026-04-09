@@ -21,14 +21,16 @@ describe("book tagActions", () => {
     (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
     const { addBookTagAction } = await import("./tagActions");
-    await expect(addBookTagAction({ bookId: crypto.randomUUID(), tagId: crypto.randomUUID() })).rejects.toThrow(
-      /introuvable/i,
-    );
+    await expect(
+      addBookTagAction({ bookId: crypto.randomUUID(), tagId: crypto.randomUUID() }),
+    ).rejects.toThrow(/introuvable/i);
   });
 
   it("addBookTagAction upserts pivot and updates vector", async () => {
     const { prisma } = await import("@/lib/db/prisma");
-    (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: crypto.randomUUID() });
+    (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: crypto.randomUUID(),
+    });
 
     const { updateBookSearchVector } = await import("@/lib/search/searchVector");
     const { addBookTagAction } = await import("./tagActions");
@@ -42,7 +44,9 @@ describe("book tagActions", () => {
 
   it("removeBookTagAction deletes pivot and updates vector", async () => {
     const { prisma } = await import("@/lib/db/prisma");
-    (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: crypto.randomUUID() });
+    (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: crypto.randomUUID(),
+    });
 
     const { updateBookSearchVector } = await import("@/lib/search/searchVector");
     const { removeBookTagAction } = await import("./tagActions");
@@ -54,4 +58,3 @@ describe("book tagActions", () => {
     expect(updateBookSearchVector).toHaveBeenCalledWith(bookId);
   });
 });
-

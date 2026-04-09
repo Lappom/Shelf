@@ -150,4 +150,3 @@ describe("Phase 10 (Shelves integration)", () => {
     expect(ordered.map((x) => x.bookId)).toEqual([bookB.id, bookA.id]);
   });
 });
-

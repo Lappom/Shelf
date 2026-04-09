@@ -91,17 +91,24 @@ export const ShelfRuleConditionSchema = ConditionBaseSchema.superRefine((c, ctx)
 
   if (field === "page_count") {
     if (!["gt", "gte", "lt", "lte", "eq", "neq", "in", "not_in"].includes(op)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Operator not supported for page_count." });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Operator not supported for page_count.",
+      });
       return;
     }
-    if (op === "in" || op === "not_in") requireStringArray(); // coerce later via SQL cast
+    if (op === "in" || op === "not_in")
+      requireStringArray(); // coerce later via SQL cast
     else requireNumber();
     return;
   }
 
   if (field === "added_at") {
     if (!["after", "before", "eq", "neq"].includes(op)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Operator not supported for added_at." });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Operator not supported for added_at.",
+      });
       return;
     }
     requireDateString();
@@ -113,7 +120,6 @@ export const ShelfRuleConditionSchema = ConditionBaseSchema.superRefine((c, ctx)
       requireStringArray();
       return;
     }
-    if (op === "is_empty" || op === "is_not_empty") return;
     if (op === "contains" || op === "not_contains" || op === "eq" || op === "neq") {
       requireString();
       return;
@@ -132,8 +138,10 @@ export const ShelfRuleConditionSchema = ConditionBaseSchema.superRefine((c, ctx)
       requireStringArray();
       return;
     }
-    if (op === "is_empty" || op === "is_not_empty") return;
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Operator not supported for array field." });
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Operator not supported for array field.",
+    });
     return;
   }
 
@@ -147,8 +155,10 @@ export const ShelfRuleConditionSchema = ConditionBaseSchema.superRefine((c, ctx)
       requireString();
       return;
     }
-    if (op === "is_empty" || op === "is_not_empty") return;
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Operator not supported for text field." });
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Operator not supported for text field.",
+    });
   }
 });
 
@@ -434,7 +444,6 @@ function buildConditionSql(c: ShelfRule["conditions"][number]): Prisma.Sql {
 export function buildShelfRuleWhereSql(rule: ShelfRule): Prisma.Sql {
   const conditions = rule.conditions.map(buildConditionSql);
   if (!conditions.length) return Prisma.sql`TRUE`;
-  const joiner = rule.match === "all" ? Prisma.sql` AND ` : Prisma.sql` OR `;
+  const joiner = rule.match === "all" ? " AND " : " OR ";
   return Prisma.sql`(${Prisma.join(conditions, joiner)})`;
 }
-

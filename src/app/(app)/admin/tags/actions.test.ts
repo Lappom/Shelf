@@ -72,4 +72,3 @@ describe("admin tags actions", () => {
     expect(updateBookSearchVector).toHaveBeenCalledTimes(2);
   });
 });
-

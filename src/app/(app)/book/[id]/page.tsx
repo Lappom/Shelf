@@ -78,7 +78,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
     id: s.id,
     name: s.name,
     icon: s.icon,
-    type: s.type,
+    type: s.type as AddToShelfMenuShelf["type"],
     checked: memberSet.has(s.id),
   }));
 

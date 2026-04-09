@@ -2,23 +2,30 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
-import { buildShelfRuleWhereSql, parseShelfRuleJson } from "@/lib/shelves/rules";
-import { ShelfDetailClient, type ShelfDetailBookRow, type ShelfDetailShelf } from "@/components/shelf/ShelfDetailClient";
+import { buildShelfRuleWhereSql, parseShelfRuleJson, type ShelfRule } from "@/lib/shelves/rules";
+import {
+  ShelfDetailClient,
+  type ShelfDetailBookRow,
+  type ShelfDetailShelf,
+} from "@/components/shelf/ShelfDetailClient";
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
 
 function normalizeAuthors(authors: unknown): string[] {
   if (!Array.isArray(authors)) return [];
-  return authors.filter((a): a is string => typeof a === "string" && a.trim()).map((a) => a.trim());
+  return authors
+    .filter((a): a is string => typeof a === "string" && Boolean(a.trim()))
+    .map((a) => a.trim());
 }
 
 export default async function ShelfDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = ParamsSchema.safeParse(await params);
   if (!parsed.success) return <div className="p-6">Étagère invalide.</div>;
 
   const shelf = await prisma.shelf.findFirst({
-    where: { id: parsed.data.id, ownerId: user.id },
+    where: { id: parsed.data.id, ownerId: userId },
     select: {
       id: true,
       name: true,
@@ -40,7 +47,8 @@ export default async function ShelfDetailPage({ params }: { params: Promise<{ id
     icon: shelf.icon,
     type: shelf.type,
     createdAt: shelf.createdAt.toISOString(),
-    rules: shelf.type === "dynamic" ? (shelf.rule?.rules ?? { match: "all", conditions: [] }) : null,
+    rules:
+      shelf.type === "dynamic" ? (shelf.rule?.rules ?? { match: "all", conditions: [] }) : null,
   };
 
   let books: ShelfDetailBookRow[] = [];
@@ -67,7 +75,7 @@ export default async function ShelfDetailPage({ params }: { params: Promise<{ id
     }));
   } else if (shelf.type === "reading") {
     const rows = await prisma.userBookProgress.findMany({
-      where: { userId: user.id, status: "reading", book: { deletedAt: null } },
+      where: { userId, status: "reading", book: { deletedAt: null } },
       select: {
         updatedAt: true,
         book: { select: { id: true, title: true, authors: true, format: true, createdAt: true } },
@@ -85,11 +93,11 @@ export default async function ShelfDetailPage({ params }: { params: Promise<{ id
       shelfSortOrder: 0,
     }));
   } else if (shelf.type === "dynamic") {
-    let rule;
+    let rule: ShelfRule;
     try {
       rule = parseShelfRuleJson(shelfDto.rules);
     } catch {
-      rule = { match: "all", conditions: [] } as const;
+      rule = { match: "all", conditions: [] };
     }
 
     const whereSql = buildShelfRuleWhereSql(rule);
@@ -122,4 +130,3 @@ export default async function ShelfDetailPage({ params }: { params: Promise<{ id
     </div>
   );
 }
-

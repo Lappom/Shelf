@@ -284,37 +284,37 @@
 ## Phase 12 — Recherche, filtres, tri, pagination
 
 ### 12.1 Full-text (docs/SPECS.md §7.1)
-- [ ] `tsvector` indexé sur title/authors/description/subjects.
-- [ ] Support `plainto_tsquery` + `websearch_to_tsquery`.
-- [ ] Ranking `ts_rank_cd` pondéré : titre A > auteurs B > sujets C > description D.
+- [x] `tsvector` indexé sur title/authors/description/subjects.
+- [x] Support `plainto_tsquery` + `websearch_to_tsquery`.
+- [x] Ranking `ts_rank_cd` pondéré : titre A > auteurs B > sujets C > description D.
 
 ### 12.2 Fuzzy (docs/SPECS.md §7.1)
-- [ ] Complément `pg_trgm` pour fautes de frappe.
-- [ ] Stratégie de combinaison FTS + trigram (fallback ou blended score).
+- [x] Complément `pg_trgm` pour fautes de frappe.
+- [x] Stratégie de combinaison FTS + trigram (fallback ou blended score).
 
 ### 12.3 Filtres combinables (docs/SPECS.md §7.2)
-- [ ] Format multi-select.
-- [ ] Langue multi-select.
-- [ ] Tags multi-select.
-- [ ] Étagère select (de l’utilisateur).
-- [ ] Statut lecture multi-select (progress).
-- [ ] Auteur autocomplete.
-- [ ] Éditeur autocomplete.
-- [ ] Date ajout range.
-- [ ] Nombre pages range slider.
+- [x] Format multi-select.
+- [x] Langue multi-select.
+- [x] Tags multi-select.
+- [x] Étagère select (de l’utilisateur).
+- [x] Statut lecture multi-select (progress).
+- [x] Auteur autocomplete.
+- [x] Éditeur autocomplete.
+- [x] Date ajout range.
+- [x] Nombre pages range slider.
 
 ### 12.4 Tri (docs/SPECS.md §7.3)
-- [ ] Titre A-Z / Z-A.
-- [ ] Date d’ajout.
-- [ ] Date de publication.
-- [ ] Auteur.
-- [ ] Progression de lecture.
-- [ ] Nombre de pages.
+- [x] Titre A-Z / Z-A.
+- [x] Date d’ajout.
+- [x] Date de publication.
+- [x] Auteur.
+- [x] Progression de lecture.
+- [x] Nombre de pages.
 
 ### 12.5 Pagination (docs/SPECS.md §7.4)
-- [ ] Cursor-based pagination (pas d’OFFSET).
-- [ ] Préférence taille page (12/24/48) en `UserPreference`.
-- [ ] Option infinite scroll en préférence user.
+- [x] Cursor-based pagination (pas d’OFFSET).
+- [x] Préférence taille page (12/24/48) en `UserPreference`.
+- [x] Option infinite scroll en préférence user.
 
 ---
 

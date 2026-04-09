@@ -53,7 +53,14 @@ export type ShelfDetailBookRow = {
 };
 
 type RuleMatch = "all" | "any";
-type RuleField = "language" | "format" | "page_count" | "added_at" | "authors" | "subjects" | "tags";
+type RuleField =
+  | "language"
+  | "format"
+  | "page_count"
+  | "added_at"
+  | "authors"
+  | "subjects"
+  | "tags";
 type RuleOp =
   | "eq"
   | "neq"
@@ -136,13 +143,7 @@ function formatAuthors(authors: string[]) {
   return authors.join(", ");
 }
 
-function SortableBookRow({
-  book,
-  disabled,
-}: {
-  book: ShelfDetailBookRow;
-  disabled?: boolean;
-}) {
+function SortableBookRow({ book, disabled }: { book: ShelfDetailBookRow; disabled?: boolean }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: book.id,
     disabled: Boolean(disabled),
@@ -158,13 +159,13 @@ function SortableBookRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center justify-between gap-3 rounded-2xl border border-(--eleven-border-subtle) bg-background px-3 py-2",
+        "bg-background flex items-center justify-between gap-3 rounded-2xl border border-(--eleven-border-subtle) px-3 py-2",
         isDragging && "shadow-eleven-warm",
       )}
     >
       <div className="min-w-0">
         <div className="truncate text-sm font-medium">
-          <Link className="hover:underline underline-offset-4" href={`/book/${book.id}`}>
+          <Link className="underline-offset-4 hover:underline" href={`/book/${book.id}`}>
             {book.title}
           </Link>
         </div>
@@ -247,7 +248,10 @@ export function ShelfDetailClient({
   });
 
   const [ruleDraft, setRuleDraft] = React.useState<ShelfRuleDraft>(() => coerceRules(shelf.rules));
-  const [preview, setPreview] = React.useState<{ count: number; examples: Array<{ id: string; title: string }> } | null>(null);
+  const [preview, setPreview] = React.useState<{
+    count: number;
+    examples: Array<{ id: string; title: string }>;
+  } | null>(null);
 
   function applySort(mode: "az" | "added") {
     const sorted = [...books].sort((a, b) => {
@@ -297,7 +301,10 @@ export function ShelfDetailClient({
       setPreview({
         count: res.count,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        examples: (res.examples as any[]).map((e) => ({ id: String(e.id), title: String(e.title) })),
+        examples: (res.examples as any[]).map((e) => ({
+          id: String(e.id),
+          title: String(e.title),
+        })),
       });
     }
   }
@@ -341,11 +348,17 @@ export function ShelfDetailClient({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="space-y-1 sm:col-span-2">
                 <div className="text-muted-foreground text-xs">Nom</div>
-                <Input value={metaDraft.name} onChange={(e) => setMetaDraft((d) => ({ ...d, name: e.target.value }))} />
+                <Input
+                  value={metaDraft.name}
+                  onChange={(e) => setMetaDraft((d) => ({ ...d, name: e.target.value }))}
+                />
               </div>
               <div className="space-y-1">
                 <div className="text-muted-foreground text-xs">Emoji</div>
-                <Input value={metaDraft.icon} onChange={(e) => setMetaDraft((d) => ({ ...d, icon: e.target.value }))} />
+                <Input
+                  value={metaDraft.icon}
+                  onChange={(e) => setMetaDraft((d) => ({ ...d, icon: e.target.value }))}
+                />
               </div>
             </div>
             <div className="space-y-1">
@@ -376,7 +389,9 @@ export function ShelfDetailClient({
               <div className="text-muted-foreground text-xs">Match</div>
               <SmallSelect
                 value={ruleDraft.match}
-                onChange={(v) => setRuleDraft((d) => ({ ...d, match: v === "any" ? "any" : "all" }))}
+                onChange={(v) =>
+                  setRuleDraft((d) => ({ ...d, match: v === "any" ? "any" : "all" }))
+                }
                 options={[
                   { value: "all", label: "all (AND)" },
                   { value: "any", label: "any (OR)" },
@@ -391,7 +406,11 @@ export function ShelfDetailClient({
                     ...d,
                     conditions: [
                       ...d.conditions,
-                      { field: "language", operator: "eq", value: defaultValueFor("language", "eq") },
+                      {
+                        field: "language",
+                        operator: "eq",
+                        value: defaultValueFor("language", "eq"),
+                      },
                     ],
                   }))
                 }
@@ -478,7 +497,9 @@ export function ShelfDetailClient({
                           });
                         }}
                         placeholder={
-                          c.operator === "in" || c.operator === "has_any" || c.operator === "has_all"
+                          c.operator === "in" ||
+                          c.operator === "has_any" ||
+                          c.operator === "has_all"
                             ? c.field === "tags"
                               ? "ex: to-read, classic"
                               : "ex: fr, en"
@@ -511,7 +532,7 @@ export function ShelfDetailClient({
               <div className="text-muted-foreground text-sm">
                 {preview ? (
                   <>
-                    <span className="font-medium text-foreground">{preview.count}</span> résultats •{" "}
+                    <span className="text-foreground font-medium">{preview.count}</span> résultats •{" "}
                     {preview.examples.length} exemples
                   </>
                 ) : (
@@ -530,7 +551,7 @@ export function ShelfDetailClient({
                 <ul className="space-y-1 text-sm">
                   {preview.examples.map((e) => (
                     <li key={e.id} className="truncate">
-                      <Link className="hover:underline underline-offset-4" href={`/book/${e.id}`}>
+                      <Link className="underline-offset-4 hover:underline" href={`/book/${e.id}`}>
                         {e.title}
                       </Link>
                     </li>
@@ -565,7 +586,12 @@ export function ShelfDetailClient({
               <Button variant="outline" size="sm" onClick={() => applySort("az")} disabled={busy}>
                 A-Z
               </Button>
-              <Button variant="outline" size="sm" onClick={() => applySort("added")} disabled={busy}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => applySort("added")}
+                disabled={busy}
+              >
                 Ajout
               </Button>
             </div>
@@ -575,7 +601,10 @@ export function ShelfDetailClient({
         <CardContent className="space-y-2 py-4">
           {canReorderBooks ? (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-              <SortableContext items={books.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext
+                items={books.map((b) => b.id)}
+                strategy={verticalListSortingStrategy}
+              >
                 {books.map((b) => (
                   <SortableBookRow key={b.id} book={b} />
                 ))}
@@ -595,4 +624,3 @@ export function ShelfDetailClient({
     </div>
   );
 }
-

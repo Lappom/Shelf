@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { headers } from "next/headers";
+import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 import { requireUser } from "@/lib/auth/rbac";
@@ -81,12 +82,13 @@ function assertNotSystemShelf(type: string) {
 export async function createShelfAction(input: unknown) {
   await assertActionSecurity("create");
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = CreateShelfSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
   const created = await prisma.shelf.create({
     data: {
-      ownerId: user.id,
+      ownerId: userId,
       type: parsed.data.type,
       name: parsed.data.name,
       description: parsed.data.description,
@@ -100,7 +102,7 @@ export async function createShelfAction(input: unknown) {
     await prisma.shelfRule.create({
       data: {
         shelfId: created.id,
-        rules: { match: "all", conditions: [] },
+        rules: { match: "all", conditions: [] } as unknown as Prisma.InputJsonValue,
       },
       select: { id: true },
     });
@@ -112,10 +114,11 @@ export async function createShelfAction(input: unknown) {
 export async function updateShelfAction(input: unknown) {
   await assertActionSecurity("update");
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = UpdateShelfSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
-  const shelf = await getOwnedShelfOrThrow(user.id, parsed.data.shelfId);
+  const shelf = await getOwnedShelfOrThrow(userId, parsed.data.shelfId);
   assertNotSystemShelf(shelf.type);
 
   await prisma.shelf.update({
@@ -134,10 +137,11 @@ export async function updateShelfAction(input: unknown) {
 export async function deleteShelfAction(input: unknown) {
   await assertActionSecurity("delete");
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = DeleteShelfSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
-  const shelf = await getOwnedShelfOrThrow(user.id, parsed.data.shelfId);
+  const shelf = await getOwnedShelfOrThrow(userId, parsed.data.shelfId);
   assertNotSystemShelf(shelf.type);
 
   await prisma.$transaction(async (tx) => {
@@ -152,10 +156,11 @@ export async function deleteShelfAction(input: unknown) {
 export async function addBookToShelfAction(input: unknown) {
   await assertActionSecurity("add_book");
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = AddRemoveBookSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
-  const shelf = await getOwnedShelfOrThrow(user.id, parsed.data.shelfId);
+  const shelf = await getOwnedShelfOrThrow(userId, parsed.data.shelfId);
   if (shelf.type === "reading") return { ok: false as const, error: "UNSUPPORTED" as const };
 
   await prisma.bookShelf.upsert({
@@ -170,10 +175,11 @@ export async function addBookToShelfAction(input: unknown) {
 export async function removeBookFromShelfAction(input: unknown) {
   await assertActionSecurity("remove_book");
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = AddRemoveBookSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
-  const shelf = await getOwnedShelfOrThrow(user.id, parsed.data.shelfId);
+  const shelf = await getOwnedShelfOrThrow(userId, parsed.data.shelfId);
   if (shelf.type === "reading") return { ok: false as const, error: "UNSUPPORTED" as const };
 
   await prisma.bookShelf.deleteMany({
@@ -186,14 +192,16 @@ export async function removeBookFromShelfAction(input: unknown) {
 export async function reorderShelvesAction(input: unknown) {
   await assertActionSecurity("reorder_shelves");
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = ReorderShelvesSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
   const shelves = await prisma.shelf.findMany({
-    where: { ownerId: user.id, id: { in: parsed.data.shelfIds } },
+    where: { ownerId: userId, id: { in: parsed.data.shelfIds } },
     select: { id: true, type: true },
   });
-  if (shelves.length !== parsed.data.shelfIds.length) return { ok: false as const, error: "NOT_FOUND" as const };
+  if (shelves.length !== parsed.data.shelfIds.length)
+    return { ok: false as const, error: "NOT_FOUND" as const };
 
   // Keep system shelves pinned by their negative sortOrder. Only reorder non-system shelves.
   const reorderable = shelves.filter((s) => s.type !== "favorites" && s.type !== "reading");
@@ -217,10 +225,11 @@ export async function reorderShelvesAction(input: unknown) {
 export async function reorderShelfBooksAction(input: unknown) {
   await assertActionSecurity("reorder_books");
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = ReorderShelfBooksSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
-  const shelf = await getOwnedShelfOrThrow(user.id, parsed.data.shelfId);
+  const shelf = await getOwnedShelfOrThrow(userId, parsed.data.shelfId);
   if (shelf.type !== "manual") return { ok: false as const, error: "UNSUPPORTED" as const };
 
   const existing = await prisma.bookShelf.findMany({
@@ -248,10 +257,11 @@ export async function reorderShelfBooksAction(input: unknown) {
 export async function updateShelfRuleAction(input: unknown) {
   await assertActionSecurity("update_rule");
   const user = await requireUser();
+  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
   const parsed = UpdateShelfRuleSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
-  const shelf = await getOwnedShelfOrThrow(user.id, parsed.data.shelfId);
+  const shelf = await getOwnedShelfOrThrow(userId, parsed.data.shelfId);
   if (shelf.type !== "dynamic") return { ok: false as const, error: "UNSUPPORTED" as const };
 
   let rule;
@@ -263,8 +273,8 @@ export async function updateShelfRuleAction(input: unknown) {
 
   await prisma.shelfRule.upsert({
     where: { shelfId: shelf.id },
-    update: { rules: rule },
-    create: { shelfId: shelf.id, rules: rule },
+    update: { rules: rule as unknown as Prisma.InputJsonValue },
+    create: { shelfId: shelf.id, rules: rule as unknown as Prisma.InputJsonValue },
     select: { id: true },
   });
 
@@ -273,7 +283,8 @@ export async function updateShelfRuleAction(input: unknown) {
 
 export async function previewShelfRuleAction(input: unknown) {
   await assertActionSecurity("preview_rule");
-  await requireUser();
+  const user = await requireUser();
+  void user;
   const parsed = PreviewShelfRuleSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
@@ -305,7 +316,7 @@ export async function previewShelfRuleAction(input: unknown) {
       AND ${whereSql};
   `;
 
-  const count = Number(countRes[0]?.count ?? 0n);
+  const count = Number(countRes[0]?.count ?? BigInt(0));
 
   return {
     ok: true as const,
@@ -313,4 +324,3 @@ export async function previewShelfRuleAction(input: unknown) {
     examples: rows.map((r) => ({ id: r.id, title: r.title, authors: r.authors })),
   };
 }
-

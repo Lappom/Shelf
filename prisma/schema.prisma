@@ -302,6 +302,7 @@ model UserPreference {
   readerTheme      ReaderTheme?    @map("reader_theme")
   libraryView      LibraryView?    @map("library_view")
   booksPerPage     Int             @default(24) @map("books_per_page")
+  libraryInfiniteScroll Boolean    @default(false) @map("library_infinite_scroll")
 
   user User @relation(fields: [userId], references: [id])
 

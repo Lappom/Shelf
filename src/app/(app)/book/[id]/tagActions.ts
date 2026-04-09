@@ -55,4 +55,3 @@ export async function removeBookTagAction(input: unknown) {
   await updateBookSearchVector(parsed.data.bookId);
   return { ok: true as const };
 }
-

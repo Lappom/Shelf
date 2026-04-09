@@ -23,7 +23,13 @@ export type AddToShelfMenuShelf = {
   checked: boolean;
 };
 
-export function AddToShelfMenu({ bookId, shelves }: { bookId: string; shelves: AddToShelfMenuShelf[] }) {
+export function AddToShelfMenu({
+  bookId,
+  shelves,
+}: {
+  bookId: string;
+  shelves: AddToShelfMenuShelf[];
+}) {
   const router = useRouter();
   const [busy, startTransition] = React.useTransition();
   const [state, setState] = React.useState<AddToShelfMenuShelf[]>(shelves);
@@ -45,7 +51,9 @@ export function AddToShelfMenu({ bookId, shelves }: { bookId: string; shelves: A
               key={s.id}
               checked={s.checked}
               onCheckedChange={(checked) => {
-                setState((prev) => prev.map((x) => (x.id === s.id ? { ...x, checked: Boolean(checked) } : x)));
+                setState((prev) =>
+                  prev.map((x) => (x.id === s.id ? { ...x, checked: Boolean(checked) } : x)),
+                );
                 startTransition(async () => {
                   if (checked) {
                     await addBookToShelfAction({ shelfId: s.id, bookId });
@@ -70,4 +78,3 @@ export function AddToShelfMenu({ bookId, shelves }: { bookId: string; shelves: A
     </DropdownMenu>
   );
 }
-

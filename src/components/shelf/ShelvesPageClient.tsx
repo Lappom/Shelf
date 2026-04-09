@@ -23,7 +23,14 @@ import { GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -87,15 +94,18 @@ function SortableShelfRow({
       <CardHeader className="flex flex-row items-start justify-between gap-3 border-b">
         <div className="min-w-0 space-y-1">
           <CardTitle className="flex items-center gap-2">
-            <span className="text-lg">{shelf.icon ?? (shelf.type === "dynamic" ? "🧩" : "📚")}</span>
+            <span className="text-lg">
+              {shelf.icon ?? (shelf.type === "dynamic" ? "🧩" : "📚")}
+            </span>
             <span className="truncate">
-              <Link className="hover:underline underline-offset-4" href={`/shelves/${shelf.id}`}>
+              <Link className="underline-offset-4 hover:underline" href={`/shelves/${shelf.id}`}>
                 {shelf.name}
               </Link>
             </span>
           </CardTitle>
           <CardDescription className="line-clamp-2">
-            {shelf.description || `${shelfTypeLabel(shelf.type)} • ${shelf.booksCount ?? "—"} livres`}
+            {shelf.description ||
+              `${shelfTypeLabel(shelf.type)} • ${shelf.booksCount ?? "—"} livres`}
           </CardDescription>
         </div>
 
@@ -115,7 +125,12 @@ function SortableShelfRow({
 
           {shelf.type !== "favorites" && shelf.type !== "reading" && (
             <>
-              <Button variant="ghost" size="icon-sm" aria-label="Éditer" onClick={() => onEdit(shelf)}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Éditer"
+                onClick={() => onEdit(shelf)}
+              >
                 <PencilIcon />
               </Button>
               <Button
@@ -265,17 +280,14 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
 
       <div className="grid grid-cols-1 gap-3">
         {systemShelves.map((s) => (
-          <SortableShelfRow
-            key={s.id}
-            shelf={s}
-            disabled
-            onEdit={() => {}}
-            onDelete={() => {}}
-          />
+          <SortableShelfRow key={s.id} shelf={s} disabled onEdit={() => {}} onDelete={() => {}} />
         ))}
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={reorderableShelves.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={reorderableShelves.map((s) => s.id)}
+            strategy={verticalListSortingStrategy}
+          >
             {reorderableShelves.map((s) => (
               <SortableShelfRow
                 key={s.id}
@@ -327,7 +339,10 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
 
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Nom</div>
-              <Input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
+              <Input
+                value={draft.name}
+                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+              />
             </div>
 
             <div className="space-y-1">
@@ -349,7 +364,12 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setCreateOpen(false)} disabled={busy}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setCreateOpen(false)}
+              disabled={busy}
+            >
               Annuler
             </Button>
             <Button type="button" onClick={doCreate} disabled={busy || !draft.name.trim()}>
@@ -369,12 +389,18 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
           <div className="space-y-3">
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Nom</div>
-              <Input value={draft.name} onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))} />
+              <Input
+                value={draft.name}
+                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+              />
             </div>
 
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Emoji (optionnel)</div>
-              <Input value={draft.icon} onChange={(e) => setDraft((d) => ({ ...d, icon: e.target.value }))} />
+              <Input
+                value={draft.icon}
+                onChange={(e) => setDraft((d) => ({ ...d, icon: e.target.value }))}
+              />
             </div>
 
             <div className="space-y-1">
@@ -387,7 +413,12 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
           </div>
 
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setEditOpen(false)} disabled={busy}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setEditOpen(false)}
+              disabled={busy}
+            >
               Annuler
             </Button>
             <Button type="button" onClick={doEdit} disabled={busy || !draft.name.trim()}>
@@ -402,11 +433,17 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
           <DialogHeader>
             <DialogTitle>Supprimer l’étagère</DialogTitle>
             <DialogDescription>
-              Cette action retire aussi tous ses liens livres↔étagère. Les livres ne sont pas supprimés.
+              Cette action retire aussi tous ses liens livres↔étagère. Les livres ne sont pas
+              supprimés.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => setDeleteOpen(false)} disabled={busy}>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              disabled={busy}
+            >
               Annuler
             </Button>
             <Button variant="destructive" type="button" onClick={doDelete} disabled={busy}>
@@ -418,4 +455,3 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
     </div>
   );
 }
-

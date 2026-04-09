@@ -43,4 +43,3 @@ describe("shelf rules", () => {
     expect(sql).toBeTruthy();
   });
 });
-
