@@ -67,6 +67,8 @@ async function handleMcpRequest(req: Request): Promise<Response> {
       async () => {
         const transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: undefined,
+          // JSON responses: SSE streams do not complete cleanly when inlining the handler in tests / some runtimes.
+          enableJsonResponse: true,
         });
         const server = createShelfMcpServer();
         await server.connect(transport);

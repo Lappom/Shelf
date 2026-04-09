@@ -8,6 +8,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Integration tests share one DATABASE_URL; parallel files cause FK races on cleanup.
+    fileParallelism: false,
     environment: "node",
     setupFiles: ["./vitest.setup.dom.ts"],
     include: ["**/*.{test,spec}.?(c|m)[jt]s?(x)"],

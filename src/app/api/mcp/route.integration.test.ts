@@ -30,6 +30,7 @@ describe("POST /api/mcp (Streamable HTTP + API key)", () => {
     dbAvailable = await assertIntegrationDatabaseOrThrow();
     if (!dbAvailable) return;
 
+    await prisma.adminAuditLog.deleteMany({ where: { actor: { email: MCP_TEST_EMAIL } } });
     await prisma.apiKey.deleteMany({ where: { user: { email: MCP_TEST_EMAIL } } });
     await prisma.user.deleteMany({ where: { email: MCP_TEST_EMAIL } });
 
@@ -51,6 +52,7 @@ describe("POST /api/mcp (Streamable HTTP + API key)", () => {
 
   afterAll(async () => {
     if (!dbAvailable) return;
+    await prisma.adminAuditLog.deleteMany({ where: { actor: { email: MCP_TEST_EMAIL } } });
     await prisma.apiKey.deleteMany({ where: { user: { email: MCP_TEST_EMAIL } } });
     await prisma.user.deleteMany({ where: { email: MCP_TEST_EMAIL } });
     await prisma.$disconnect();
