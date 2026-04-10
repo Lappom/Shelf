@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth/rbac";
 import { runApiRoute } from "@/lib/api/route";
 import { corsPreflight, getClientIp } from "@/lib/api/http";
 import { asUuidOrThrow } from "@/lib/api/errors";
+import { annotateCatalogCandidatesLibraryOwnership } from "@/lib/catalog/annotateCatalogLibraryOwnership";
 import { searchCatalogPreviewCached } from "@/lib/catalog/searchCatalogPreview";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
@@ -54,7 +55,8 @@ export async function GET(req: Request) {
         });
       },
     },
-    async ({ req }) => {
+    async ({ req, user }) => {
+      const userId = z.string().uuid().parse((user as { id?: unknown }).id);
       const url = new URL(req.url);
       const parsed = QuerySchema.safeParse({
         q: url.searchParams.get("q") ?? undefined,
@@ -69,7 +71,11 @@ export async function GET(req: Request) {
 
       try {
         const result = await searchCatalogPreviewCached(parsed.data);
-        return NextResponse.json(result, { status: 200 });
+        const candidates = await annotateCatalogCandidatesLibraryOwnership(
+          userId,
+          result.candidates,
+        );
+        return NextResponse.json({ ...result, candidates }, { status: 200 });
       } catch {
         return NextResponse.json({ error: "Catalog provider unavailable" }, { status: 502 });
       }

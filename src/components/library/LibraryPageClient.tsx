@@ -96,6 +96,7 @@ export function LibraryPageClient({
 
   const [view, setView] = useState<"grid" | "list">(initialPrefs.libraryView ?? "grid");
   const [q, setQ] = useState("");
+  const [author, setAuthor] = useState("");
   const [formats, setFormats] = useState<string[]>([]);
   const [languages, setLanguages] = useState<string[]>([]);
   const [tagIds, setTagIds] = useState<string[]>([]);
@@ -115,10 +116,12 @@ export function LibraryPageClient({
   const abortRef = useRef<AbortController | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const lastQueryKeyRef = useRef<string>("");
+  const skipNextLibraryUrlSync = useRef(true);
 
   const queryKey = useMemo(() => {
     return JSON.stringify({
       q: q.trim() || null,
+      author: author.trim() || null,
       formats,
       languages,
       tagIds,
@@ -126,7 +129,32 @@ export function LibraryPageClient({
       statuses,
       limit: booksPerPage,
     });
-  }, [q, formats, languages, tagIds, shelfId, statuses, booksPerPage]);
+  }, [q, author, formats, languages, tagIds, shelfId, statuses, booksPerPage]);
+
+  // Hydrate q/author from URL (deep links from book detail, shared library URLs).
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const uq = sp.get("q");
+    const ua = sp.get("author");
+    if (uq) setQ(uq);
+    if (ua) setAuthor(ua);
+  }, []);
+
+  // Keep URL in sync with library search state (shareable).
+  useEffect(() => {
+    if (skipNextLibraryUrlSync.current) {
+      skipNextLibraryUrlSync.current = false;
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (q.trim()) params.set("q", q.trim());
+    else params.delete("q");
+    if (author.trim()) params.set("author", author.trim());
+    else params.delete("author");
+    const qs = params.toString();
+    const path = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    window.history.replaceState(null, "", path);
+  }, [q, author]);
 
   const fetchPage = useCallback(
     async (args: { cursor?: string | null; append: boolean }) => {
@@ -149,6 +177,7 @@ export function LibraryPageClient({
       if (tagIds.length) params.set("tagIds", toCsv(tagIds));
       if (shelfId) params.set("shelfId", shelfId);
       if (statuses.length) params.set("statuses", toCsv(statuses));
+      if (author.trim()) params.set("author", author.trim());
 
       try {
         const res = await fetch(`/api/search?${params.toString()}`, {
@@ -167,7 +196,7 @@ export function LibraryPageClient({
         setLoading(false);
       }
     },
-    [q, booksPerPage, formats, languages, tagIds, shelfId, statuses],
+    [q, author, booksPerPage, formats, languages, tagIds, shelfId, statuses],
   );
 
   useEffect(() => {
@@ -216,6 +245,17 @@ export function LibraryPageClient({
 
   const Filters = (
     <div className="space-y-5">
+      <div className="space-y-2">
+        <div className="text-eleven-muted text-xs">Auteur (contient)</div>
+        <Input
+          placeholder="Filtrer par auteur…"
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+          className="text-sm"
+          aria-label="Filtrer par auteur"
+        />
+      </div>
+
       <div className="space-y-2">
         <div className="text-eleven-muted text-xs">Format</div>
         <div className="grid grid-cols-2 gap-2">
@@ -400,6 +440,7 @@ export function LibraryPageClient({
                   setTagIds([]);
                   setShelfId("");
                   setStatuses([]);
+                  setAuthor("");
                 }}
               >
                 Réinitialiser
@@ -418,7 +459,7 @@ export function LibraryPageClient({
               className="eleven-body-airy transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
             />
             <Button asChild variant="outline" className="rounded-eleven-pill">
-              <Link href="/search">Avancé</Link>
+              <Link href="/search">Catalogue</Link>
             </Button>
           </div>
 

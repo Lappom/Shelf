@@ -1,70 +1,71 @@
 import Link from "next/link";
-import { z } from "zod";
+import { redirect } from "next/navigation";
 
 import { requireUserPage } from "@/lib/auth/rbac";
-import { prisma } from "@/lib/db/prisma";
 import { SearchPageClient } from "@/components/search/SearchPageClient";
 
-export default async function SearchPage() {
+const LEGACY_LIBRARY_PARAMS = [
+  "mode",
+  "sort",
+  "dir",
+  "formats",
+  "languages",
+  "tagIds",
+  "shelfId",
+  "statuses",
+  "author",
+  "publisher",
+  "addedFrom",
+  "addedTo",
+  "pagesMin",
+  "pagesMax",
+] as const;
+
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const user = await requireUserPage();
-  const userId = z
-    .string()
-    .uuid()
-    .parse((user as { id?: unknown }).id);
   const role = (user as { role?: unknown }).role;
   const isAdmin = role === "admin";
 
-  const [tags, shelves, pref] = await Promise.all([
-    prisma.tag.findMany({
-      select: { id: true, name: true, color: true },
-      orderBy: [{ name: "asc" }],
-      take: 1000,
-    }),
-    prisma.shelf.findMany({
-      where: { ownerId: userId },
-      select: { id: true, name: true, type: true },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      take: 1000,
-    }),
-    prisma.userPreference.upsert({
-      where: { userId },
-      update: {},
-      create: {
-        userId,
-        theme: "system",
-        booksPerPage: 24,
-        libraryInfiniteScroll: false,
-      },
-      select: { booksPerPage: true, libraryInfiniteScroll: true },
-    }),
-  ]);
+  const sp = searchParams ? await searchParams : undefined;
+  const raw = new URLSearchParams();
+  if (sp) {
+    for (const [k, v] of Object.entries(sp)) {
+      if (v === undefined) continue;
+      if (Array.isArray(v)) {
+        for (const item of v) raw.append(k, item);
+      } else {
+        raw.set(k, v);
+      }
+    }
+  }
+
+  const hasLegacyLibrary = LEGACY_LIBRARY_PARAMS.some((p) => raw.has(p));
+  if (hasLegacyLibrary) {
+    const qs = raw.toString();
+    redirect(qs ? `/library?${qs}` : "/library");
+  }
+
+  const qRaw = raw.get("q");
+  const initialCatalogQ =
+    typeof qRaw === "string" && qRaw.trim() ? qRaw.slice(0, 200) : "";
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 px-6 py-10">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Recherche</h1>
-          <p className="text-muted-foreground text-sm">
-            Recherche full-text + fuzzy, filtres combinables, tri et pagination.
-          </p>
-        </div>
+    <div className="mx-auto w-full max-w-5xl px-6 py-8">
+      <header className="catalog-hero-enter mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="eleven-display-section text-2xl tracking-tight sm:text-3xl">Catalogue</h1>
+        <Link
+          className="text-eleven-muted hover:text-foreground text-sm underline-offset-4 hover:underline"
+          href="/library"
+        >
+          Bibliothèque
+        </Link>
+      </header>
 
-        <div className="flex items-center gap-2">
-          <Link
-            className="text-muted-foreground hover:text-foreground text-sm underline-offset-4 hover:underline"
-            href="/library"
-          >
-            Retour bibliothèque
-          </Link>
-        </div>
-      </div>
-
-      <SearchPageClient
-        initialTags={tags}
-        initialShelves={shelves}
-        initialPrefs={pref}
-        isAdmin={isAdmin}
-      />
+      <SearchPageClient initialCatalogQ={initialCatalogQ} isAdmin={isAdmin} />
     </div>
   );
 }

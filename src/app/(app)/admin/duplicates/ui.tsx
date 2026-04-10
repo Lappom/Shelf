@@ -247,7 +247,8 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
             <Button variant="outline" disabled={busy} onClick={() => onScan("hash")}>
               Scanner hash
             </Button>
-            <div className="flex items-center gap-2">
+            {/* suppressHydrationWarning: password managers (e.g. Proton Pass) inject data-* on the client */}
+            <div className="flex items-center gap-2" suppressHydrationWarning>
               <Input
                 value={threshold}
                 onChange={(e) => setThreshold(e.target.value)}

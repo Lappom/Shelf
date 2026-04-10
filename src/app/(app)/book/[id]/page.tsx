@@ -200,7 +200,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                   authorList.map((a) => (
                     <Link
                       key={a}
-                      href={`/search?author=${encodeURIComponent(a)}`}
+                      href={`/library?author=${encodeURIComponent(a)}`}
                       className="underline-offset-4 hover:underline"
                     >
                       {a}

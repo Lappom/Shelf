@@ -661,8 +661,10 @@ L'interface suit le design system décrit dans `DESIGN.md`, inspiré d'ElevenLab
 - Vue grille (défaut) ou liste, switchable.
 - Grille : couvertures de livres en cards avec titre, auteur, badge de format.
 - Liste : tableau avec colonnes triables.
-- Barre de recherche persistante en haut.
-- Filtres dans un panneau latéral collapsible.
+- Barre de recherche persistante en haut (full-text via `GET /api/search`).
+- Query string : `q` (texte), `author` (contient) pour liens partageables et navigation depuis la fiche livre.
+- Filtres dans un panneau latéral collapsible (dont auteur, format, langue, étagère, tags, statut).
+- Lien vers le catalogue externe (`/search`).
 - Pagination en bas ou infinite scroll.
 - Indicateur de progression de lecture sur chaque couverture.
 - FAB (Floating Action Button) d'ajout pour les admins.
@@ -695,10 +697,12 @@ L'interface suit le design system décrit dans `DESIGN.md`, inspiré d'ElevenLab
 - Drag & drop pour réordonner (étagères manuelles).
 - Éditeur de règles visuel pour les étagères dynamiques.
 
-#### Search (`/search`)
-- Recherche full-text avec résultats instantanés (debounced).
-- Filtres avancés.
-- Highlighting des termes recherchés dans les résultats.
+#### Search (`/search`) — catalogue externe
+- Parcours du catalogue agrégé (Open Library + Google Books), résultats en aperçu (debounced) via `GET /api/catalog/search`.
+- Aucun `Book` créé tant que l’utilisateur ne confirme pas l’ajout (flux admin : `POST /api/books` avec `intent: create_from_catalog`).
+- Query string : `q` pour la requête catalogue (URL partageable).
+- Les anciennes URLs avec filtres bibliothèque (`author`, `sort`, `tagIds`, etc.) redirigent vers `/library` avec les mêmes paramètres.
+- La recherche full-text **dans la bibliothèque personnelle** est sur `/library` (voir ci-dessus).
 
 #### Admin (`/admin`)
 - **Users** : liste, création, modification de rôle, suppression.
@@ -817,13 +821,17 @@ But : permettre à **tout utilisateur authentifié** (`reader` ou `admin`) de **
       "isbns": ["978…"],
       "language": "fr",
       "relevanceScore": 0.91,
-      "coverPreviewUrl": "https://covers.openlibrary.org/b/isbn/…-L.jpg"
+      "coverPreviewUrl": "https://covers.openlibrary.org/b/isbn/…-L.jpg",
+      "inLibrary": true,
+      "libraryBookId": "uuid-du-livre-chezvous"
     }
   ]
 }
 ```
 
 `coverPreviewUrl` : `null` si aucun lien de couverture exploitable (`imageLinks` Google Books ou ISBN Open Library normalisé). Les URLs de couverture pointent vers les CDN providers (pas le storage Shelf).
+
+`inLibrary` / `libraryBookId` : pour l’utilisateur authentifié, indique si un livre de **sa** bibliothèque correspond déjà au candidat (même couple `externalCatalogProvider` + `externalCatalogId`, ou même ISBN-13). `libraryBookId` est l’UUID du `Book` (lien fiche). Requête DB après le cache providers (pas de fuite inter-utilisateurs).
 
 **Erreurs** : `400` (paramètres invalides ou `q` et `title` ensemble), `401` / `403` si non authentifié, `502` si tous les providers sont indisponibles.
 

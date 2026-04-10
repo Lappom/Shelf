@@ -46,7 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                   <Link href="/shelves">Étagères</Link>
                 </Button>
                 <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
-                  <Link href="/search">Recherche</Link>
+                  <Link href="/search">Catalogue</Link>
                 </Button>
                 {isAdmin ? (
                   <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">

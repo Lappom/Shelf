@@ -38,7 +38,7 @@ export function MobileBottomNav({ showAdmin }: { showAdmin: boolean }) {
     },
     {
       href: "/search",
-      label: "Recherche",
+      label: "Catalogue",
       icon: SearchIcon,
       match: (p: string) => isSubpath(p, "/search"),
     },

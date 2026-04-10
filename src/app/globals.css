@@ -515,4 +515,112 @@
       animation: none;
     }
   }
+
+  /* Catalog (/search): entrance + skeleton (prefers-reduced-motion aware) */
+  @keyframes catalog-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes catalog-hero-sub-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.35rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes catalog-results-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.3rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes catalog-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.45rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes catalog-skeleton-pulse {
+    from {
+      opacity: 0.5;
+    }
+    to {
+      opacity: 0.92;
+    }
+  }
+
+  @keyframes catalog-loading-pulse {
+    from {
+      opacity: 0.55;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .catalog-hero-enter {
+      animation: catalog-hero-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .catalog-hero-sub-enter {
+      animation: catalog-hero-sub-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+    }
+
+    .catalog-results-enter {
+      animation: catalog-results-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .catalog-card-enter {
+      animation: catalog-card-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--catalog-enter-delay, 0ms);
+    }
+
+    .catalog-skeleton-card .catalog-skeleton-stagger {
+      animation: catalog-skeleton-pulse 1s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+      animation-delay: var(--catalog-skeleton-delay, 0ms);
+    }
+
+    .catalog-loading-dots {
+      animation: catalog-loading-pulse 0.9s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .catalog-hero-enter,
+    .catalog-hero-sub-enter,
+    .catalog-results-enter,
+    .catalog-card-enter {
+      animation: none;
+    }
+
+    .catalog-skeleton-card .catalog-skeleton-stagger {
+      animation: none;
+    }
+
+    .catalog-loading-dots {
+      animation: none;
+    }
+  }
 }

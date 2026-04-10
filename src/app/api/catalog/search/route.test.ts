@@ -15,6 +15,17 @@ vi.mock("@/lib/catalog/searchCatalogPreview", () => ({
   searchCatalogPreviewCached,
 }));
 
+vi.mock("@/lib/catalog/annotateCatalogLibraryOwnership", () => ({
+  annotateCatalogCandidatesLibraryOwnership: vi.fn(
+    async (_userId: string, candidates: unknown[]) =>
+      (candidates as Record<string, unknown>[]).map((c) => ({
+        ...c,
+        inLibrary: false,
+        libraryBookId: null,
+      })),
+  ),
+}));
+
 vi.mock("@/lib/security/rateLimit", () => ({
   rateLimitOrThrow,
 }));
