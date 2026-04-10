@@ -598,10 +598,53 @@ export function registerShelfMcpTools(mcp: McpServer) {
     async (args) =>
       runAuditedTool("dismiss_recommendation", async () => {
         const ctx = requireMcpContext();
-        await prisma.userRecommendation.updateMany({
+        const updated = await prisma.userRecommendation.updateMany({
           where: { userId: ctx.userId, bookId: args.book_id, dismissed: false },
           data: { dismissed: true },
         });
+        if (updated.count > 0) {
+          await prisma.recommendationAnalyticsEvent.create({
+            data: {
+              userId: ctx.userId,
+              bookId: args.book_id,
+              event: "dismiss",
+              source: "mcp",
+            },
+          });
+        }
+        return mcpJsonResult({ ok: true });
+      }),
+  );
+
+  mcp.registerTool(
+    "recommendation_feedback",
+    {
+      description:
+        "Record explicit like or dislike for a recommended book (updates scoring signals and funnel analytics).",
+      inputSchema: {
+        book_id: z.string().uuid(),
+        kind: z.enum(["like", "dislike"]),
+      },
+    },
+    async (args) =>
+      runAuditedTool("recommendation_feedback", async () => {
+        const ctx = requireMcpContext();
+        const event = args.kind === "like" ? "like" : "dislike";
+        await prisma.$transaction([
+          prisma.userRecommendationFeedback.upsert({
+            where: { userId_bookId: { userId: ctx.userId, bookId: args.book_id } },
+            create: { userId: ctx.userId, bookId: args.book_id, kind: args.kind },
+            update: { kind: args.kind },
+          }),
+          prisma.recommendationAnalyticsEvent.create({
+            data: {
+              userId: ctx.userId,
+              bookId: args.book_id,
+              event,
+              source: "mcp",
+            },
+          }),
+        ]);
         return mcpJsonResult({ ok: true });
       }),
   );

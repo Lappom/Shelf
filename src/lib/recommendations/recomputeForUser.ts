@@ -1,8 +1,17 @@
 import { prisma } from "@/lib/db/prisma";
 
+import {
+  applyAnchorAdjustments,
+  dominantLanguageFromSeeds,
+  fileAvailabilityBonus,
+  languageScoreMultiplier,
+  maxContentSimilarityToAnchors,
+  noveltyRecencyBoost,
+} from "./anchorSignals";
 import { TOP_STORED, W_FINAL_POPULARITY, W_FINAL_RECENCY } from "./constants";
-import { finalScore, popularityScore, recencyBonus, applyAuthorDiversity } from "./aggregate";
+import { applyAuthorSubjectDiversity, finalScore, popularityScore, recencyBonus } from "./aggregate";
 import { bookSubjectTfidf, buildSubjectIdf, jsonAuthorsToStrings, subjectsToTerms } from "./corpus";
+import { buildCooccurrenceScores } from "./cooccurrence";
 import { collaborativeScoreForBook, findNeighbors } from "./collaborative";
 import type { BookFeatures } from "./types";
 import { authorOverlap, contentSimilarity, sparseCosine, tagJaccard } from "./similarity";
@@ -11,6 +20,7 @@ import {
   reasonLikedBook,
   reasonNeighbor,
   reasonPopular,
+  reasonReadTogether,
   reasonRecent,
   reasonSameAuthor,
   reasonSimilarSubject,
@@ -99,13 +109,9 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
   });
   const collaborativeEnabled = pref?.recommendationsCollaborativeEnabled ?? true;
 
-  const dismissed = await prisma.userRecommendation.findMany({
-    where: { userId, dismissed: true },
-    select: { bookId: true },
-  });
-  const dismissedSet = new Set(dismissed.map((d) => d.bookId));
-
   const [
+    dismissed,
+    feedbackRows,
     booksRaw,
     progressAll,
     shelfLinks,
@@ -115,6 +121,14 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
     totalUsers,
     progressTarget,
   ] = await Promise.all([
+    prisma.userRecommendation.findMany({
+      where: { userId, dismissed: true },
+      select: { bookId: true },
+    }),
+    prisma.userRecommendationFeedback.findMany({
+      where: { userId },
+      select: { bookId: true, kind: true },
+    }),
     prisma.book.findMany({
       where: { deletedAt: null },
       select: {
@@ -127,6 +141,7 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
         pageCount: true,
         createdAt: true,
         tags: { select: { tagId: true } },
+        _count: { select: { files: true } },
       },
     }),
     prisma.userBookProgress.findMany({
@@ -161,6 +176,11 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
       select: { bookId: true, status: true },
     }),
   ]);
+
+  const dismissedSet = new Set(dismissed.map((d) => d.bookId));
+  const likeAnchorIds = feedbackRows.filter((f) => f.kind === "like").map((f) => f.bookId);
+  const dislikeAnchorIds = feedbackRows.filter((f) => f.kind === "dislike").map((f) => f.bookId);
+  const negativeAnchorIds = [...new Set([...dismissedSet, ...dislikeAnchorIds])];
 
   const shelfRows = shelfLinks.map((l) => ({
     ownerId: l.shelf.ownerId,
@@ -197,6 +217,7 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
     publisher: b.publisher,
     pageCount: b.pageCount,
     createdAt: b.createdAt,
+    fileCount: b._count.files,
   }));
 
   const bookById = new Map(bookFeatures.map((b) => [b.id, b]));
@@ -233,6 +254,14 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
     .sort((a, b) => (seedWeights.get(b.id) ?? 0) - (seedWeights.get(a.id) ?? 0))
     .slice(0, 25);
 
+  const seedIdSet = new Set(seeds.map((s) => s.id));
+  const coocByBook = buildCooccurrenceScores({
+    progressRows,
+    targetUserId: userId,
+    seedBookIds: seedIdSet,
+  });
+  const dominantLang = dominantLanguageFromSeeds(seeds);
+
   const userIds = new Set<string>();
   for (const p of progressRows) userIds.add(p.userId);
   for (const s of shelfRows) userIds.add(s.ownerId);
@@ -268,6 +297,7 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
     score: number;
     content: number;
     collab: number;
+    cooc: number;
     popularity: number;
     recency: number;
     reasons: Array<{ code: string; text: string }>;
@@ -299,6 +329,8 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
         ? collaborativeScoreForBook(c.id, targetPos, neighbors)
         : 0;
 
+    const coocSc = collaborativeEnabled ? (coocByBook.get(c.id) ?? 0) : 0;
+
     const reasons: Array<{ code: string; text: string }> = [];
 
     if (!coldStart && seeds.length > 0) {
@@ -324,6 +356,9 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
     if (!coldStart && collab >= 0.08) {
       reasons.push(reasonNeighbor());
     }
+    if (!coldStart && coocSc >= 0.12) {
+      reasons.push(reasonReadTogether());
+    }
     if (pop >= 0.05) {
       reasons.push(reasonPopular());
     }
@@ -336,9 +371,22 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
     }
 
     const wPopRec = W_FINAL_POPULARITY + W_FINAL_RECENCY;
-    const rawFinal = coldStart
+    let rawFinal = coldStart
       ? (W_FINAL_POPULARITY / wPopRec) * pop + (W_FINAL_RECENCY / wPopRec) * rec
-      : finalScore(content, collab, pop, rec, collaborativeEnabled);
+      : finalScore(content, collab, coocSc, pop, rec, collaborativeEnabled);
+
+    const finishedReaders = finishedByBook.get(c.id) ?? 0;
+    rawFinal += noveltyRecencyBoost(finishedReaders, rec);
+    rawFinal *= languageScoreMultiplier(c.language, dominantLang);
+    rawFinal += fileAvailabilityBonus(c.fileCount);
+
+    const maxNeg = maxContentSimilarityToAnchors(c, negativeAnchorIds, bookById, simFn);
+    const maxPos = maxContentSimilarityToAnchors(c, likeAnchorIds, bookById, simFn);
+    rawFinal = applyAnchorAdjustments({
+      baseScore: rawFinal,
+      maxNegSimilarity: maxNeg,
+      maxPosSimilarity: maxPos,
+    });
 
     const score = Math.max(0, Math.min(1, rawFinal));
 
@@ -347,6 +395,7 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
       score,
       content,
       collab,
+      cooc: coocSc,
       popularity: pop,
       recency: rec,
       reasons: dedupeReasons(reasons),
@@ -364,7 +413,12 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
     recency: r.recency,
   }));
 
-  const diversified = applyAuthorDiversity(forDiversity, bookById, TOP_STORED);
+  const diversified = applyAuthorSubjectDiversity(
+    forDiversity,
+    bookById,
+    tfidfByBook,
+    TOP_STORED,
+  );
   const top = diversified.slice(0, TOP_STORED);
 
   const scoreById = new Map(scored.map((r) => [r.bookId, r]));

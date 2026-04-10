@@ -24,6 +24,7 @@ export const RECO_REASON_FILTER_CODES: { code: string; label: string }[] = [
   { code: "same_author", label: "Même auteur" },
   { code: "similar_subject", label: "Sujet proche" },
   { code: "neighbor_user", label: "Goûts proches" },
+  { code: "read_together", label: "Co-lecture" },
   { code: "similar_tags", label: "Tags" },
   { code: "popular", label: "Populaire" },
   { code: "recent", label: "Récent" },

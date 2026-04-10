@@ -837,21 +837,21 @@
 ## Phase 30 — Recommandations V2 (hybride)
 
 ### 30.1 Moteur de scoring hybride
-- [ ] Conserver content-based et ajouter signaux collaboratifs anonymisés.
-- [ ] Stratégie cold start (nouvel utilisateur / nouveau livre).
-- [ ] Diversification des résultats (éviter la sur-concentration).
-- [ ] Re-rank par contraintes produit (langue, disponibilité, signaux utilisateur).
+- [x] Conserver content-based et ajouter signaux collaboratifs anonymisés.
+- [x] Stratégie cold start (nouvel utilisateur / nouveau livre).
+- [x] Diversification des résultats (éviter la sur-concentration).
+- [x] Re-rank par contraintes produit (langue, disponibilité, signaux utilisateur).
 
 ### 30.2 UX des recommandations
-- [ ] Afficher les raisons (“Parce que vous avez lu…”, tags, auteurs proches).
-- [ ] Feedback explicite (`like` / `dislike` / `not interested`) avec effet mesurable.
-- [ ] Contrôles de confidentialité et transparence utilisateur.
-- [ ] Observabilité du funnel (impression, clic, ajout, dismiss).
+- [x] Afficher les raisons (“Parce que vous avez lu…”, tags, auteurs proches).
+- [x] Feedback explicite (`like` / `dislike` / `not interested`) avec effet mesurable.
+- [x] Contrôles de confidentialité et transparence utilisateur.
+- [x] Observabilité du funnel (impression, clic, ajout, dismiss).
 
 ### 30.3 Critères d’acceptation
-- [ ] Amélioration CTR et taux d’ajout sur baseline V1.
-- [ ] Réduction du taux de dismiss non qualifié.
-- [ ] A/B test ou évaluation offline documentée.
+- [x] Amélioration CTR et taux d’ajout sur baseline V1.
+- [x] Réduction du taux de dismiss non qualifié.
+- [x] A/B test ou évaluation offline documentée.
 
 ---
 

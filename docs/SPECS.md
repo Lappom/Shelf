@@ -106,6 +106,10 @@ Shelf ──N:N── Book (via BookShelf)
 Shelf ──1:1── ShelfRule (optional, for dynamic shelves)
 
 User ──1:N── UserRecommendation
+User ──1:N── UserRecommendationFeedback
+Book ──1:N── UserRecommendationFeedback
+User ──1:N── RecommendationAnalyticsEvent
+Book ──1:N── RecommendationAnalyticsEvent
 User ──1:N── ApiKey
 ```
 
@@ -1098,10 +1102,11 @@ Chaque utilisateur reçoit des suggestions de livres basées sur ses habitudes d
 | Annotations nombreuses | Moyen | Nombre d'entrées `UserAnnotation` par livre |
 | Ajouté à une étagère manuelle | Faible | `BookShelf` |
 | Livre abandonné | Négatif | `UserBookProgress.status = 'abandoned'` |
+| J’aime / Moins (feedback explicite) | Positif / négatif | `UserRecommendationFeedback` (dernier état par `(user_id, book_id)`) |
 
 ### 16.3 Algorithme de scoring
 
-Le moteur de recommandation repose sur deux axes complémentaires :
+Le moteur combine **contenu**, **collaboratif (deux formes)** et **signaux globaux**, puis applique des ajustements produit et la diversité.
 
 **1. Content-based filtering (similarité de contenu)**
 
@@ -1132,20 +1137,38 @@ En contexte multi-utilisateurs, si deux utilisateurs ont des étagères et histo
 - Seuil minimum de livres en commun (5) pour éviter le bruit.
 - Désactivable par l'utilisateur dans ses préférences (vie privée).
 
+**3. Co-occurrence anonyme (item–item)**
+
+- Agrégation : livres souvent terminés par des lecteurs qui ont aussi terminé au moins un des « seeds » de l’utilisateur cible.
+- Aucun identifiant de lecteur n’est exposé ; le signal est purement statistique sur l’historique local.
+
 ### 16.4 Score final de recommandation
 
+Blend principal (les poids `collab` et `cooc` sont mis à **zéro** si l’utilisateur a désactivé le collaboratif, puis renormalisation) :
+
 ```
-recommendation_score(user, book) =
-    0.60 × content_score(user, book)
-  + 0.25 × collaborative_score(user, book)
-  + 0.10 × popularity_score(book)
-  + 0.05 × recency_bonus(book)
-  - penalty_if_same_author_already_recommended
+blend =
+    w_content × content_score(user, book)
+  + w_collab × collaborative_score(user, book)    // user–user
+  + w_cooc × cooccurrence_score(user, book)       // item–item anonyme
+  + w_pop × popularity_score(book)
+  + w_rec × recency_bonus(book)
 ```
 
+Valeurs de référence implémentation : `w_content=0.55`, `w_collab=0.20`, `w_cooc=0.10`, `w_pop=0.10`, `w_rec=0.05` (ajustables dans le code).
+
+**Ajustements** (après le blend, avant clamp `[0,1]` et sélection top-K) :
+
+- **Cold start livre** : bonus léger lié à la récence si le livre a très peu de lecteurs « terminé » (exploration).
+- **Langue** : langue majoritaire des seeds → léger malus si le candidat a une langue connue et différente.
+- **Disponibilité fichier** : petit bonus si le livre a au moins un `BookFile` (sans exclure les fiches sans fichier).
+- **Ancres négatives** : similarité de contenu maximale vers les livres en *dislike* ou *dismiss* → pénalité ; **ancres positives** : *like* explicite → léger bonus.
+
+**Post-traitement** :
+
 - `popularity_score` : nombre de lecteurs ayant terminé le livre / total d'utilisateurs.
-- `recency_bonus` : boost pour les livres récemment ajoutés à la bibliothèque.
-- Pénalité de diversité : éviter de recommander 5 livres du même auteur.
+- `recency_bonus` : livres récemment ajoutés au catalogue.
+- **Diversité** : pénalité gloutonne sur répétition d’auteur ; pénalité additionnelle sur redondance de sujets (TF-IDF) dans le top stocké.
 
 ### 16.5 Calcul et stockage
 
@@ -1154,8 +1177,10 @@ recommendation_score(user, book) =
 | Fréquence de calcul | Background job toutes les 6h + recalcul à la demande |
 | Stockage | Table `UserRecommendation` avec scores pré-calculés |
 | Nombre de recommandations | Top 50 par utilisateur, affichées par lots de 10 |
-| Cold start | Nouveaux utilisateurs → recommandations basées sur la popularité globale |
+| Cold start utilisateur | Pas de seeds forts → popularité + récence |
+| Cold start livre | Faible popularité globale → bonus d’exploration (récence) |
 | Invalidation | Recalcul déclenché après un livre terminé ou ajouté aux favoris |
+| Funnel | Événements append-only `RecommendationAnalyticsEvent` (impression, clic, dismiss, like, dislike) avec source `carousel` \| `page` \| `mcp` |
 
 ### 16.6 Table `UserRecommendation`
 
@@ -1172,12 +1197,35 @@ recommendation_score(user, book) =
 
 Contrainte unique : `(user_id, book_id)`
 
+#### Table `UserRecommendationFeedback`
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| user_id | UUID | FK → User |
+| book_id | UUID | FK → Book |
+| kind | ENUM('like','dislike') | Dernier feedback explicite |
+| updated_at | TIMESTAMPTZ | |
+
+Contrainte unique : `(user_id, book_id)`
+
+#### Table `RecommendationAnalyticsEvent`
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| user_id | UUID | FK → User |
+| book_id | UUID | FK → Book |
+| event | ENUM(impression, click, dismiss, like, dislike) | |
+| source | ENUM(carousel, page, mcp) | |
+| created_at | TIMESTAMPTZ | |
+
+Index : `(user_id, created_at)`, `(event, created_at)`
+
 ### 16.7 Interface
 
 - **Section "Pour vous"** sur la page Library : carrousel horizontal de couvertures recommandées.
-- Chaque recommandation affiche la raison principale ("Parce que vous avez aimé *Fondation*").
-- Bouton "Pas intéressé" pour dismiss (améliore le modèle).
-- Page dédiée `/recommendations` avec la liste complète et filtres par raison.
+- Chaque recommandation affiche la raison principale ("Parce que vous avez aimé *Fondation*") ; codes raison incluant *co-lecture* (`read_together`) lorsque le signal co-occurrence est fort.
+- Actions : **J’aime**, **Moins** (dislike), **Pas intéressé** (dismiss) ; liens vers la fiche livre portent `?reco=1` pour traçabilité URL.
+- Page dédiée `/recommendations` : mêmes actions, filtres par raison, texte de confidentialité (signaux stockés, pas d’exposition d’identité de voisins).
 
 ---
 
@@ -1252,7 +1300,8 @@ Table `ApiKey` :
 | Tool | Description | Paramètres |
 |------|-------------|------------|
 | `get_recommendations` | Recommandations personnalisées | `limit?: number` |
-| `dismiss_recommendation` | Ignorer une recommandation | `book_id: string` |
+| `dismiss_recommendation` | Ignorer une recommandation | `book_id: string` (enregistre aussi un événement analytics `dismiss`, source `mcp`) |
+| `recommendation_feedback` | Enregistrer un like ou dislike explicite | `book_id: string`, `kind: 'like' \| 'dislike'` |
 
 #### Administration (admin uniquement)
 

@@ -17,8 +17,8 @@ describe("aggregate", () => {
   });
 
   it("finalScore renormalizes when collaborative disabled", () => {
-    const withCollab = finalScore(0.8, 0.2, 0.5, 0.5, true);
-    const noCollab = finalScore(0.8, 0, 0.5, 0.5, false);
+    const withCollab = finalScore(0.8, 0.2, 0.15, 0.5, 0.5, true);
+    const noCollab = finalScore(0.8, 0, 0, 0.5, 0.5, false);
     expect(withCollab).toBeGreaterThan(0);
     expect(noCollab).toBeGreaterThan(0);
     expect(noCollab).toBeGreaterThan(withCollab);
@@ -38,6 +38,7 @@ describe("aggregate", () => {
           publisher: null,
           pageCount: null,
           createdAt: new Date(),
+          fileCount: 0,
         },
       ],
       [
@@ -52,6 +53,7 @@ describe("aggregate", () => {
           publisher: null,
           pageCount: null,
           createdAt: new Date(),
+          fileCount: 0,
         },
       ],
       [
@@ -66,6 +68,7 @@ describe("aggregate", () => {
           publisher: null,
           pageCount: null,
           createdAt: new Date(),
+          fileCount: 0,
         },
       ],
     ]);

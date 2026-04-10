@@ -1,12 +1,14 @@
 import type { BookFeatures } from "./types";
 import {
   SAME_AUTHOR_PENALTY,
+  SAME_SUBJECT_PENALTY,
+  W_FINAL_COOC,
   W_FINAL_COLLAB,
   W_FINAL_CONTENT,
   W_FINAL_POPULARITY,
   W_FINAL_RECENCY,
 } from "./constants";
-import { normalizeAuthorSet } from "./similarity";
+import { normalizeAuthorSet, sparseCosine } from "./similarity";
 
 export type ScoredCandidate = {
   bookId: string;
@@ -37,11 +39,12 @@ export function popularityScore(finishedReaders: number, totalUsers: number): nu
 }
 
 /**
- * Greedy re-ranking: penalize candidates whose primary author overlaps with already picked authors.
+ * Greedy re-ranking: author diversity + soft subject (TF-IDF) redundancy penalty.
  */
-export function applyAuthorDiversity(
+export function applyAuthorSubjectDiversity(
   sorted: ScoredCandidate[],
   bookById: Map<string, BookFeatures>,
+  tfidfByBook: Map<string, Map<string, number>>,
   topK: number,
 ): ScoredCandidate[] {
   const picked: ScoredCandidate[] = [];
@@ -59,6 +62,14 @@ export function applyAuthorDiversity(
       if (book) {
         for (const a of normalizeAuthorSet(book.authors)) {
           penalty += (authorCounts.get(a) ?? 0) * SAME_AUTHOR_PENALTY;
+        }
+        const cVec = tfidfByBook.get(c.bookId);
+        if (cVec && cVec.size > 0) {
+          for (const p of picked) {
+            const pVec = tfidfByBook.get(p.bookId);
+            if (!pVec || pVec.size === 0) continue;
+            penalty += sparseCosine(cVec, pVec) * SAME_SUBJECT_PENALTY;
+          }
         }
       }
       const adj = c.score - penalty;
@@ -80,19 +91,37 @@ export function applyAuthorDiversity(
   return picked;
 }
 
-/** Weighted blend per SPECS §16.4 (collab may be 0 when disabled). */
+/**
+ * Greedy re-ranking: penalize candidates whose primary author overlaps with already picked authors.
+ */
+export function applyAuthorDiversity(
+  sorted: ScoredCandidate[],
+  bookById: Map<string, BookFeatures>,
+  topK: number,
+): ScoredCandidate[] {
+  const emptyTfidf = new Map<string, Map<string, number>>();
+  return applyAuthorSubjectDiversity(sorted, bookById, emptyTfidf, topK);
+}
+
+/**
+ * Weighted blend: content + optional user–user CF + optional co-occurrence + popularity + recency.
+ * When collaborative is disabled, collab and cooc weights are zero and the rest renormalize.
+ */
 export function finalScore(
   content: number,
   collab: number,
+  cooc: number,
   popularity: number,
   recency: number,
   collaborativeEnabled: boolean,
 ): number {
   const wCollab = collaborativeEnabled ? W_FINAL_COLLAB : 0;
-  const base = W_FINAL_CONTENT + wCollab + W_FINAL_POPULARITY + W_FINAL_RECENCY;
+  const wCooc = collaborativeEnabled ? W_FINAL_COOC : 0;
+  const base = W_FINAL_CONTENT + wCollab + wCooc + W_FINAL_POPULARITY + W_FINAL_RECENCY;
   return (
     (W_FINAL_CONTENT / base) * content +
     (wCollab / base) * collab +
+    (wCooc / base) * cooc +
     (W_FINAL_POPULARITY / base) * popularity +
     (W_FINAL_RECENCY / base) * recency
   );

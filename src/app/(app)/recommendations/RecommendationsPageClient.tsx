@@ -1,17 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import * as React from "react";
+import { ThumbsDownIcon, ThumbsUpIcon } from "lucide-react";
 
 import { patchUserPreferencesAction } from "@/app/(app)/actions/userPreferences";
 import {
   dismissRecommendationAction,
   listRecommendationsAction,
+  logRecommendationAnalyticsBatchAction,
   refreshRecommendationsAction,
+  setRecommendationFeedbackAction,
 } from "@/app/(app)/recommendations/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { RecoBookLink } from "@/components/recommendations/RecoBookLink";
 import {
   RECO_REASON_FILTER_CODES,
   parseRecoReasons,
@@ -53,11 +56,26 @@ export function RecommendationsPageClient({
   const [loading, setLoading] = React.useState(false);
   const [busy, startTransition] = React.useTransition();
   const [refreshBusy, startRefresh] = React.useTransition();
+  const impressionLogged = React.useRef(new Set<string>());
 
   React.useEffect(() => {
     setItems(initialItems);
     setNextCursor(initialNextCursor);
   }, [initialItems, initialNextCursor]);
+
+  React.useEffect(() => {
+    if (items.length === 0) return;
+    const newItems = items.filter((i) => !impressionLogged.current.has(i.bookId));
+    if (newItems.length === 0) return;
+    for (const i of newItems) impressionLogged.current.add(i.bookId);
+    void logRecommendationAnalyticsBatchAction({
+      items: newItems.map((i) => ({
+        bookId: i.bookId,
+        event: "impression",
+        source: "page",
+      })),
+    }).catch(() => undefined);
+  }, [items]);
 
   const loadPage = React.useCallback(
     async (opts: { append: boolean; cursor: string | null; code: string | null }) => {
@@ -85,7 +103,14 @@ export function RecommendationsPageClient({
 
   const onDismiss = (bookId: string) => {
     startTransition(async () => {
-      const res = await dismissRecommendationAction({ bookId });
+      const res = await dismissRecommendationAction({ bookId, source: "page" });
+      if (res.ok) setItems((prev) => prev.filter((x) => x.bookId !== bookId));
+    });
+  };
+
+  const onFeedback = (bookId: string, kind: "like" | "dislike") => {
+    startTransition(async () => {
+      const res = await setRecommendationFeedbackAction({ bookId, kind, source: "page" });
       if (res.ok) setItems((prev) => prev.filter((x) => x.bookId !== bookId));
     });
   };
@@ -140,6 +165,12 @@ export function RecommendationsPageClient({
             lecteurs, minimum 5 livres en commun).
           </span>
         </label>
+        <p className="text-eleven-muted mt-3 text-xs leading-relaxed">
+          Vos « J’aime », « Moins » et « Pas intéressé » sont enregistrés pour affiner les scores.
+          Les signaux collaboratifs n’exposent jamais d’identité de lecteur ; les statistiques
+          d’usage (impressions, clics) servent uniquement à mesurer la qualité des suggestions.
+          Détails : §16 des spécifications produit.
+        </p>
       </Card>
 
       <div className="flex flex-wrap gap-2">
@@ -189,9 +220,11 @@ export function RecommendationsPageClient({
                 key={row.bookId}
                 className="shadow-eleven-card flex overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white"
               >
-                <Link
+                <RecoBookLink
+                  bookId={row.bookId}
                   href={`/book/${row.bookId}`}
                   className="bg-muted relative w-28 shrink-0 sm:w-32"
+                  source="page"
                 >
                   {src ? (
                     <Image
@@ -207,14 +240,16 @@ export function RecommendationsPageClient({
                       Pas de couverture
                     </div>
                   )}
-                </Link>
+                </RecoBookLink>
                 <div className="flex min-w-0 flex-1 flex-col p-4">
-                  <Link
+                  <RecoBookLink
+                    bookId={row.bookId}
                     href={`/book/${row.bookId}`}
                     className="line-clamp-2 font-medium hover:underline"
+                    source="page"
                   >
                     {row.title}
-                  </Link>
+                  </RecoBookLink>
                   <div className="text-eleven-muted mt-1 line-clamp-1 text-xs">
                     {authorsLine(row.authors) || "—"}
                   </div>
@@ -235,7 +270,31 @@ export function RecommendationsPageClient({
                       ))}
                     </div>
                   ) : null}
-                  <div className="mt-auto flex justify-end pt-3">
+                  <div className="mt-auto flex flex-col gap-2 pt-3 sm:flex-row sm:flex-wrap sm:justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 rounded-xl text-xs"
+                      disabled={busy}
+                      aria-label="J’aime cette suggestion"
+                      onClick={() => onFeedback(row.bookId, "like")}
+                    >
+                      <ThumbsUpIcon className="mr-1 h-3.5 w-3.5" />
+                      J’aime
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-eleven-muted h-8 rounded-xl text-xs"
+                      disabled={busy}
+                      aria-label="Moins comme ça"
+                      onClick={() => onFeedback(row.bookId, "dislike")}
+                    >
+                      <ThumbsDownIcon className="mr-1 h-3.5 w-3.5" />
+                      Moins
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"

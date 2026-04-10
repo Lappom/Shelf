@@ -7,8 +7,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const recoMocks = vi.hoisted(() => ({
   dismissRecommendationAction: vi.fn(async () => ({ ok: true as const })),
+  logRecommendationAnalyticsBatchAction: vi.fn(async () => ({ ok: true as const })),
   markRecommendationsSeenAction: vi.fn(async () => undefined),
   refreshRecommendationsAction: vi.fn(async () => ({ ok: true as const })),
+  setRecommendationFeedbackAction: vi.fn(async () => ({ ok: true as const })),
 }));
 
 vi.mock("@/app/(app)/recommendations/actions", () => recoMocks);
@@ -63,6 +65,7 @@ describe("RecommendationsCarousel", () => {
     await user.click(screen.getByRole("button", { name: /pas intéressé/i }));
     expect(dismissRecommendationAction).toHaveBeenCalledWith({
       bookId: "550e8400-e29b-41d4-a716-446655440000",
+      source: "carousel",
     });
     await waitFor(() => {
       expect(screen.queryByText("Test Book Alpha")).not.toBeInTheDocument();

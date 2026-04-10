@@ -42,6 +42,13 @@ export function reasonNeighbor(): RecommendationReason {
   };
 }
 
+export function reasonReadTogether(): RecommendationReason {
+  return {
+    code: "read_together",
+    text: "Souvent lu par des lecteurs qui ont aimé les mêmes livres",
+  };
+}
+
 export function reasonLikedBook(title: string): RecommendationReason {
   return {
     code: "because_liked",
@@ -55,6 +62,7 @@ export function pickPrimaryReason(reasons: RecommendationReason[]): Recommendati
     "same_author",
     "similar_subject",
     "neighbor_user",
+    "read_together",
     "similar_tags",
     "popular",
     "recent",

@@ -118,6 +118,25 @@ enum AdminImportJobStatus {
   dead_letter
 }
 
+enum RecommendationFeedbackKind {
+  like
+  dislike
+}
+
+enum RecommendationAnalyticsEventType {
+  impression
+  click
+  dismiss
+  like
+  dislike
+}
+
+enum RecommendationAnalyticsSource {
+  carousel
+  page
+  mcp
+}
+
 model User {
   id           String    @id @default(uuid()) @db.Uuid
   email        String    @unique @db.VarChar(255)
@@ -142,6 +161,8 @@ model User {
   adminAuditLogs  AdminAuditLog[]
   importJobs      AdminImportJob[]
   metadataMergeResolutionAudits MetadataMergeResolutionAudit[]
+  recommendationFeedback          UserRecommendationFeedback[]
+  recommendationAnalyticsEvents   RecommendationAnalyticsEvent[]
 
   @@map("users")
 }
@@ -187,6 +208,8 @@ model Book {
   duplicateAuditsPrimary   DuplicateResolutionAudit[] @relation("DuplicateAuditPrimaryBook")
   duplicateAuditsAbsorbed  DuplicateResolutionAudit[] @relation("DuplicateAuditAbsorbedBook")
   metadataMergeResolutionAudits MetadataMergeResolutionAudit[]
+  recommendationFeedback          UserRecommendationFeedback[]
+  recommendationAnalyticsEvents   RecommendationAnalyticsEvent[]
 
   @@index([contentHash])
   @@index([isbn13])
@@ -378,6 +401,38 @@ model UserRecommendation {
   @@index([bookId])
   @@index([userId, dismissed, score])
   @@map("user_recommendations")
+}
+
+model UserRecommendationFeedback {
+  id        String                   @id @default(uuid()) @db.Uuid
+  userId    String                   @map("user_id") @db.Uuid
+  bookId    String                   @map("book_id") @db.Uuid
+  kind      RecommendationFeedbackKind
+  createdAt DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+  @@map("user_recommendation_feedback")
+}
+
+model RecommendationAnalyticsEvent {
+  id        String                         @id @default(uuid()) @db.Uuid
+  userId    String                         @map("user_id") @db.Uuid
+  bookId    String                         @map("book_id") @db.Uuid
+  event     RecommendationAnalyticsEventType
+  source    RecommendationAnalyticsSource
+  createdAt DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
+  @@map("recommendation_analytics_events")
 }
 
 model ApiKey {

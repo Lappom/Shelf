@@ -19,6 +19,7 @@ function book(p: Partial<BookFeatures> & Pick<BookFeatures, "id" | "title">): Bo
     publisher: null,
     pageCount: null,
     createdAt: new Date(),
+    fileCount: 0,
     ...p,
   };
 }

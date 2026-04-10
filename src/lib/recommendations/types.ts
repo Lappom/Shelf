@@ -14,4 +14,6 @@ export type BookFeatures = {
   publisher: string | null;
   pageCount: number | null;
   createdAt: Date;
+  /** Number of attached files (EPUB/PDF, etc.) */
+  fileCount: number;
 };

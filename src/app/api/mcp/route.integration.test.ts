@@ -84,6 +84,7 @@ describe("POST /api/mcp (Streamable HTTP + API key)", () => {
 
     const listed = await client.listTools();
     expect(listed.tools.some((t) => t.name === "list_books")).toBe(true);
+    expect(listed.tools.some((t) => t.name === "recommendation_feedback")).toBe(true);
 
     const result = await client.callTool({
       name: "list_books",
