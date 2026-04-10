@@ -471,6 +471,83 @@
     }
   }
 
+  @keyframes admin-merge-audits-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-merge-audits-toolbar-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-merge-audits-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-settings-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-settings-notice-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-settings-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-settings-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .shelf-hero-enter {
       animation: shelf-hero-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -590,6 +667,49 @@
       animation: admin-ops-secondary-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
       animation-delay: 0.24s;
     }
+
+    .admin-merge-audits-hero-enter {
+      animation: admin-merge-audits-hero-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .admin-merge-audits-toolbar-enter {
+      animation: admin-merge-audits-toolbar-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: 0.06s;
+    }
+
+    .admin-merge-audits-panel-enter {
+      animation: admin-merge-audits-panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: 0.12s;
+    }
+
+    .admin-merge-audits-row-enter {
+      animation: admin-ops-row-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-merge-audits-delay, 0ms);
+    }
+
+    .admin-merge-audits-skeleton-stagger {
+      animation: library-skeleton-pulse 1.1s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+      animation-delay: var(--admin-merge-audits-skeleton-delay, 0ms);
+    }
+
+    .admin-settings-hero-enter {
+      animation: admin-settings-hero-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .admin-settings-notice-enter {
+      animation: admin-settings-notice-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-settings-notice-delay, 0.08s);
+    }
+
+    .admin-settings-panel-enter {
+      animation: admin-settings-panel-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-settings-panel-delay, 0ms);
+    }
+
+    .admin-settings-row-enter {
+      animation: admin-settings-row-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-settings-row-delay, 0ms);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -638,6 +758,24 @@
     .admin-ops-table-panel-enter,
     .admin-ops-row-enter,
     .admin-ops-secondary-enter {
+      animation: none;
+    }
+
+    .admin-merge-audits-hero-enter,
+    .admin-merge-audits-toolbar-enter,
+    .admin-merge-audits-panel-enter,
+    .admin-merge-audits-row-enter {
+      animation: none;
+    }
+
+    .admin-merge-audits-skeleton-stagger {
+      animation: none;
+    }
+
+    .admin-settings-hero-enter,
+    .admin-settings-notice-enter,
+    .admin-settings-panel-enter,
+    .admin-settings-row-enter {
       animation: none;
     }
   }

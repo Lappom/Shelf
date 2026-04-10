@@ -1,0 +1,39 @@
+/* Admin storage: MIME bar fill (GPU-friendly transform only) */
+
+.barTrack {
+  height: 0.5rem;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--eleven-border-subtle);
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 9999px;
+  transform-origin: left;
+  background: var(--foreground);
+  opacity: 0.88;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .barFillMotion {
+    transform: scaleX(0);
+    animation: admin-storage-bar-grow 0.55s cubic-bezier(0.25, 1, 0.5, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barFillMotion {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes admin-storage-bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}

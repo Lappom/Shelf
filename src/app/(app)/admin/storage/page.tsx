@@ -1,6 +1,9 @@
 import { requireAdminPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
-import { Card } from "@/components/ui/card";
+
+import { StorageDashboard, type StorageMimeBreakdownRow } from "./storage-dashboard";
+
+const MIME_BREAKDOWN_TOP = 5;
 
 function formatBytes(n: bigint | number) {
   const v = typeof n === "bigint" ? Number(n) : n;
@@ -15,49 +18,98 @@ function formatBytes(n: bigint | number) {
   return `${x < 10 && i > 0 ? x.toFixed(1) : Math.round(x)} ${units[i]}`;
 }
 
+function buildMimeBreakdown(
+  rows: { mimeType: string; bytes: bigint; fileCount: number }[],
+  totalBytes: bigint,
+): StorageMimeBreakdownRow[] {
+  const sorted = [...rows].sort((a, b) => {
+    if (a.bytes < b.bytes) return 1;
+    if (a.bytes > b.bytes) return -1;
+    return a.mimeType.localeCompare(b.mimeType);
+  });
+
+  if (sorted.length <= MIME_BREAKDOWN_TOP) {
+    return sorted.map((r) => ({
+      label: r.mimeType,
+      fileCount: r.fileCount,
+      bytesLabel: formatBytes(r.bytes),
+      percentOfVolume:
+        totalBytes > BigInt(0)
+          ? Math.round((Number(r.bytes) / Number(totalBytes)) * 1000) / 10
+          : 0,
+    }));
+  }
+
+  const top = sorted.slice(0, MIME_BREAKDOWN_TOP - 1);
+  const rest = sorted.slice(MIME_BREAKDOWN_TOP - 1);
+  const otherBytes = rest.reduce((acc, r) => acc + r.bytes, BigInt(0));
+  const otherCount = rest.reduce((acc, r) => acc + r.fileCount, 0);
+
+  const mappedTop = top.map((r) => ({
+    label: r.mimeType,
+    fileCount: r.fileCount,
+    bytesLabel: formatBytes(r.bytes),
+    percentOfVolume:
+      totalBytes > BigInt(0)
+        ? Math.round((Number(r.bytes) / Number(totalBytes)) * 1000) / 10
+        : 0,
+  }));
+
+  const otherRow: StorageMimeBreakdownRow = {
+    label: "Autres",
+    fileCount: otherCount,
+    bytesLabel: formatBytes(otherBytes),
+    percentOfVolume:
+      totalBytes > BigInt(0)
+        ? Math.round((Number(otherBytes) / Number(totalBytes)) * 1000) / 10
+        : 0,
+  };
+
+  return [...mappedTop, otherRow];
+}
+
 export default async function AdminStoragePage() {
   await requireAdminPage();
 
-  const [fileAgg, bookCount] = await Promise.all([
+  const [fileAgg, bookCount, booksWithFilesCount, byMime] = await Promise.all([
     prisma.bookFile.aggregate({
       _sum: { fileSize: true },
       _count: { id: true },
     }),
     prisma.book.count({ where: { deletedAt: null } }),
+    prisma.book.count({
+      where: { deletedAt: null, files: { some: {} } },
+    }),
+    prisma.bookFile.groupBy({
+      by: ["mimeType"],
+      _sum: { fileSize: true },
+      _count: { id: true },
+    }),
   ]);
 
   const totalBytes = fileAgg._sum.fileSize ?? BigInt(0);
+  const fileCount = fileAgg._count.id;
+
+  const mimeRows = byMime.map((r) => ({
+    mimeType: r.mimeType,
+    bytes: r._sum.fileSize ?? BigInt(0),
+    fileCount: r._count.id,
+  }));
+
+  const mimeBreakdown = buildMimeBreakdown(mimeRows, totalBytes);
+
+  const avgBytes =
+    fileCount > 0 ? totalBytes / BigInt(fileCount) : BigInt(0);
+  const avgBytesLabel = fileCount > 0 ? formatBytes(avgBytes) : "—";
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="eleven-display-section text-xl">Stockage</h2>
-        <p className="text-eleven-muted text-sm">
-          Statistiques agrégées des fichiers EPUB enregistrés (table{" "}
-          <code className="text-xs">book_files</code>
-          ).
-        </p>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Card className="shadow-eleven-card p-4">
-          <div className="text-eleven-muted text-xs font-medium uppercase">Volume total</div>
-          <div className="eleven-display-section mt-1 text-2xl">{formatBytes(totalBytes)}</div>
-          <div className="text-eleven-muted mt-2 text-sm">
-            {fileAgg._count.id} fichier{fileAgg._count.id === 1 ? "" : "s"} en base
-          </div>
-        </Card>
-        <Card className="shadow-eleven-card p-4">
-          <div className="text-eleven-muted text-xs font-medium uppercase">Livres actifs</div>
-          <div className="eleven-display-section mt-1 text-2xl">{bookCount}</div>
-          <div className="text-eleven-muted mt-2 text-sm">
-            Entrées <code className="text-xs">books</code> non supprimées
-          </div>
-        </Card>
-      </div>
-      <p className="text-eleven-muted text-xs">
-        Les couvertures et métadonnées utilisent d’autres chemins storage ; l’espace disque réel
-        dépend de l’adapter (local ou S3/MinIO).
-      </p>
-    </div>
+    <StorageDashboard
+      totalBytesLabel={formatBytes(totalBytes)}
+      fileCount={fileCount}
+      bookCount={bookCount}
+      booksWithFilesCount={booksWithFilesCount}
+      avgBytesLabel={avgBytesLabel}
+      mimeBreakdown={mimeBreakdown}
+    />
   );
 }
