@@ -1,22 +1,49 @@
+import type { CSSProperties } from "react";
+
 import { Card } from "@/components/ui/card";
 
 export default function LibraryLoading() {
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-2">
-          <div className="bg-muted h-8 w-40 animate-pulse rounded-lg" />
-          <div className="bg-muted h-4 w-64 max-w-full animate-pulse rounded-lg" />
+    <div className="space-y-6">
+      <div className="library-hero-band flex flex-col gap-5 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
+        <div className="max-w-xl space-y-3">
+          <div
+            className="library-skeleton-stagger bg-muted h-9 w-48 max-w-full rounded-lg sm:h-10 sm:w-56"
+            style={{ "--library-skeleton-delay": "0ms" } as CSSProperties}
+          />
+          <div
+            className="library-skeleton-stagger bg-muted h-4 w-full max-w-md rounded-lg"
+            style={{ "--library-skeleton-delay": "60ms" } as CSSProperties}
+          />
         </div>
-        <div className="bg-muted rounded-eleven-pill h-10 w-full animate-pulse sm:w-72" />
+        <div
+          className="library-skeleton-stagger bg-muted rounded-eleven-pill h-9 w-full sm:w-40"
+          style={{ "--library-skeleton-delay": "100ms" } as CSSProperties}
+        />
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {Array.from({ length: 10 }).map((_, i) => (
+
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+        {Array.from({ length: 12 }).map((_, i) => (
           <Card key={i} className="overflow-hidden">
-            <div className="bg-muted aspect-2/3 w-full animate-pulse" />
+            <div
+              className="library-skeleton-stagger bg-muted aspect-2/3 w-full"
+              style={
+                { "--library-skeleton-delay": `${Math.min(i, 11) * 45}ms` } as CSSProperties
+              }
+            />
             <div className="space-y-2 p-3">
-              <div className="bg-muted h-4 w-3/4 animate-pulse rounded" />
-              <div className="bg-muted h-3 w-3/5 animate-pulse rounded" />
+              <div
+                className="library-skeleton-stagger bg-muted h-4 w-3/4 rounded"
+                style={
+                  { "--library-skeleton-delay": `${Math.min(i, 11) * 45 + 20}ms` } as CSSProperties
+                }
+              />
+              <div
+                className="library-skeleton-stagger bg-muted h-3 w-3/5 rounded"
+                style={
+                  { "--library-skeleton-delay": `${Math.min(i, 11) * 45 + 35}ms` } as CSSProperties
+                }
+              />
             </div>
           </Card>
         ))}

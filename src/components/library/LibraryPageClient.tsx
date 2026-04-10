@@ -343,12 +343,17 @@ export function LibraryPageClient({
 
   return (
     <div className="space-y-6">
-      <RecommendationsCarousel initialItems={initialRecommendations} />
+      <RecommendationsCarousel
+        initialItems={initialRecommendations}
+        className="library-results-enter"
+      />
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="eleven-display-section text-3xl">Bibliothèque</h1>
-          <p className="text-eleven-secondary text-sm">
+      <div className="library-hero-band flex flex-col gap-5 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
+        <div className="max-w-xl space-y-2">
+          <h1 className="library-hero-display library-hero-enter text-3xl sm:text-[2.15rem]">
+            Bibliothèque
+          </h1>
+          <p className="text-eleven-secondary library-hero-sub-enter text-sm leading-relaxed">
             Vue grille/liste, recherche, filtres et progression de lecture.
           </p>
         </div>
@@ -383,7 +388,7 @@ export function LibraryPageClient({
 
       <div className="flex flex-col gap-4 sm:flex-row">
         <aside className="hidden w-full max-w-xs shrink-0 sm:block">
-          <Card className="shadow-eleven-card p-4">
+          <Card className="shadow-eleven-card focus-within:ring-ring/45 p-4 transition-[box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-within:ring-2">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-sm font-medium">Filtres</div>
               <button
@@ -410,7 +415,7 @@ export function LibraryPageClient({
               placeholder="Rechercher un livre…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="eleven-body-airy"
+              className="eleven-body-airy transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
             />
             <Button asChild variant="outline" className="rounded-eleven-pill">
               <Link href="/search">Avancé</Link>
@@ -425,10 +430,19 @@ export function LibraryPageClient({
 
           {view === "grid" ? (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-              {items.map((b) => (
-                <Link key={b.id} href={`/book/${b.id}`} className="group">
-                  <Card className="shadow-eleven-card hover:shadow-eleven-button-white overflow-hidden transition">
-                    <div className="bg-muted relative aspect-2/3 w-full">
+              {items.map((b, index) => (
+                <Link
+                  key={b.id}
+                  href={`/book/${b.id}`}
+                  className="group library-card-enter"
+                  style={
+                    {
+                      "--library-enter-delay": `${Math.min(index, 23) * 45}ms`,
+                    } as React.CSSProperties
+                  }
+                >
+                  <Card className="shadow-eleven-card overflow-hidden transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 motion-reduce:group-hover:shadow-eleven-card">
+                    <div className="bg-muted relative aspect-2/3 w-full overflow-hidden">
                       {b.coverUrl ? (
                         <Image
                           src={
@@ -439,7 +453,7 @@ export function LibraryPageClient({
                           fill
                           unoptimized={!b.coverToken}
                           sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 16vw"
-                          className="object-cover"
+                          className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                         />
                       ) : (
                         <div className="text-eleven-muted flex h-full w-full items-center justify-center text-xs">
@@ -471,7 +485,7 @@ export function LibraryPageClient({
               ))}
             </div>
           ) : (
-            <Card className="shadow-eleven-card overflow-hidden">
+            <Card className="shadow-eleven-card library-results-enter overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40 text-eleven-muted text-left text-xs">
@@ -483,8 +497,16 @@ export function LibraryPageClient({
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((b) => (
-                      <tr key={b.id} className="border-t">
+                    {items.map((b, index) => (
+                      <tr
+                        key={b.id}
+                        className="library-row-enter border-t transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-muted/30"
+                        style={
+                          {
+                            "--library-enter-delay": `${Math.min(index, 23) * 35}ms`,
+                          } as React.CSSProperties
+                        }
+                      >
                         <td className="px-4 py-3">
                           <Link className="hover:underline" href={`/book/${b.id}`}>
                             {b.title}

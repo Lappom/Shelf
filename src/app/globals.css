@@ -269,4 +269,175 @@
       animation: none;
     }
   }
+
+  /* Library route: warm “reading room” backdrop + grain (scoped to .library-shell) */
+  .library-shell {
+    position: relative;
+    isolation: isolate;
+    min-height: 100%;
+    background:
+      radial-gradient(
+        ellipse 130% 70% at 50% -18%,
+        oklch(0.96 0.025 78 / 0.55) 0%,
+        transparent 58%
+      ),
+      var(--background);
+  }
+
+  .dark .library-shell {
+    background:
+      radial-gradient(
+        ellipse 130% 70% at 50% -18%,
+        oklch(0.32 0.04 75 / 0.45) 0%,
+        transparent 55%
+      ),
+      var(--background);
+  }
+
+  .library-shell::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
+  }
+
+  .library-shell-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .library-hero-display {
+    font-family: var(--font-library-display), var(--font-heading), ui-serif, Georgia, serif;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+  }
+
+  .library-hero-band {
+    border-radius: var(--eleven-radius-warm);
+    border: 1px solid var(--eleven-border-subtle);
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--secondary) 88%, transparent) 0%,
+      color-mix(in oklch, var(--card) 92%, transparent) 100%
+    );
+    box-shadow: var(--eleven-shadow-inset-border), var(--eleven-shadow-soft);
+  }
+
+  .dark .library-hero-band {
+    background: linear-gradient(
+      135deg,
+      color-mix(in oklch, var(--secondary) 55%, transparent) 0%,
+      color-mix(in oklch, var(--card) 70%, transparent) 100%
+    );
+  }
+
+  @keyframes library-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes library-hero-sub-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.35rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes library-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.45rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes library-results-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Table rows: opacity only (transform on tr is unreliable across browsers) */
+  @keyframes library-row-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes library-skeleton-pulse {
+    from {
+      opacity: 0.55;
+    }
+    to {
+      opacity: 0.95;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .library-hero-enter {
+      animation: library-hero-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .library-hero-sub-enter {
+      animation: library-hero-sub-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+    }
+
+    .library-card-enter {
+      animation: library-card-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--library-enter-delay, 0ms);
+    }
+
+    .library-results-enter {
+      animation: library-results-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .library-row-enter {
+      animation: library-row-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--library-enter-delay, 0ms);
+    }
+
+    .library-skeleton-stagger {
+      animation: library-skeleton-pulse 1.1s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+      animation-delay: var(--library-skeleton-delay, 0ms);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .library-hero-enter,
+    .library-hero-sub-enter,
+    .library-card-enter,
+    .library-results-enter,
+    .library-row-enter {
+      animation: none;
+    }
+
+    .library-skeleton-stagger {
+      animation: none;
+    }
+  }
 }

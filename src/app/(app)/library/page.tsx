@@ -50,7 +50,7 @@ export default async function LibraryPage() {
   }));
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-6 px-6 py-10">
+    <>
       {isAdmin ? <LibraryAdminFab /> : null}
       <LibraryPageClient
         initialRecommendations={initialRecommendations}
@@ -71,6 +71,6 @@ export default async function LibraryPage() {
           ) : null
         }
       />
-    </div>
+    </>
   );
 }
