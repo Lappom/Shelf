@@ -25,16 +25,16 @@ L’image applique automatiquement les migrations Prisma (`prisma migrate deploy
 
 ### Variables d’environnement critiques
 
-| Domaine | Variables (résumé) |
-|--------|---------------------|
-| Base | `DATABASE_URL` |
-| Auth | `NEXTAUTH_URL`, `NEXTAUTH_SECRET` (≥ 32 caractères en prod) |
-| OIDC (optionnel) | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` — les trois, ou aucune |
-| Stockage local | `STORAGE_TYPE=local`, `STORAGE_PATH` |
-| Stockage S3 | `STORAGE_TYPE=s3` + `S3_*` (voir §13.1) |
-| Rate limiting partagé | `REDIS_URL` recommandé si plusieurs réplicas |
-| Inscription | `REGISTRATION_ENABLED` |
-| Cron reco (optionnel) | `SHELF_CRON_SECRET` pour sécuriser `/api/cron/recommendations` |
+| Domaine               | Variables (résumé)                                                           |
+| --------------------- | ---------------------------------------------------------------------------- |
+| Base                  | `DATABASE_URL`                                                               |
+| Auth                  | `NEXTAUTH_URL`, `NEXTAUTH_SECRET` (≥ 32 caractères en prod)                  |
+| OIDC (optionnel)      | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` — les trois, ou aucune |
+| Stockage local        | `STORAGE_TYPE=local`, `STORAGE_PATH`                                         |
+| Stockage S3           | `STORAGE_TYPE=s3` + `S3_*` (voir §13.1)                                      |
+| Rate limiting partagé | `REDIS_URL` recommandé si plusieurs réplicas                                 |
+| Inscription           | `REGISTRATION_ENABLED`                                                       |
+| Cron reco (optionnel) | `SHELF_CRON_SECRET` pour sécuriser `/api/cron/recommendations`               |
 
 Liste complète et valeurs par défaut : §13.1.
 
@@ -72,12 +72,12 @@ Le service `redis` est optionnel dans Compose ; sans `REDIS_URL`, le rate limiti
 
 ### Rotation des secrets
 
-| Secret | Effet typique |
-|--------|----------------|
-| `NEXTAUTH_SECRET` | Invalidation des sessions JWT existantes ; tous les utilisateurs devront se reconnecter. |
-| `COVER_TOKEN_SECRET` (si défini) | Les jetons HMAC des URLs de couverture deviennent invalides jusqu’à régénération côté app. Si absent, la rotation de `NEXTAUTH_SECRET` joue un rôle équivalent pour ce mécanisme. |
-| `SHELF_CRON_SECRET` | Les appels planifiés vers `/api/cron/recommendations` doivent utiliser le nouveau secret. |
-| Clés `S3_ACCESS_KEY` / `S3_SECRET_KEY` | Mettre à jour les credentials côté fournisseur S3/MinIO et redéployer ; pas d’impact sur les chemins objets s’ils restent inchangés. |
+| Secret                                 | Effet typique                                                                                                                                                                     |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXTAUTH_SECRET`                      | Invalidation des sessions JWT existantes ; tous les utilisateurs devront se reconnecter.                                                                                          |
+| `COVER_TOKEN_SECRET` (si défini)       | Les jetons HMAC des URLs de couverture deviennent invalides jusqu’à régénération côté app. Si absent, la rotation de `NEXTAUTH_SECRET` joue un rôle équivalent pour ce mécanisme. |
+| `SHELF_CRON_SECRET`                    | Les appels planifiés vers `/api/cron/recommendations` doivent utiliser le nouveau secret.                                                                                         |
+| Clés `S3_ACCESS_KEY` / `S3_SECRET_KEY` | Mettre à jour les credentials côté fournisseur S3/MinIO et redéployer ; pas d’impact sur les chemins objets s’ils restent inchangés.                                              |
 
 Générer des valeurs fortes (ex. `openssl rand -hex 32`).
 
@@ -93,23 +93,23 @@ Les en-têtes CORS sur les routes API concernées n’autorisent que l’**origi
 
 Fenêtre par défaut : **60 secondes** pour les compteurs ci-dessous (sauf mention). D’autres routes ou Server Actions ont leurs propres plafonds ; pour la liste exhaustive, chercher `rateLimitOrThrow` et `rateLimit` dans le dépôt.
 
-| Zone | Limite indicative |
-|------|-------------------|
-| Connexion (login) | 10 requêtes / minute / IP |
-| Inscription (register) | 5 / minute / IP |
-| Upload EPUB (admin) | 10 / minute / admin + IP |
-| Création livre physique (admin) | 20 / minute / admin + IP |
+| Zone                                                               | Limite indicative                        |
+| ------------------------------------------------------------------ | ---------------------------------------- |
+| Connexion (login)                                                  | 10 requêtes / minute / IP                |
+| Inscription (register)                                             | 5 / minute / IP                          |
+| Upload EPUB (admin)                                                | 10 / minute / admin + IP                 |
+| Création livre physique (admin)                                    | 20 / minute / admin + IP                 |
 | Aperçu / recherche Open Library via `POST /api/books` (JSON admin) | 30 / minute chaque variante / admin + IP |
-| Serveur MCP (`/api/mcp`) | 60 requêtes / minute / clé API |
+| Serveur MCP (`/api/mcp`)                                           | 60 requêtes / minute / clé API           |
 
 Avec **plusieurs instances** `shelf`, définir `REDIS_URL` pour que ces compteurs soient cohérents.
 
 ## Stockage : local vs S3 / MinIO
 
-| Mode | Variables | Usage |
-|------|-----------|--------|
-| Local | `STORAGE_TYPE=local`, `STORAGE_PATH` | Disque du serveur ou volume Docker (défaut Compose). |
-| S3-compatible | `STORAGE_TYPE=s3`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` | Cloud S3, MinIO, etc. |
+| Mode          | Variables                                                                                    | Usage                                                |
+| ------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| Local         | `STORAGE_TYPE=local`, `STORAGE_PATH`                                                         | Disque du serveur ou volume Docker (défaut Compose). |
+| S3-compatible | `STORAGE_TYPE=s3`, `S3_ENDPOINT`, `S3_BUCKET`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_REGION` | Cloud S3, MinIO, etc.                                |
 
 L’application **ne sert pas** les fichiers depuis l’URL du bucket : lecture via endpoints authentifiés uniquement (§14).
 

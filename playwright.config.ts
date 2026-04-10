@@ -6,8 +6,7 @@ dotenv.config();
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
 
-const nextAuthSecret =
-  process.env.NEXTAUTH_SECRET ?? "e2e-dev-secret-placeholder-32chars!";
+const nextAuthSecret = process.env.NEXTAUTH_SECRET ?? "e2e-dev-secret-placeholder-32chars!";
 
 export default defineConfig({
   testDir: "e2e",

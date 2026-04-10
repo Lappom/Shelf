@@ -52,7 +52,10 @@ export async function GET(req: Request) {
       },
     },
     async ({ req, user }) => {
-      const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+      const userId = z
+        .string()
+        .uuid()
+        .parse((user as { id?: unknown }).id);
 
       const url = new URL(req.url);
       const parsed = QuerySchema.safeParse({
@@ -108,7 +111,10 @@ export async function GET(req: Request) {
 
       if (!res.ok) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
 
-      return NextResponse.json({ results: res.results, nextCursor: res.nextCursor }, { status: 200 });
+      return NextResponse.json(
+        { results: res.results, nextCursor: res.nextCursor },
+        { status: 200 },
+      );
     },
   );
 }

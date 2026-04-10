@@ -13,10 +13,7 @@ import {
   type SearchBooksForUserInput,
 } from "@/lib/library/searchBooksForUser";
 import { prisma } from "@/lib/db/prisma";
-import {
-  scanHashCandidates,
-  upsertDuplicatePairs,
-} from "@/lib/admin/duplicates/scan";
+import { scanHashCandidates, upsertDuplicatePairs } from "@/lib/admin/duplicates/scan";
 import { loadRecommendationsPage } from "@/lib/recommendations/loadRecommendationsPage";
 import { scheduleRecommendationsRecompute } from "@/lib/recommendations/trigger";
 import { sanitizePlainText } from "@/lib/security/sanitize";
@@ -388,7 +385,8 @@ export function registerShelfMcpTools(mcp: McpServer) {
         const cfiRange = args.cfi_range?.trim() || MCP_DEFAULT_CFI;
         const contentRaw = args.content?.trim() ? args.content : null;
         const noteRaw = args.note?.trim() ? args.note : null;
-        const content = contentRaw != null ? sanitizePlainText(contentRaw, { maxLen: 50_000 }) : null;
+        const content =
+          contentRaw != null ? sanitizePlainText(contentRaw, { maxLen: 50_000 }) : null;
         const note = noteRaw != null ? sanitizePlainText(noteRaw, { maxLen: 50_000 }) : null;
 
         const created = await prisma.userAnnotation.create({
@@ -718,8 +716,14 @@ export function registerShelfMcpTools(mcp: McpServer) {
           select: { id: true },
         });
         const aliveSet = new Set(alive.map((b) => b.id));
-        const filtered = candidates.filter((c) => aliveSet.has(c.bookIdA) && aliveSet.has(c.bookIdB));
-        const upserted = await upsertDuplicatePairs({ kind: "hash", scannedAt, candidates: filtered });
+        const filtered = candidates.filter(
+          (c) => aliveSet.has(c.bookIdA) && aliveSet.has(c.bookIdB),
+        );
+        const upserted = await upsertDuplicatePairs({
+          kind: "hash",
+          scannedAt,
+          candidates: filtered,
+        });
         return mcpJsonResult({
           candidates: candidates.length,
           upserted,

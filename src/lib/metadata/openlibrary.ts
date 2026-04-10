@@ -228,24 +228,11 @@ type OpenLibrarySearchResponse = {
   }>;
 };
 
-export async function searchOpenLibraryByTitleAuthor(args: {
-  title: string;
-  author: string;
-  limit?: number;
-}): Promise<OpenLibrarySearchCandidate[]> {
-  const title = args.title.trim();
-  const author = args.author.trim();
-  const limit = Math.max(1, Math.min(10, Math.trunc(args.limit ?? 10)));
-  if (!title || !author) return [];
-
-  const cacheId = stableHash(`${title.toLowerCase()}|${author.toLowerCase()}|${limit}`);
-  const cached = await getCachedJson<OpenLibrarySearchCandidate[]>(searchKey(cacheId));
-  if (cached) return cached;
-
-  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}`;
-  const json = await fetchJson<OpenLibrarySearchResponse>(url, "search");
-
-  const candidates: OpenLibrarySearchCandidate[] = (json.docs ?? [])
+function mapSearchDocsToCandidates(
+  docs: OpenLibrarySearchResponse["docs"],
+  limit: number,
+): OpenLibrarySearchCandidate[] {
+  return (docs ?? [])
     .map((d) => {
       const key = typeof d.key === "string" ? d.key.trim() : "";
       const t = typeof d.title === "string" ? d.title.trim() : "";
@@ -261,7 +248,54 @@ export async function searchOpenLibraryByTitleAuthor(args: {
     })
     .filter((c) => c.key && c.title)
     .slice(0, limit);
+}
 
+/**
+ * Search Open Library: generic `q`, title-only, or title+author. Cached per query shape.
+ */
+export async function searchOpenLibraryCatalog(args: {
+  q?: string;
+  title?: string;
+  author?: string;
+  limit?: number;
+}): Promise<OpenLibrarySearchCandidate[]> {
+  const limit = Math.max(1, Math.min(10, Math.trunc(args.limit ?? 10)));
+  const q = (args.q ?? "").trim();
+  const title = (args.title ?? "").trim();
+  const author = (args.author ?? "").trim();
+
+  let url: string;
+  let cacheId: string;
+
+  if (q) {
+    cacheId = stableHash(`catalog:q:${q.toLowerCase()}:${limit}`);
+    url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}`;
+  } else if (title && author) {
+    cacheId = stableHash(`catalog:ta:${title.toLowerCase()}:${author.toLowerCase()}:${limit}`);
+    url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}`;
+  } else if (title) {
+    cacheId = stableHash(`catalog:t:${title.toLowerCase()}:${limit}`);
+    url = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}`;
+  } else {
+    return [];
+  }
+
+  const cached = await getCachedJson<OpenLibrarySearchCandidate[]>(searchKey(cacheId));
+  if (cached) return cached;
+
+  const json = await fetchJson<OpenLibrarySearchResponse>(url, "search");
+  const candidates = mapSearchDocsToCandidates(json.docs, limit);
   await setCachedJson(searchKey(cacheId), candidates);
   return candidates;
+}
+
+export async function searchOpenLibraryByTitleAuthor(args: {
+  title: string;
+  author: string;
+  limit?: number;
+}): Promise<OpenLibrarySearchCandidate[]> {
+  const title = args.title.trim();
+  const author = args.author.trim();
+  if (!title || !author) return [];
+  return searchOpenLibraryCatalog({ title, author, limit: args.limit });
 }

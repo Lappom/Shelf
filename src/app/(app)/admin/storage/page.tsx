@@ -33,7 +33,8 @@ export default async function AdminStoragePage() {
       <div>
         <h2 className="eleven-display-section text-xl">Stockage</h2>
         <p className="text-eleven-muted text-sm">
-          Statistiques agrégées des fichiers EPUB enregistrés (table <code className="text-xs">book_files</code>
+          Statistiques agrégées des fichiers EPUB enregistrés (table{" "}
+          <code className="text-xs">book_files</code>
           ).
         </p>
       </div>
@@ -48,12 +49,14 @@ export default async function AdminStoragePage() {
         <Card className="shadow-eleven-card p-4">
           <div className="text-eleven-muted text-xs font-medium uppercase">Livres actifs</div>
           <div className="eleven-display-section mt-1 text-2xl">{bookCount}</div>
-          <div className="text-eleven-muted mt-2 text-sm">Entrées <code className="text-xs">books</code> non supprimées</div>
+          <div className="text-eleven-muted mt-2 text-sm">
+            Entrées <code className="text-xs">books</code> non supprimées
+          </div>
         </Card>
       </div>
       <p className="text-eleven-muted text-xs">
-        Les couvertures et métadonnées utilisent d’autres chemins storage ; l’espace disque réel dépend de
-        l’adapter (local ou S3/MinIO).
+        Les couvertures et métadonnées utilisent d’autres chemins storage ; l’espace disque réel
+        dépend de l’adapter (local ou S3/MinIO).
       </p>
     </div>
   );

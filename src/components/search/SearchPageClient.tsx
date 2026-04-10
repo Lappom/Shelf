@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { updateSearchPreferencesAction } from "@/app/(app)/search/actions";
+import {
+  AddPhysicalBookDialog,
+  type PhysicalBookCatalogPrefill,
+} from "@/components/book/AddPhysicalBookDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,6 +36,15 @@ type ApiSearchResult = {
 };
 
 type ApiSearchResponse = { results: ApiSearchResult[]; nextCursor: string | null };
+
+type CatalogApiCandidate = {
+  key: string;
+  title: string;
+  authors: string[];
+  firstPublishYear: number | null;
+  isbns: string[];
+  coverPreviewUrl: string | null;
+};
 
 function normalizeWhitespace(s: string) {
   return s.replace(/\s+/g, " ").trim();
@@ -101,10 +114,12 @@ export function SearchPageClient({
   initialTags,
   initialShelves,
   initialPrefs,
+  isAdmin = false,
 }: {
   initialTags: SearchTagOption[];
   initialShelves: SearchShelfOption[];
   initialPrefs: SearchPrefs;
+  isAdmin?: boolean;
 }) {
   const [busyPrefs, startPrefsTransition] = useTransition();
 
@@ -135,6 +150,15 @@ export function SearchPageClient({
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<ApiSearchResult[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+
+  const [searchScope, setSearchScope] = useState<"library" | "catalog">("library");
+  const [catalogQ, setCatalogQ] = useState("");
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogItems, setCatalogItems] = useState<CatalogApiCandidate[]>([]);
+  const [catalogAddOpen, setCatalogAddOpen] = useState(false);
+  const [catalogPrefill, setCatalogPrefill] = useState<PhysicalBookCatalogPrefill | null>(null);
+  const [catalogDialogKey, setCatalogDialogKey] = useState(0);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -181,6 +205,56 @@ export function SearchPageClient({
     pagesMax,
     booksPerPage,
   ]);
+
+  useEffect(() => {
+    if (searchScope !== "catalog") return;
+    const term = catalogQ.trim();
+    if (!term) {
+      setCatalogItems([]);
+      setCatalogError(null);
+      setCatalogLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const t = window.setTimeout(() => {
+      void (async () => {
+        setCatalogLoading(true);
+        setCatalogError(null);
+        try {
+          const params = new URLSearchParams();
+          params.set("q", term);
+          const res = await fetch(`/api/catalog/search?${params.toString()}`, {
+            method: "GET",
+            credentials: "include",
+          });
+          const json = (await res.json().catch(() => null)) as {
+            candidates?: CatalogApiCandidate[];
+            error?: string;
+          } | null;
+          if (cancelled) return;
+          if (!res.ok) {
+            setCatalogItems([]);
+            setCatalogError(json?.error ?? "Erreur catalogue.");
+            return;
+          }
+          setCatalogItems(Array.isArray(json?.candidates) ? json!.candidates! : []);
+        } catch {
+          if (!cancelled) {
+            setCatalogItems([]);
+            setCatalogError("Erreur réseau.");
+          }
+        } finally {
+          if (!cancelled) setCatalogLoading(false);
+        }
+      })();
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(t);
+    };
+  }, [searchScope, catalogQ]);
 
   // Initialize state from URL query params (deep-linking).
   useEffect(() => {
@@ -293,6 +367,7 @@ export function SearchPageClient({
 
   // Debounced initial fetch when queryKey changes.
   useEffect(() => {
+    if (searchScope !== "library") return;
     const key = queryKey;
     lastQueryKeyRef.current = key;
 
@@ -304,10 +379,11 @@ export function SearchPageClient({
 
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryKey]);
+  }, [queryKey, searchScope]);
 
   // Infinite scroll
   useEffect(() => {
+    if (searchScope !== "library") return;
     if (!infiniteScroll) return;
     if (!sentinelRef.current) return;
     if (!nextCursor) return;
@@ -326,7 +402,7 @@ export function SearchPageClient({
     io.observe(el);
     return () => io.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [infiniteScroll, nextCursor, loading, queryKey]);
+  }, [infiniteScroll, nextCursor, loading, queryKey, searchScope]);
 
   function onToggleFormat(f: string) {
     setFormats((prev) => (prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f]));
@@ -366,312 +442,423 @@ export function SearchPageClient({
 
   return (
     <div className="space-y-6">
-      <Card className="p-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center">
-            <div className="flex-1">
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Rechercher (titre, auteurs, sujets, description)…"
-                aria-label="Recherche"
-                data-testid="search-query"
-              />
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant={searchScope === "library" ? "default" : "outline"}
+          onClick={() => setSearchScope("library")}
+        >
+          Ma bibliothèque
+        </Button>
+        <Button
+          type="button"
+          variant={searchScope === "catalog" ? "default" : "outline"}
+          onClick={() => setSearchScope("catalog")}
+        >
+          Catalogue
+        </Button>
+      </div>
+
+      {searchScope === "catalog" ? (
+        <>
+          <Card className="p-4">
+            <p className="text-muted-foreground mb-3 text-sm">
+              Open Library : aperçu uniquement (aucun livre créé tant que vous ne confirmez pas
+              l&apos;ajout).
+            </p>
+            <Input
+              value={catalogQ}
+              onChange={(e) => setCatalogQ(e.target.value)}
+              placeholder="Titre, auteur, ISBN…"
+              aria-label="Recherche catalogue externe"
+            />
+          </Card>
+
+          {catalogError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              {catalogError}
             </div>
+          )}
 
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={mode}
-                onChange={(e) => setMode(e.target.value as "websearch" | "plain")}
-                className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3"
-                aria-label="Mode de requête"
-              >
-                <option value="websearch">Websearch</option>
-                <option value="plain">Plain</option>
-              </select>
-
-              <select
-                value={sort}
-                onChange={(e) => setSort(e.target.value as typeof sort)}
-                className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3"
-                aria-label="Tri"
-              >
-                <option value="relevance">Pertinence</option>
-                <option value="title">Titre</option>
-                <option value="added_at">Date d’ajout</option>
-                <option value="publish_date">Date de publication</option>
-                <option value="author">Auteur</option>
-                <option value="progress">Progression</option>
-                <option value="page_count">Pages</option>
-              </select>
-
-              <select
-                value={dir}
-                onChange={(e) => setDir(e.target.value as "asc" | "desc")}
-                className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3"
-                aria-label="Sens du tri"
-              >
-                <option value="desc">↓</option>
-                <option value="asc">↑</option>
-              </select>
-            </div>
+          <div className="text-muted-foreground text-sm">
+            {catalogLoading
+              ? "Recherche…"
+              : !catalogQ.trim()
+                ? "Saisissez un terme pour lancer la recherche."
+                : `${catalogItems.length} résultat(s)`}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Préférences</div>
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  value={String(booksPerPage)}
-                  onChange={(e) => updatePrefs({ booksPerPage: Number(e.target.value) })}
-                  disabled={busyPrefs}
-                  className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3 disabled:opacity-50"
-                  aria-label="Livres par page"
-                >
-                  <option value="12">12 / page</option>
-                  <option value="24">24 / page</option>
-                  <option value="48">48 / page</option>
-                </select>
-
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={infiniteScroll}
-                    onChange={(e) => updatePrefs({ libraryInfiniteScroll: e.target.checked })}
-                    disabled={busyPrefs}
-                  />
-                  Scroll infini
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Filtres rapides</div>
-              <div className="flex flex-wrap gap-2 text-sm">
-                {["epub", "physical", "pdf", "cbz", "cbr", "audiobook"].map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    className={`rounded-full border px-2.5 py-1 ${
-                      formats.includes(f)
-                        ? "bg-muted/30 border-(--eleven-border-subtle)"
-                        : "hover:bg-muted/20 border-(--eleven-border-subtle)"
-                    }`}
-                    onClick={() => onToggleFormat(f)}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-2 text-sm">
-                {["fr", "en", "es", "de", "it", "pt", "zh", "ja"].map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    className={`rounded-full border px-2.5 py-1 ${
-                      languages.includes(l)
-                        ? "bg-muted/30 border-(--eleven-border-subtle)"
-                        : "hover:bg-muted/20 border-(--eleven-border-subtle)"
-                    }`}
-                    onClick={() => onToggleLanguage(l)}
-                  >
-                    {l}
-                  </button>
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-2 text-sm">
-                {["not_started", "reading", "finished", "abandoned"].map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={`rounded-full border px-2.5 py-1 ${
-                      statuses.includes(s)
-                        ? "bg-muted/30 border-(--eleven-border-subtle)"
-                        : "hover:bg-muted/20 border-(--eleven-border-subtle)"
-                    }`}
-                    onClick={() => onToggleStatus(s)}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Filtres avancés</div>
-              <div className="grid gap-2">
-                <select
-                  value={shelfId}
-                  onChange={(e) => setShelfId(e.target.value)}
-                  className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3"
-                  aria-label="Étagère"
-                >
-                  <option value="">Étagère…</option>
-                  {initialShelves.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-
-                <Input
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                  placeholder="Auteur (contient…)…"
-                  aria-label="Auteur"
-                />
-                <Input
-                  value={publisher}
-                  onChange={(e) => setPublisher(e.target.value)}
-                  placeholder="Éditeur (contient…)…"
-                  aria-label="Éditeur"
-                />
-
-                <div className="grid grid-cols-2 gap-2">
-                  <Input
-                    value={addedFrom}
-                    onChange={(e) => setAddedFrom(e.target.value)}
-                    placeholder="Ajouté après (ISO)…"
-                    aria-label="Date ajout min"
-                  />
-                  <Input
-                    value={addedTo}
-                    onChange={(e) => setAddedTo(e.target.value)}
-                    placeholder="Ajouté avant (ISO)…"
-                    aria-label="Date ajout max"
-                  />
+          <div className="grid gap-3">
+            {catalogItems.map((c) => (
+              <Card key={c.key} className="p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+                  {c.coverPreviewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.coverPreviewUrl}
+                      alt=""
+                      className="h-28 w-20 shrink-0 rounded-lg border border-(--eleven-border-subtle) object-cover"
+                    />
+                  ) : (
+                    <div className="bg-muted/40 text-muted-foreground flex h-28 w-20 shrink-0 items-center justify-center rounded-lg border border-(--eleven-border-subtle) text-xs">
+                      —
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="text-base leading-tight font-semibold">{c.title}</div>
+                    <div className="text-muted-foreground text-sm">
+                      {(c.authors ?? []).slice(0, 6).join(", ") || "—"}
+                      {c.firstPublishYear != null ? ` · ${c.firstPublishYear}` : ""}
+                    </div>
+                    {isAdmin ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setCatalogPrefill({
+                            title: c.title,
+                            authors: c.authors.length ? c.authors : ["Inconnu"],
+                            isbns: c.isbns,
+                          });
+                          setCatalogDialogKey((k) => k + 1);
+                          setCatalogAddOpen(true);
+                        }}
+                      >
+                        Ajouter à la bibliothèque
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
+              </Card>
+            ))}
+          </div>
 
-                <div className="grid grid-cols-2 gap-2">
+          {isAdmin ? (
+            <AddPhysicalBookDialog
+              key={catalogDialogKey}
+              hideTrigger
+              open={catalogAddOpen}
+              onOpenChange={(v) => {
+                setCatalogAddOpen(v);
+                if (!v) setCatalogPrefill(null);
+              }}
+              catalogPrefill={catalogPrefill}
+            />
+          ) : null}
+        </>
+      ) : (
+        <>
+          <Card className="p-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center">
+                <div className="flex-1">
                   <Input
-                    value={pagesMin}
-                    onChange={(e) => setPagesMin(e.target.value)}
-                    placeholder="Pages min"
-                    aria-label="Pages min"
-                  />
-                  <Input
-                    value={pagesMax}
-                    onChange={(e) => setPagesMax(e.target.value)}
-                    placeholder="Pages max"
-                    aria-label="Pages max"
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Rechercher (titre, auteurs, sujets, description)…"
+                    aria-label="Recherche"
+                    data-testid="search-query"
                   />
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {initialTags.slice(0, 16).map((t) => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-sm ${
-                        tagIds.includes(t.id)
-                          ? "bg-muted/30 border-(--eleven-border-subtle)"
-                          : "hover:bg-muted/20 border-(--eleven-border-subtle)"
-                      }`}
-                      onClick={() => onToggleTag(t.id)}
-                      title={t.name}
-                    >
-                      <span
-                        className="inline-block size-2.5 shrink-0 rounded-full border border-(--eleven-border-subtle)"
-                        style={{ background: t.color }}
-                        aria-hidden
-                      />
-                      <span className="max-w-40 truncate">{t.name}</span>
-                    </button>
-                  ))}
-                  {initialTags.length > 16 && (
-                    <span className="text-muted-foreground self-center text-xs">
-                      +{initialTags.length - 16} tags (filtre complet via URL param `tagIds`)
-                    </span>
-                  )}
+                  <select
+                    value={mode}
+                    onChange={(e) => setMode(e.target.value as "websearch" | "plain")}
+                    className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3"
+                    aria-label="Mode de requête"
+                  >
+                    <option value="websearch">Websearch</option>
+                    <option value="plain">Plain</option>
+                  </select>
+
+                  <select
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as typeof sort)}
+                    className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3"
+                    aria-label="Tri"
+                  >
+                    <option value="relevance">Pertinence</option>
+                    <option value="title">Titre</option>
+                    <option value="added_at">Date d’ajout</option>
+                    <option value="publish_date">Date de publication</option>
+                    <option value="author">Auteur</option>
+                    <option value="progress">Progression</option>
+                    <option value="page_count">Pages</option>
+                  </select>
+
+                  <select
+                    value={dir}
+                    onChange={(e) => setDir(e.target.value as "asc" | "desc")}
+                    className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3"
+                    aria-label="Sens du tri"
+                  >
+                    <option value="desc">↓</option>
+                    <option value="asc">↑</option>
+                  </select>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {anyFilters && (
-            <div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFormats([]);
-                  setLanguages([]);
-                  setTagIds([]);
-                  setShelfId("");
-                  setStatuses([]);
-                  setAuthor("");
-                  setPublisher("");
-                  setAddedFrom("");
-                  setAddedTo("");
-                  setPagesMin("");
-                  setPagesMax("");
-                }}
-              >
-                Réinitialiser les filtres
-              </Button>
-            </div>
-          )}
-        </div>
-      </Card>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Préférences</div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={String(booksPerPage)}
+                      onChange={(e) => updatePrefs({ booksPerPage: Number(e.target.value) })}
+                      disabled={busyPrefs}
+                      className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3 disabled:opacity-50"
+                      aria-label="Livres par page"
+                    >
+                      <option value="12">12 / page</option>
+                      <option value="24">24 / page</option>
+                      <option value="48">48 / page</option>
+                    </select>
 
-      <div className="space-y-3">
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
-            {error}
-          </div>
-        )}
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={infiniteScroll}
+                        onChange={(e) => updatePrefs({ libraryInfiniteScroll: e.target.checked })}
+                        disabled={busyPrefs}
+                      />
+                      Scroll infini
+                    </label>
+                  </div>
+                </div>
 
-        <div className="text-muted-foreground text-sm">
-          {loading ? "Recherche…" : `${items.length} résultat(s)`}
-        </div>
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Filtres rapides</div>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    {["epub", "physical", "pdf", "cbz", "cbr", "audiobook"].map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        className={`rounded-full border px-2.5 py-1 ${
+                          formats.includes(f)
+                            ? "bg-muted/30 border-(--eleven-border-subtle)"
+                            : "hover:bg-muted/20 border-(--eleven-border-subtle)"
+                        }`}
+                        onClick={() => onToggleFormat(f)}
+                      >
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    {["fr", "en", "es", "de", "it", "pt", "zh", "ja"].map((l) => (
+                      <button
+                        key={l}
+                        type="button"
+                        className={`rounded-full border px-2.5 py-1 ${
+                          languages.includes(l)
+                            ? "bg-muted/30 border-(--eleven-border-subtle)"
+                            : "hover:bg-muted/20 border-(--eleven-border-subtle)"
+                        }`}
+                        onClick={() => onToggleLanguage(l)}
+                      >
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-sm">
+                    {["not_started", "reading", "finished", "abandoned"].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className={`rounded-full border px-2.5 py-1 ${
+                          statuses.includes(s)
+                            ? "bg-muted/30 border-(--eleven-border-subtle)"
+                            : "hover:bg-muted/20 border-(--eleven-border-subtle)"
+                        }`}
+                        onClick={() => onToggleStatus(s)}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-        <div className="grid gap-3">
-          {items.map((b) => {
-            const authors = authorsToString(b.authors);
-            const tagNames = tagIds.map((id) => tagsById.get(id)?.name).filter(Boolean);
-            void tagNames;
-            return (
-              <Card key={b.id} className="p-4">
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-base font-semibold tracking-tight">
-                      {highlight(b.title, terms)}
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Filtres avancés</div>
+                  <div className="grid gap-2">
+                    <select
+                      value={shelfId}
+                      onChange={(e) => setShelfId(e.target.value)}
+                      className="border-input focus-visible:border-ring focus-visible:ring-ring/50 h-9 rounded-xl border bg-transparent px-2 text-[0.94rem] outline-none focus-visible:ring-3"
+                      aria-label="Étagère"
+                    >
+                      <option value="">Étagère…</option>
+                      {initialShelves.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <Input
+                      value={author}
+                      onChange={(e) => setAuthor(e.target.value)}
+                      placeholder="Auteur (contient…)…"
+                      aria-label="Auteur"
+                    />
+                    <Input
+                      value={publisher}
+                      onChange={(e) => setPublisher(e.target.value)}
+                      placeholder="Éditeur (contient…)…"
+                      aria-label="Éditeur"
+                    />
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={addedFrom}
+                        onChange={(e) => setAddedFrom(e.target.value)}
+                        placeholder="Ajouté après (ISO)…"
+                        aria-label="Date ajout min"
+                      />
+                      <Input
+                        value={addedTo}
+                        onChange={(e) => setAddedTo(e.target.value)}
+                        placeholder="Ajouté avant (ISO)…"
+                        aria-label="Date ajout max"
+                      />
                     </div>
-                    <div className="text-muted-foreground text-xs">
-                      {b.format}
-                      {b.language ? ` • ${b.language}` : ""}
-                      {b.pageCount ? ` • ${b.pageCount} p.` : ""}
-                      {typeof b.progress === "number" ? ` • ${(b.progress * 100).toFixed(0)}%` : ""}
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        value={pagesMin}
+                        onChange={(e) => setPagesMin(e.target.value)}
+                        placeholder="Pages min"
+                        aria-label="Pages min"
+                      />
+                      <Input
+                        value={pagesMax}
+                        onChange={(e) => setPagesMax(e.target.value)}
+                        placeholder="Pages max"
+                        aria-label="Pages max"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {initialTags.slice(0, 16).map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-sm ${
+                            tagIds.includes(t.id)
+                              ? "bg-muted/30 border-(--eleven-border-subtle)"
+                              : "hover:bg-muted/20 border-(--eleven-border-subtle)"
+                          }`}
+                          onClick={() => onToggleTag(t.id)}
+                          title={t.name}
+                        >
+                          <span
+                            className="inline-block size-2.5 shrink-0 rounded-full border border-(--eleven-border-subtle)"
+                            style={{ background: t.color }}
+                            aria-hidden
+                          />
+                          <span className="max-w-40 truncate">{t.name}</span>
+                        </button>
+                      ))}
+                      {initialTags.length > 16 && (
+                        <span className="text-muted-foreground self-center text-xs">
+                          +{initialTags.length - 16} tags (filtre complet via URL param `tagIds`)
+                        </span>
+                      )}
                     </div>
                   </div>
-
-                  {authors && <div className="text-muted-foreground text-sm">{authors}</div>}
-
-                  {b.description && (
-                    <div className="text-muted-foreground line-clamp-3 text-sm">
-                      {highlight(b.description, terms)}
-                    </div>
-                  )}
                 </div>
-              </Card>
-            );
-          })}
-        </div>
+              </div>
 
-        {!infiniteScroll && nextCursor && (
-          <div>
-            <Button
-              variant="outline"
-              disabled={loading}
-              onClick={() => fetchPage({ cursor: nextCursor, append: true })}
-            >
-              Charger plus
-            </Button>
+              {anyFilters && (
+                <div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setFormats([]);
+                      setLanguages([]);
+                      setTagIds([]);
+                      setShelfId("");
+                      setStatuses([]);
+                      setAuthor("");
+                      setPublisher("");
+                      setAddedFrom("");
+                      setAddedTo("");
+                      setPagesMin("");
+                      setPagesMax("");
+                    }}
+                  >
+                    Réinitialiser les filtres
+                  </Button>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <div className="space-y-3">
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+                {error}
+              </div>
+            )}
+
+            <div className="text-muted-foreground text-sm">
+              {loading ? "Recherche…" : `${items.length} résultat(s)`}
+            </div>
+
+            <div className="grid gap-3">
+              {items.map((b) => {
+                const authors = authorsToString(b.authors);
+                const tagNames = tagIds.map((id) => tagsById.get(id)?.name).filter(Boolean);
+                void tagNames;
+                return (
+                  <Card key={b.id} className="p-4">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-base font-semibold tracking-tight">
+                          {highlight(b.title, terms)}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {b.format}
+                          {b.language ? ` • ${b.language}` : ""}
+                          {b.pageCount ? ` • ${b.pageCount} p.` : ""}
+                          {typeof b.progress === "number"
+                            ? ` • ${(b.progress * 100).toFixed(0)}%`
+                            : ""}
+                        </div>
+                      </div>
+
+                      {authors && <div className="text-muted-foreground text-sm">{authors}</div>}
+
+                      {b.description && (
+                        <div className="text-muted-foreground line-clamp-3 text-sm">
+                          {highlight(b.description, terms)}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {!infiniteScroll && nextCursor && (
+              <div>
+                <Button
+                  variant="outline"
+                  disabled={loading}
+                  onClick={() => fetchPage({ cursor: nextCursor, append: true })}
+                >
+                  Charger plus
+                </Button>
+              </div>
+            )}
+
+            {infiniteScroll && <div ref={sentinelRef} className="h-10" />}
           </div>
-        )}
-
-        {infiniteScroll && <div ref={sentinelRef} className="h-10" />}
-      </div>
+        </>
+      )}
     </div>
   );
 }

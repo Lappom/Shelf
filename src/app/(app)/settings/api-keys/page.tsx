@@ -9,7 +9,10 @@ import { ApiKeysSettingsClient } from "./ApiKeysSettingsClient";
 
 export default async function ApiKeysSettingsPage() {
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
 
   const rows = await prisma.apiKey.findMany({
     where: { userId },

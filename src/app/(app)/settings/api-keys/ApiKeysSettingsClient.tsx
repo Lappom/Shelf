@@ -80,8 +80,8 @@ export function ApiKeysSettingsClient({ initialKeys }: { initialKeys: KeyRow[] }
         <CardHeader>
           <CardTitle className="text-lg">Nouvelle clé</CardTitle>
           <CardDescription>
-            Préfixe <code className="text-xs">sk_shelf_</code> — copiez le secret une seule fois après
-            création.
+            Préfixe <code className="text-xs">sk_shelf_</code> — copiez le secret une seule fois
+            après création.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -122,18 +122,21 @@ export function ApiKeysSettingsClient({ initialKeys }: { initialKeys: KeyRow[] }
           ) : (
             <ul className="divide-y divide-(--eleven-border-subtle)">
               {keys.map((k) => (
-                <li key={k.id} className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <li
+                  key={k.id}
+                  className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div>
                     <p className="font-medium">{k.name}</p>
                     <p className="text-eleven-muted font-mono text-xs">
                       {k.prefix}…
-                      {k.revokedAt ? (
-                        <span className="text-destructive ml-2">révoquée</span>
-                      ) : null}
+                      {k.revokedAt ? <span className="text-destructive ml-2">révoquée</span> : null}
                     </p>
                     <p className="text-eleven-muted text-xs">
                       Créée {new Date(k.createdAt).toLocaleString()}
-                      {k.lastUsedAt ? ` · Dernière utilisation ${new Date(k.lastUsedAt).toLocaleString()}` : ""}
+                      {k.lastUsedAt
+                        ? ` · Dernière utilisation ${new Date(k.lastUsedAt).toLocaleString()}`
+                        : ""}
                     </p>
                   </div>
                   {!k.revokedAt ? (

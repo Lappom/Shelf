@@ -1,6 +1,10 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
 
-import { enrichFromOpenLibraryByIsbn, searchOpenLibraryByTitleAuthor } from "./openlibrary";
+import {
+  enrichFromOpenLibraryByIsbn,
+  searchOpenLibraryByTitleAuthor,
+  searchOpenLibraryCatalog,
+} from "./openlibrary";
 
 vi.mock("./openlibrary-cache", () => ({
   getCachedJson: vi.fn(async () => null),
@@ -118,5 +122,47 @@ describe("searchOpenLibraryByTitleAuthor", () => {
   it("returns [] when title or author missing", async () => {
     await expect(searchOpenLibraryByTitleAuthor({ title: "", author: "x" })).resolves.toEqual([]);
     await expect(searchOpenLibraryByTitleAuthor({ title: "x", author: "" })).resolves.toEqual([]);
+  });
+});
+
+describe("searchOpenLibraryCatalog", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    // @ts-expect-error - test runtime
+    global.fetch = vi.fn(async (url: string) => {
+      if (url.includes("/search.json")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            docs: [
+              {
+                key: "/works/OL999W",
+                title: "Generic",
+                author_name: ["Zed"],
+                first_publish_year: 1999,
+                isbn: ["9789999999999"],
+              },
+            ],
+          }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+  });
+
+  it("uses q= for generic query", async () => {
+    const res = await searchOpenLibraryCatalog({ q: "asimov foundation", limit: 5 });
+    expect(res).toHaveLength(1);
+    expect(res[0].title).toBe("Generic");
+    expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatch(/search\.json\?q=/);
+  });
+
+  it("uses title-only when no author", async () => {
+    const res = await searchOpenLibraryCatalog({ title: "Solo", limit: 3 });
+    expect(res).toHaveLength(1);
+    const calledUrl = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    expect(calledUrl).toContain("title=Solo");
+    expect(calledUrl).not.toContain("author=");
   });
 });

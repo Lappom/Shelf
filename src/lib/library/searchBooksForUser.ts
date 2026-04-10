@@ -196,7 +196,8 @@ export async function searchBooksForUser(
   const dir = input.dir ?? "desc";
   const limit = input.limit;
   const offset = input.offset ?? 0;
-  const cursorRaw = input.offset != null && input.offset > 0 ? undefined : (input.cursor ?? undefined);
+  const cursorRaw =
+    input.offset != null && input.offset > 0 ? undefined : (input.cursor ?? undefined);
 
   const q = (input.q ?? "").trim();
 

@@ -35,7 +35,9 @@ describe("admin users actions", () => {
     const targetId = "00000000-0000-4000-8000-0000000000b2";
     const { prisma } = await import("@/lib/db/prisma");
     (prisma.user.count as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(1);
-    (prisma.user.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: targetId });
+    (prisma.user.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: targetId,
+    });
     (prisma.user.update as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({});
 
     const { updateUserRoleAction } = await import("./actions");

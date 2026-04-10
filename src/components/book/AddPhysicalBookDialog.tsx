@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { normalizeIsbn } from "@/lib/books/isbn";
+
 import {
   Dialog,
   DialogContent,
@@ -48,16 +50,45 @@ function splitAuthorsCsv(raw: string) {
     .slice(0, 50);
 }
 
+/** Prefill when opening from external catalog discovery (e.g. GET /api/catalog/search). */
+export type PhysicalBookCatalogPrefill = {
+  title: string;
+  authors: string[];
+  isbns?: string[];
+};
+
+function initialFieldsFromCatalogPrefill(
+  catalogPrefill: PhysicalBookCatalogPrefill | null | undefined,
+) {
+  if (!catalogPrefill) {
+    return { title: "", authorsCsv: "", isbn: "" };
+  }
+  let isbnVal = "";
+  for (const raw of catalogPrefill.isbns ?? []) {
+    if (normalizeIsbn(raw)) {
+      isbnVal = raw.trim();
+      break;
+    }
+  }
+  return {
+    title: catalogPrefill.title,
+    authorsCsv: catalogPrefill.authors.join(", "),
+    isbn: isbnVal,
+  };
+}
+
 export function AddPhysicalBookDialog({
   triggerText = "Ajouter un livre physique",
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   hideTrigger = false,
+  catalogPrefill = null,
 }: {
   triggerText?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   hideTrigger?: boolean;
+  catalogPrefill?: PhysicalBookCatalogPrefill | null;
 }) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined && controlledOnOpenChange !== undefined;
@@ -68,9 +99,10 @@ export function AddPhysicalBookDialog({
   };
   const [state, setState] = useState<UiState>({ type: "idle" });
 
-  const [title, setTitle] = useState("");
-  const [authorsCsv, setAuthorsCsv] = useState("");
-  const [isbn, setIsbn] = useState("");
+  const initialFromCatalog = initialFieldsFromCatalogPrefill(catalogPrefill);
+  const [title, setTitle] = useState(initialFromCatalog.title);
+  const [authorsCsv, setAuthorsCsv] = useState(initialFromCatalog.authorsCsv);
+  const [isbn, setIsbn] = useState(initialFromCatalog.isbn);
   const [publisher, setPublisher] = useState("");
   const [publishDate, setPublishDate] = useState("");
   const [language, setLanguage] = useState("");
@@ -278,12 +310,12 @@ export function AddPhysicalBookDialog({
                     autoComplete="off"
                   />
                   <p className="text-muted-foreground text-xs leading-relaxed">
-                    Douchette USB : place le curseur dans ce champ puis scanne (saisie clavier). Caméra
-                    : HTTPS recommandé ; certains codes (magazines ISSN, anciens formats) ne sont pas des
-                    ISBN reconnus ici.
+                    Douchette USB : place le curseur dans ce champ puis scanne (saisie clavier).
+                    Caméra : HTTPS recommandé ; certains codes (magazines ISSN, anciens formats) ne
+                    sont pas des ISBN reconnus ici.
                   </p>
                   {barcodeHint && (
-                    <p className="text-amber-800 text-xs leading-relaxed">{barcodeHint}</p>
+                    <p className="text-xs leading-relaxed text-amber-800">{barcodeHint}</p>
                   )}
                 </div>
                 <div className="shrink-0 lg:max-w-[min(100%,280px)] lg:pt-0">

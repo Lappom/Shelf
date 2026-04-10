@@ -18,10 +18,7 @@ export function addCorsHeaders(res: Response, req: Request) {
   res.headers.set("Access-Control-Allow-Origin", appOrigin);
   res.headers.set("Vary", "Origin");
   res.headers.set("Access-Control-Allow-Credentials", "true");
-  res.headers.set(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, Mcp-Session-Id",
-  );
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, Mcp-Session-Id");
   res.headers.set("Access-Control-Allow-Methods", "GET,POST,PATCH,PUT,DELETE,OPTIONS");
   return res;
 }

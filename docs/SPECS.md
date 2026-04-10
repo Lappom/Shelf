@@ -528,6 +528,8 @@ Options : titre (A-Z / Z-A), date d'ajout, date de publication, auteur, progress
 - **Endpoint** : `https://openlibrary.org/api/`
 - **Recherche par ISBN** : `https://openlibrary.org/isbn/{isbn}.json`
 - **Recherche par titre/auteur** : `https://openlibrary.org/search.json?title=...&author=...`
+- **Recherche générique** : `https://openlibrary.org/search.json?q=...`
+- **Titre seul** : `https://openlibrary.org/search.json?title=...`
 - **Couvertures** : `https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg`
 
 ### 9.2 Champs enrichis
@@ -730,12 +732,52 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | PATCH | `/api/annotations/:id` | Modifier |
 | DELETE | `/api/annotations/:id` | Supprimer |
 | GET | `/api/search?q=...` | Recherche full-text |
+| GET | `/api/catalog/search` | Preview catalogue externe (Open Library), **sans création** `Book` |
 | POST | `/api/admin/scan-duplicates` | Scanner les doublons |
 | POST | `/api/admin/import-calibre` | Import Calibre |
 | POST | `/api/admin/pull-books` | Pull catalogue externe → créer des `Book` **sans fichiers** (idempotent, cursor) |
 | GET | `/api/admin/users` | Liste des utilisateurs |
 | GET | `/api/admin/audit-logs` | Journal d’audit admin (pagination `limit`, `before`, `beforeId`) |
 | POST / GET | `/api/cron/recommendations` | Recalcul batch des recommandations (secret `SHELF_CRON_SECRET`, voir §12.1) |
+
+### 12.2.1 Catalogue externe — preview (`GET /api/catalog/search`)
+
+But : permettre à **tout utilisateur authentifié** (`reader` ou `admin`) de **parcourir** le catalogue public Open Library en **lecture seule** : aucune ligne `Book` ni autre écriture base n’est effectuée sur cet endpoint (distinct de `GET /api/search` qui interroge la bibliothèque locale, Phase 12 FTS).
+
+**Méthode** : `GET`
+
+**Authentification** : session utilisateur requise (`requireUser`).
+
+**Query** (tous string sauf `limit`, validation serveur Zod) :
+
+- `q` **ou** `title` : fournir **exactement un** des deux (pas les deux à la fois). `q` : requête générique Open Library (titre, auteur, ISBN, etc.). `title` : recherche par titre ; `author` optionnel (affine avec `search.json?title=&author=`).
+- `author` : optionnel, ignoré si `q` est présent ; utile seulement avec `title`.
+- `limit` : entier 1–10, défaut 10 (nombre max de candidats retournés).
+
+**Rate limit** : par couple utilisateur + IP (ex. 30 requêtes / 60 s), aligné sur la recherche Open Library côté `POST /api/books` ; appels sortants vers Open Library soumis au throttle §9.3 + cache §9.3.
+
+**Réponse 200** (JSON) :
+
+```json
+{
+  "candidates": [
+    {
+      "key": "/works/OL123W",
+      "title": "…",
+      "authors": ["…"],
+      "firstPublishYear": 2000,
+      "isbns": ["978…"],
+      "coverPreviewUrl": "https://covers.openlibrary.org/b/isbn/…-L.jpg"
+    }
+  ]
+}
+```
+
+`coverPreviewUrl` : `null` si aucun ISBN normalisable parmi `isbns`. Les URLs de couverture pointent vers le CDN Open Library (pas le storage Shelf).
+
+**Erreurs** : `400` (paramètres invalides ou `q` et `title` ensemble), `401` / `403` si non authentifié, `502` si Open Library indisponible.
+
+**Sécurité** : pas de fuite de secrets ; ne pas journaliser la requête textuelle en clair dans les événements d’audit (cf. §14).
 
 ---
 

@@ -13,9 +13,7 @@ export type ResolvedApiKeyUser = {
 /**
  * Resolve user from raw token; returns null if invalid, expired, or revoked.
  */
-export async function resolveApiKeyUser(
-  rawToken: string,
-): Promise<ResolvedApiKeyUser | null> {
+export async function resolveApiKeyUser(rawToken: string): Promise<ResolvedApiKeyUser | null> {
   const hash = hashApiKeyToken(rawToken);
   const now = new Date();
   const row = await prisma.apiKey.findFirst({

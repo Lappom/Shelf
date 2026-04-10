@@ -65,7 +65,7 @@ export function AdminUsersClient({
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <select
-                  className="bg-background border-input h-9 w-[140px] rounded-eleven-pill border px-3 text-sm"
+                  className="bg-background border-input rounded-eleven-pill h-9 w-[140px] border px-3 text-sm"
                   value={u.role}
                   disabled={pending === u.id}
                   onChange={(e) => onRoleChange(u.id, e.target.value as "admin" | "reader")}

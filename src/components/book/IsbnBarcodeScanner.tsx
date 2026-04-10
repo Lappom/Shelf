@@ -19,7 +19,8 @@ function canUseNativeBarcodeDetector() {
 }
 
 function mediaErrorMessage(err: unknown): string {
-  if (!(err instanceof DOMException)) return "Caméra indisponible. Réessaie ou saisis l’ISBN à la main.";
+  if (!(err instanceof DOMException))
+    return "Caméra indisponible. Réessaie ou saisis l’ISBN à la main.";
   if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
     return "Accès à la caméra refusé. Autorise la caméra dans le navigateur ou utilise une douchette USB.";
   }
@@ -191,7 +192,9 @@ export function IsbnBarcodeScanner({
         return;
       }
 
-      let detector: { detect: (image: ImageBitmapSource) => Promise<Array<{ format: string; rawValue: string }>> };
+      let detector: {
+        detect: (image: ImageBitmapSource) => Promise<Array<{ format: string; rawValue: string }>>;
+      };
       try {
         detector = new Ctor({ formats: [...NATIVE_FORMATS] });
       } catch {
@@ -261,31 +264,35 @@ export function IsbnBarcodeScanner({
       setStatus("Place le code-barres dans le cadre…");
 
       try {
-        const controls = await reader.decodeFromVideoDevice(undefined, video, (result, _err, ctrl) => {
-          if (cancelled || stoppedRef.current) return;
-          zxingControlsRef.current = ctrl;
-          if (!result) return;
-          const raw = result.getText()?.trim() ?? "";
-          if (!raw) return;
-          const n = normalizeIsbn(raw);
-          if (n) {
-            stoppedRef.current = true;
-            try {
-              ctrl.stop();
-            } catch {
-              /* ignore */
+        const controls = await reader.decodeFromVideoDevice(
+          undefined,
+          video,
+          (result, _err, ctrl) => {
+            if (cancelled || stoppedRef.current) return;
+            zxingControlsRef.current = ctrl;
+            if (!result) return;
+            const raw = result.getText()?.trim() ?? "";
+            if (!raw) return;
+            const n = normalizeIsbn(raw);
+            if (n) {
+              stoppedRef.current = true;
+              try {
+                ctrl.stop();
+              } catch {
+                /* ignore */
+              }
+              zxingControlsRef.current = null;
+              video.srcObject = null;
+              setPanelOpen(false);
+              onIsbnDecodedRef.current(n);
+              return;
             }
-            zxingControlsRef.current = null;
-            video.srcObject = null;
-            setPanelOpen(false);
-            onIsbnDecodedRef.current(n);
-            return;
-          }
-          if (!invalidReportedRef.current.has(raw)) {
-            invalidReportedRef.current.add(raw);
-            onRawNotIsbnRef.current?.(raw);
-          }
-        });
+            if (!invalidReportedRef.current.has(raw)) {
+              invalidReportedRef.current.add(raw);
+              onRawNotIsbnRef.current?.(raw);
+            }
+          },
+        );
         zxingControlsRef.current = controls;
       } catch (e) {
         fail(e instanceof Error ? e.message : mediaErrorMessage(e));

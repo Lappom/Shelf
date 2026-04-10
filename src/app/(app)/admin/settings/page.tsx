@@ -17,8 +17,8 @@ export default async function AdminSettingsPage() {
       <div>
         <h2 className="eleven-display-section text-xl">Paramètres instance</h2>
         <p className="text-eleven-muted text-sm">
-          Aperçu non sensible de la configuration (les secrets ne sont jamais affichés). Modifier les
-          valeurs via les variables d’environnement et redémarrer l’application.
+          Aperçu non sensible de la configuration (les secrets ne sont jamais affichés). Modifier
+          les valeurs via les variables d’environnement et redémarrer l’application.
         </p>
       </div>
       <Card className="shadow-eleven-card space-y-3 p-4 text-sm">
@@ -57,8 +57,7 @@ export default async function AdminSettingsPage() {
         </div>
         {oidcConfigured ? (
           <div className="text-eleven-muted pl-0 text-xs">
-            Issuer :{" "}
-            <span className="font-mono">{env.OIDC_ISSUER}</span>
+            Issuer : <span className="font-mono">{env.OIDC_ISSUER}</span>
           </div>
         ) : null}
       </Card>

@@ -11,6 +11,8 @@ export default async function SearchPage() {
     .string()
     .uuid()
     .parse((user as { id?: unknown }).id);
+  const role = (user as { role?: unknown }).role;
+  const isAdmin = role === "admin";
 
   const [tags, shelves, pref] = await Promise.all([
     prisma.tag.findMany({
@@ -57,7 +59,12 @@ export default async function SearchPage() {
         </div>
       </div>
 
-      <SearchPageClient initialTags={tags} initialShelves={shelves} initialPrefs={pref} />
+      <SearchPageClient
+        initialTags={tags}
+        initialShelves={shelves}
+        initialPrefs={pref}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 }

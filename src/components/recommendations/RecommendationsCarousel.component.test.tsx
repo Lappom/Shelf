@@ -14,15 +14,7 @@ const recoMocks = vi.hoisted(() => ({
 vi.mock("@/app/(app)/recommendations/actions", () => recoMocks);
 
 vi.mock("next/link", () => ({
-  default ({
-    children,
-    href,
-    ...rest
-  }: {
-    children: ReactNode;
-    href: string;
-    className?: string;
-  }) {
+  default({ children, href, ...rest }: { children: ReactNode; href: string; className?: string }) {
     return (
       <a href={href} {...rest}>
         {children}
@@ -32,7 +24,7 @@ vi.mock("next/link", () => ({
 }));
 
 vi.mock("next/image", () => ({
-  default ({ alt, src, className }: { alt?: string; src?: string; className?: string }) {
+  default({ alt, src, className }: { alt?: string; src?: string; className?: string }) {
     return <img alt={alt ?? ""} src={src} className={className} />;
   },
 }));

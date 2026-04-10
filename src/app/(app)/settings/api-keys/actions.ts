@@ -24,7 +24,10 @@ async function assertActionSecurity(suffix: string) {
 export async function listApiKeysAction() {
   await assertActionSecurity("list");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
 
   const rows = await prisma.apiKey.findMany({
     where: { userId },
@@ -63,7 +66,10 @@ const CreateSchema = z
 export async function createApiKeyAction(input: unknown) {
   await assertActionSecurity("create");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
 
   const parsed = CreateSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
@@ -96,7 +102,10 @@ const RevokeSchema = z.object({ id: z.string().uuid() }).strict();
 export async function revokeApiKeyAction(input: unknown) {
   await assertActionSecurity("revoke");
   const user = await requireUser();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
 
   const parsed = RevokeSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };

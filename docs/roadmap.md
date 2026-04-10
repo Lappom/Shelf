@@ -165,17 +165,17 @@
 - [x] Upload image + stockage via adapter + lien `cover_url`.
 - [x] Optimisation côté UI via Next `<Image>` (docs/SPECS.md §15).
 
-### 5.4 Recherche catalogue externe — preview + ajout optionnel *(dev en cours / à faire)*
+### 5.4 Recherche catalogue externe — preview + ajout optionnel
 
 > Sert le **but principal** (enregistrer des livres lus / à lire sans fichier) : découvrir une édition dans un catalogue public **sans** créer de `Book` tant que l’utilisateur ne confirme pas. Distinct de la recherche **dans ma bibliothèque** (Phase 12 FTS).
 
-- [ ] **Spec** : documenter dans `docs/SPECS.md` l’endpoint (méthode, query, auth, rate limit, schéma réponse) ; préciser qu’aucune ligne `Book` n’est écrite sur la seule recherche.
-- [ ] **API** : route dédiée authentifiée (ex. `GET /api/...` alignée sur la spec) qui retourne des candidats normalisés (titre, auteurs, ISBNs, clés Open Library si applicable, cover preview URL) — **lecture seule** côté DB.
-- [ ] **Open Library** : étendre le client existant si besoin (ex. recherche **titre seul** ou `q` générique en plus du couple titre+auteur déjà utilisé à l’ajout physique) ; conserver rate limit + cache (Phase 15).
-- [ ] **UI** : onglet, section ou page « Catalogue » / « Découvrir » clairement séparée de « Ma bibliothèque » sur `/search` (ou route dédiée) ; liste résultats preview ; états chargement / vide / erreur.
-- [ ] **CTA** : bouton **« Ajouter à la bibliothèque »** sur un candidat → réutilise le flux création livre physique (ou équivalent spec) avec métadonnées préremplies ; respect RBAC (admin vs reader selon règles actuelles d’ajout).
-- [ ] **Sécurité** : pas d’exposition de secrets ; validation serveur (zod) ; throttling par user/IP cohérent avec `openlibrary_search` existant.
-- [ ] **Tests** : au moins tests d’intégration route catalogue + test client OL sur fixtures/mocks.
+- [x] **Spec** : documenter dans `docs/SPECS.md` l’endpoint (méthode, query, auth, rate limit, schéma réponse) ; préciser qu’aucune ligne `Book` n’est écrite sur la seule recherche.
+- [x] **API** : route dédiée authentifiée (ex. `GET /api/...` alignée sur la spec) qui retourne des candidats normalisés (titre, auteurs, ISBNs, clés Open Library si applicable, cover preview URL) — **lecture seule** côté DB.
+- [x] **Open Library** : étendre le client existant si besoin (ex. recherche **titre seul** ou `q` générique en plus du couple titre+auteur déjà utilisé à l’ajout physique) ; conserver rate limit + cache (Phase 15).
+- [x] **UI** : onglet, section ou page « Catalogue » / « Découvrir » clairement séparée de « Ma bibliothèque » sur `/search` (ou route dédiée) ; liste résultats preview ; états chargement / vide / erreur.
+- [x] **CTA** : bouton **« Ajouter à la bibliothèque »** sur un candidat → réutilise le flux création livre physique (ou équivalent spec) avec métadonnées préremplies ; respect RBAC (admin vs reader selon règles actuelles d’ajout).
+- [x] **Sécurité** : pas d’exposition de secrets ; validation serveur (zod) ; throttling par user/IP cohérent avec `openlibrary_search` existant.
+- [x] **Tests** : au moins tests d’intégration route catalogue + test client OL sur fixtures/mocks.
 - [ ] *(Optionnel)* **MCP** : voir **Phase 22.4.6**.
 
 ---
@@ -333,7 +333,7 @@
 - [x] Option infinite scroll en préférence user.
 
 ### 12.6 Recherche hors bibliothèque (catalogue externe)
-- [ ] Complément aux §12.1–12.5 (FTS interne) : **Phase 5.4** — preview catalogue public, puis ajout optionnel.
+- [x] Complément aux §12.1–12.5 (FTS interne) : **Phase 5.4** — preview catalogue public, puis ajout optionnel.
 
 ---
 
