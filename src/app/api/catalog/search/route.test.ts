@@ -70,9 +70,7 @@ describe("GET /api/catalog/search", () => {
     expect(json.partial).toBe(false);
     expect(json.candidates.length).toBe(1);
     expect(json.candidates[0].coverPreviewUrl).toMatch(/covers\.openlibrary\.org/);
-    expect(searchCatalogPreview).toHaveBeenCalledWith(
-      expect.objectContaining({ q: "foundation" }),
-    );
+    expect(searchCatalogPreview).toHaveBeenCalledWith(expect.objectContaining({ q: "foundation" }));
   });
 
   it("returns 502 when all providers fail", async () => {

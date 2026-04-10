@@ -98,6 +98,22 @@ enum AdminAuditAction {
   duplicate_merge
   mcp_tool_call
   pull_books
+  pull_books_job_create
+  pull_books_job_cancel
+  pull_books_job_retry
+}
+
+enum AdminImportJobType {
+  pull_books
+}
+
+enum AdminImportJobStatus {
+  queued
+  running
+  succeeded
+  failed
+  cancelled
+  dead_letter
 }
 
 model User {
@@ -122,6 +138,7 @@ model User {
   apiKeys         ApiKey[]
   duplicateAudits DuplicateResolutionAudit[]
   adminAuditLogs  AdminAuditLog[]
+  importJobs      AdminImportJob[]
 
   @@map("users")
 }
@@ -435,4 +452,55 @@ model AdminAuditLog {
   @@index([createdAt])
   @@index([action, createdAt])
   @@map("admin_audit_logs")
+}
+
+model AdminImportJob {
+  id                String               @id @default(uuid()) @db.Uuid
+  type              AdminImportJobType
+  status            AdminImportJobStatus @default(queued)
+  params            Json
+  processedCandidates Int                @default(0) @map("processed_candidates")
+  createdCount      Int                  @default(0) @map("created_count")
+  updatedCount      Int                  @default(0) @map("updated_count")
+  skippedCount      Int                  @default(0) @map("skipped_count")
+  errorCount        Int                  @default(0) @map("error_count")
+  attempts          Int                  @default(0)
+  maxAttempts       Int                  @default(3) @map("max_attempts")
+  lastCursor        String?              @map("last_cursor")
+  nextRunAt         DateTime?            @map("next_run_at") @db.Timestamptz(6)
+  lockedAt          DateTime?            @map("locked_at") @db.Timestamptz(6)
+  lockOwner         String?              @map("lock_owner") @db.VarChar(100)
+  cancelRequestedAt DateTime?            @map("cancel_requested_at") @db.Timestamptz(6)
+  startedAt         DateTime?            @map("started_at") @db.Timestamptz(6)
+  finishedAt        DateTime?            @map("finished_at") @db.Timestamptz(6)
+  lastError         String?              @map("last_error")
+  createdById       String               @map("created_by_id") @db.Uuid
+  createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  createdBy User                 @relation(fields: [createdById], references: [id])
+  items     AdminImportJobItem[]
+
+  @@index([type, status, nextRunAt])
+  @@index([createdAt])
+  @@index([createdById, createdAt])
+  @@index([status, updatedAt])
+  @@map("admin_import_jobs")
+}
+
+model AdminImportJobItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  jobId     String   @map("job_id") @db.Uuid
+  status    String   @db.VarChar(20)
+  title     String   @db.VarChar(500)
+  authors   Json     @default("[]")
+  openLibraryId String? @map("open_library_id") @db.VarChar(50)
+  isbn13    String?  @map("isbn_13") @db.VarChar(13)
+  error     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  job AdminImportJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, createdAt])
+  @@map("admin_import_job_items")
 }

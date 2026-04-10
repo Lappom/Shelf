@@ -124,14 +124,20 @@ async function fetchGoogleBooksJson(url: string): Promise<GoogleBooksVolumeRespo
   throw new Error("GoogleBooks error");
 }
 
-function mapToCandidates(json: GoogleBooksVolumeResponse, limit: number): GoogleBooksSearchCandidate[] {
+function mapToCandidates(
+  json: GoogleBooksVolumeResponse,
+  limit: number,
+): GoogleBooksSearchCandidate[] {
   return (json.items ?? [])
     .map((item) => {
       const providerId = item.id?.trim() ?? "";
       const volume = item.volumeInfo;
       const title = volume?.title?.trim() ?? "";
       const authors =
-        volume?.authors?.map((author) => author.trim()).filter(Boolean).slice(0, 10) ?? [];
+        volume?.authors
+          ?.map((author) => author.trim())
+          .filter(Boolean)
+          .slice(0, 10) ?? [];
       const isbns =
         volume?.industryIdentifiers
           ?.map((identifier) => identifier.identifier?.trim() ?? "")

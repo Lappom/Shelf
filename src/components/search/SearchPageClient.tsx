@@ -157,7 +157,12 @@ export function SearchPageClient({
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [catalogItems, setCatalogItems] = useState<CatalogApiCandidate[]>([]);
   const [catalogAddFeedback, setCatalogAddFeedback] = useState<
-    Record<string, "idle" | "loading" | "added" | "already_exists" | "potential_conflict" | "error">
+    Partial<
+      Record<
+        string,
+        "idle" | "loading" | "added" | "already_exists" | "potential_conflict" | "error"
+      >
+    >
   >({});
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -461,9 +466,9 @@ export function SearchPageClient({
           query: catalogQ.trim() || undefined,
         }),
       });
-      const json = (await res.json().catch(() => null)) as
-        | { status?: "added" | "already_exists" | "potential_conflict" }
-        | null;
+      const json = (await res.json().catch(() => null)) as {
+        status?: "added" | "already_exists" | "potential_conflict";
+      } | null;
       if (!res.ok || !json?.status) {
         setCatalogAddFeedback((prev) => ({ ...prev, [key]: "error" }));
         return;
@@ -572,10 +577,10 @@ export function SearchPageClient({
                           {catalogAddFeedback[`${c.provider}:${c.providerId}`] === "added"
                             ? "Ajouté"
                             : catalogAddFeedback[`${c.provider}:${c.providerId}`] ===
-                                  "already_exists"
+                                "already_exists"
                               ? "Déjà présent"
                               : catalogAddFeedback[`${c.provider}:${c.providerId}`] ===
-                                    "potential_conflict"
+                                  "potential_conflict"
                                 ? "Conflit potentiel"
                                 : catalogAddFeedback[`${c.provider}:${c.providerId}`] === "error"
                                   ? "Erreur"

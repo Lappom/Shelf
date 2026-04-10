@@ -21,8 +21,8 @@ vi.mock("@/lib/admin/auditLog", () => ({
   logAdminAudit: vi.fn(async () => undefined),
 }));
 
-vi.mock("@/lib/admin/pullBooks", () => ({
-  executeAdminPullBooks: vi.fn(),
+vi.mock("@/lib/admin/pullBooksJobs", () => ({
+  enqueuePullBooksJob: vi.fn(),
 }));
 
 describe("POST /api/admin/pull-books", () => {
@@ -31,23 +31,13 @@ describe("POST /api/admin/pull-books", () => {
   });
 
   it("returns pull result and audits", async () => {
-    const { executeAdminPullBooks } = await import("@/lib/admin/pullBooks");
+    const { enqueuePullBooksJob } = await import("@/lib/admin/pullBooksJobs");
     const { logAdminAudit } = await import("@/lib/admin/auditLog");
     const { rateLimitOrThrow } = await import("@/lib/security/rateLimit");
 
-    (executeAdminPullBooks as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      created: 2,
-      skipped: 1,
-      nextCursor: "abc",
-      items: [
-        {
-          status: "created",
-          title: "T",
-          authors: ["A"],
-          open_library_id: "/works/OL1W",
-          isbn_13: null,
-        },
-      ],
+    (enqueuePullBooksJob as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: "11111111-1111-4111-8111-111111111111",
+      status: "queued",
     });
 
     const { POST } = await import("./route");
@@ -55,28 +45,24 @@ describe("POST /api/admin/pull-books", () => {
       new Request("http://test.local/api/admin/pull-books", {
         method: "POST",
         headers: { "Content-Type": "application/json", Origin: "http://test.local" },
-        body: JSON.stringify({ query: "q", limit: 10, dryRun: false }),
+        body: JSON.stringify({ query: "q", chunkSize: 10, dryRun: false }),
       }),
     );
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
     const json = await res.json();
-    expect(json.created).toBe(2);
-    expect(json.skipped).toBe(1);
-    expect(json.nextCursor).toBe("abc");
-    expect(Array.isArray(json.items)).toBe(true);
+    expect(json.jobId).toBe("11111111-1111-4111-8111-111111111111");
+    expect(json.status).toBe("queued");
     expect(logAdminAudit).toHaveBeenCalledWith(
       expect.objectContaining({
-        action: "pull_books",
+        action: "pull_books_job_create",
         actorId: "00000000-0000-4000-8000-000000000001",
         meta: expect.objectContaining({
           source: "openlibrary",
           requestedSource: "openlibrary",
-          created: 2,
-          skipped: 1,
           dryRun: false,
+          chunkSize: 10,
           queryLen: 1,
-          hadCursor: false,
         }),
       }),
     );
@@ -96,61 +82,27 @@ describe("POST /api/admin/pull-books", () => {
     );
   });
 
-  it("returns 400 without query when no cursor", async () => {
+  it("returns 400 without query", async () => {
     const { POST } = await import("./route");
     const res = await POST(
       new Request("http://test.local/api/admin/pull-books", {
         method: "POST",
         headers: { "Content-Type": "application/json", Origin: "http://test.local" },
-        body: JSON.stringify({ limit: 5 }),
+        body: JSON.stringify({ chunkSize: 5 }),
       }),
     );
     expect(res.status).toBe(400);
   });
 
-  it("returns 400 when query is provided with cursor", async () => {
+  it("returns 400 for invalid chunkSize", async () => {
     const { POST } = await import("./route");
     const res = await POST(
       new Request("http://test.local/api/admin/pull-books", {
         method: "POST",
         headers: { "Content-Type": "application/json", Origin: "http://test.local" },
-        body: JSON.stringify({ query: "q", cursor: "abc", limit: 5 }),
+        body: JSON.stringify({ query: "q", chunkSize: 200 }),
       }),
     );
     expect(res.status).toBe(400);
-  });
-
-  it("returns 400 on invalid cursor", async () => {
-    const { executeAdminPullBooks } = await import("@/lib/admin/pullBooks");
-    (executeAdminPullBooks as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("INVALID_CURSOR"),
-    );
-    const { POST } = await import("./route");
-    const res = await POST(
-      new Request("http://test.local/api/admin/pull-books", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Origin: "http://test.local" },
-        body: JSON.stringify({ cursor: "bad-cursor", limit: 5 }),
-      }),
-    );
-    expect(res.status).toBe(400);
-    await expect(res.json()).resolves.toEqual({ error: "Invalid cursor" });
-  });
-
-  it("maps upstream failures to 502 without leaking message", async () => {
-    const { executeAdminPullBooks } = await import("@/lib/admin/pullBooks");
-    (executeAdminPullBooks as unknown as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("OpenLibrary timeout internal-details"),
-    );
-    const { POST } = await import("./route");
-    const res = await POST(
-      new Request("http://test.local/api/admin/pull-books", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Origin: "http://test.local" },
-        body: JSON.stringify({ query: "q", limit: 5 }),
-      }),
-    );
-    expect(res.status).toBe(502);
-    await expect(res.json()).resolves.toEqual({ error: "Open Library unavailable" });
   });
 });

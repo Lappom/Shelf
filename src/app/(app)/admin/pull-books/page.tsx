@@ -11,7 +11,7 @@ export default async function AdminPullBooksPage() {
         <h2 className="text-xl font-semibold tracking-tight">Pull catalogue (Open Library)</h2>
         <p className="text-muted-foreground text-sm">
           Importe des fiches livres <span className="font-medium">sans fichier</span> depuis Open
-          Library, par lots idempotents. Le curseur de pagination reste côté navigateur.
+          Library, via des jobs asynchrones chunkés, idempotents, annulables et rejouables.
         </p>
       </div>
       <AdminPullBooksClient />

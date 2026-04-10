@@ -43,7 +43,9 @@ function authorsOverlap(dbAuthors: unknown, expected: string[]): boolean {
   });
 }
 
-export async function addBookFromCatalog(input: AddCatalogBookInput): Promise<AddCatalogBookResult> {
+export async function addBookFromCatalog(
+  input: AddCatalogBookInput,
+): Promise<AddCatalogBookResult> {
   const providerId = input.providerId.trim();
   if (!providerId) throw new Error("INVALID_PROVIDER_ID");
 

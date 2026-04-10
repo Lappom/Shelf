@@ -795,21 +795,21 @@
 ## Phase 28 — Admin import massif (Pull books V2)
 
 ### 28.1 Pipeline d’import par lots
-- [ ] Finaliser `Pull books` en mode batch (chunking configurable, reprise sur erreur).
-- [ ] Mode dry-run (prévisualisation sans écriture DB).
-- [ ] Rapports d’exécution (créés, mis à jour, ignorés, en erreur).
-- [ ] Idempotence inter-runs (mêmes entrées => même état final).
+- [x] Finaliser `Pull books` en mode batch (chunking configurable, reprise sur erreur).
+- [x] Mode dry-run (prévisualisation sans écriture DB).
+- [x] Rapports d’exécution (créés, mis à jour, ignorés, en erreur).
+- [x] Idempotence inter-runs (mêmes entrées => même état final).
 
 ### 28.2 Exécution asynchrone & opérabilité
-- [ ] File de jobs pour imports longs (retry/backoff, dead-letter si nécessaire).
-- [ ] Journal d’audit admin (qui a lancé quoi, quand, avec quels paramètres).
-- [ ] Annulation propre d’un job en cours.
-- [ ] UI admin de suivi (progression, erreurs, export du rapport).
+- [x] File de jobs pour imports longs (retry/backoff, dead-letter si nécessaire).
+- [x] Journal d’audit admin (qui a lancé quoi, quand, avec quels paramètres).
+- [x] Annulation propre d’un job en cours.
+- [x] UI admin de suivi (progression, erreurs, export du rapport).
 
 ### 28.3 Critères d’acceptation
-- [ ] Import de volume cible sans timeout API.
-- [ ] Reprise après crash validée sur environnement de test.
-- [ ] Tests integration/e2e sur dry-run, cancel, retry.
+- [x] Import de volume cible sans timeout API.
+- [x] Reprise après crash validée sur environnement de test.
+- [x] Tests integration/e2e sur dry-run, cancel, retry.
 
 ---
 

@@ -827,6 +827,56 @@ Règles :
 - **Rate limit** : appliquer une limite stricte (par admin + IP) ; respecter §9.3 pour Open Library.
 - **Audit** : journaliser l'action (source, counts, durée) sans fuite de secrets ni de données sensibles (§14).
 
+### 12.3.2 Admin pull-books V2 — exécution asynchrone par job
+
+Objectif : permettre des imports longs sans timeout API en déléguant l'exécution à une file de jobs persistée.
+
+Modèle de traitement :
+
+- `POST /api/admin/pull-books` crée un job et retourne immédiatement `202` avec `jobId`.
+- Le worker traite le job par chunks successifs (`chunkSize`), avec checkpoints de progression.
+- Retry/backoff borné au niveau job ; au-delà du plafond d'essais, statut `dead_letter`.
+- Annulation coopérative : un job `queued|running` peut être marqué `cancel_requested`, le worker s'arrête proprement au prochain checkpoint.
+
+Nouveaux endpoints admin (V2) :
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/api/admin/pull-books/jobs` | Liste des jobs pull-books (pagination simple, tri desc). |
+| GET | `/api/admin/pull-books/jobs/:id` | Détail d'un job + rapport d'exécution. |
+| POST | `/api/admin/pull-books/jobs/:id/cancel` | Demande d'annulation d'un job `queued|running`. |
+| POST | `/api/admin/pull-books/jobs/:id/retry` | Requeue d'un job terminal `failed|dead_letter|cancelled`. |
+
+Entrée V2 `POST /api/admin/pull-books` (JSON) :
+
+- `source`: `"openlibrary"` (obligatoire)
+- `query`: `string` (obligatoire)
+- `chunkSize`: `number` (1–50, défaut 20)
+- `dryRun`: `boolean` (défaut `false`)
+- `maxAttempts`: `number` (1–5, défaut 3)
+
+Sortie `202` :
+
+```json
+{
+  "jobId": "uuid",
+  "status": "queued"
+}
+```
+
+Sortie détail job `GET /api/admin/pull-books/jobs/:id` :
+
+- `job`: état, tentatives, progression (`processedCandidates`, `lastCursor`, `nextRunAt`, timestamps)
+- `report`: compteurs agrégés (`created`, `updated`, `skipped`, `error`) + erreurs unitaires
+
+Contraintes sécurité/opérabilité V2 :
+
+- Endpoints jobs réservés admin (`requireAdmin`) + rate limit par admin+IP.
+- Validation serveur stricte (Zod) de tous payloads.
+- Audit admin sur création, transitions d'état, annulation et retry.
+- Pas d'accès storage ; aucune création `BookFile`.
+- Logs structurés sans secrets ni requête utilisateur en clair.
+
 ### 12.3.1 Ajouter à la bibliothèque depuis résultat externe (`POST /api/books`, intent `create_from_catalog`)
 
 Endpoint : `POST /api/books` (admin uniquement, `intent = "create_from_catalog"`).

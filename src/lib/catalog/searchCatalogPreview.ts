@@ -124,9 +124,15 @@ function computeRelevance(
   )
     ? 1
     : 0;
-  const languageBonus = input.q?.trim() && candidate.language ? overlapScore(input.q, candidate.language) : 0;
+  const languageBonus =
+    input.q?.trim() && candidate.language ? overlapScore(input.q, candidate.language) : 0;
   const yearBonus = candidate.firstPublishYear ? Math.min(1, candidate.firstPublishYear / 2100) : 0;
-  const score = 0.45 * titleScore + 0.25 * authorScore + 0.2 * isbnHit + 0.05 * languageBonus + 0.05 * yearBonus;
+  const score =
+    0.45 * titleScore +
+    0.25 * authorScore +
+    0.2 * isbnHit +
+    0.05 * languageBonus +
+    0.05 * yearBonus;
   return Number(score.toFixed(6));
 }
 
@@ -156,7 +162,9 @@ function dedupeCandidates(candidates: CatalogSearchCandidate[]) {
   return [...byIsbn.values(), ...fuzzy.values()];
 }
 
-export async function searchCatalogPreview(input: CatalogSearchInput): Promise<CatalogSearchResult> {
+export async function searchCatalogPreview(
+  input: CatalogSearchInput,
+): Promise<CatalogSearchResult> {
   const q = input.q?.trim();
   const title = input.title?.trim();
   const author = input.author?.trim();
@@ -177,7 +185,9 @@ export async function searchCatalogPreview(input: CatalogSearchInput): Promise<C
   };
 
   const openLibraryCandidates =
-    openLibraryResult.status === "fulfilled" ? openLibraryResult.value.map(withCoverPreviewOpenLibrary) : [];
+    openLibraryResult.status === "fulfilled"
+      ? openLibraryResult.value.map(withCoverPreviewOpenLibrary)
+      : [];
   const googleBooksCandidates =
     googleBooksResult.status === "fulfilled"
       ? googleBooksResult.value.map((candidate) => ({
