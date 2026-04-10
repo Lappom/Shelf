@@ -1,4 +1,4 @@
-name: CI
+name: CI - Tests
 
 on:
   push:
@@ -6,10 +6,9 @@ on:
   pull_request:
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     env:
-      # prisma.config + integration tests (CI=true requires a reachable DB)
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
     services:
       postgres:
@@ -42,15 +41,41 @@ jobs:
       - name: Apply Prisma migrations
         run: pnpm exec prisma migrate deploy
 
-      - run: pnpm lint
-      - run: pnpm typecheck
       - run: pnpm test
-      - run: pnpm test:component
-      - run: pnpm build
 
-  docker:
+  test-component:
     runs-on: ubuntu-latest
-    needs: build
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f docker/Dockerfile -t shelf:ci .
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Apply Prisma migrations
+        run: pnpm exec prisma migrate deploy
+
+      - run: pnpm test:component
