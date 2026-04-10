@@ -25,10 +25,12 @@ export default async function AdminUsersPage() {
   }));
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="eleven-display-section text-xl">Utilisateurs</h2>
-        <p className="text-eleven-muted text-sm">
+    <div className="space-y-6">
+      <div className="shelf-hero-enter space-y-2">
+        <h2 className="eleven-display-section text-foreground text-2xl tracking-tight md:text-[2rem]">
+          Utilisateurs
+        </h2>
+        <p className="text-eleven-secondary eleven-body-airy max-w-2xl text-[0.94rem] leading-relaxed">
           Liste des comptes actifs. Rôle global : admin (gestion catalogue) ou reader (lecture et
           étagères personnelles).
         </p>

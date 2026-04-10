@@ -244,6 +244,59 @@
     }
   }
 
+  @keyframes admin-books-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-dup-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-dup-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-dup-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-dup-list-fade-in {
+    from {
+      opacity: 0.65;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .shelf-hero-enter {
       animation: shelf-hero-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -254,6 +307,33 @@
       animation-delay: var(--shelf-enter-delay, 0ms);
     }
 
+    .admin-books-panel,
+    .admin-tags-panel {
+      animation: admin-books-panel-in 0.22s cubic-bezier(0.25, 1, 0.5, 1) both;
+    }
+
+    .admin-dup-hero-enter {
+      animation: admin-dup-hero-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .admin-dup-panel-enter {
+      animation: admin-dup-panel-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .admin-dup-row-enter {
+      animation: admin-dup-row-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-dup-delay, 0ms);
+    }
+
+    .admin-dup-card-enter {
+      animation: admin-dup-row-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-dup-delay, 0ms);
+    }
+
+    .admin-dup-list-fade {
+      animation: admin-dup-list-fade-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
     details[open] > .shelf-details-body {
       animation: shelf-details-reveal 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
@@ -261,7 +341,17 @@
 
   @media (prefers-reduced-motion: reduce) {
     .shelf-hero-enter,
-    .shelf-item-enter {
+    .shelf-item-enter,
+    .admin-books-panel,
+    .admin-tags-panel {
+      animation: none;
+    }
+
+    .admin-dup-hero-enter,
+    .admin-dup-panel-enter,
+    .admin-dup-row-enter,
+    .admin-dup-card-enter,
+    .admin-dup-list-fade {
       animation: none;
     }
 

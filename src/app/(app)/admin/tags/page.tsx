@@ -27,9 +27,9 @@ export default async function AdminTagsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">Tags</h2>
-        <p className="text-muted-foreground text-sm">
+      <div className="shelf-hero-enter space-y-1">
+        <h2 className="eleven-display-section text-2xl text-foreground sm:text-3xl">Tags</h2>
+        <p className="text-eleven-muted eleven-body-airy text-sm tracking-wide">
           Tags globaux (admin) assignables aux livres. Couleur hex + nom unique.
         </p>
       </div>

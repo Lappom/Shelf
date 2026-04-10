@@ -29,11 +29,11 @@ export default async function AdminBooksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">Livres</h2>
-        <p className="text-muted-foreground text-sm">
-          Soft delete garde les fichiers en storage. Purge définitive supprime storage + DB. Tri :
-          plus récemment créés en premier.
+      <div className="shelf-hero-enter space-y-2">
+        <h2 className="eleven-display-section text-2xl text-foreground sm:text-3xl">Livres</h2>
+        <p className="eleven-body-airy text-eleven-secondary max-w-2xl text-base leading-relaxed">
+          Soft delete garde les fichiers en storage. Purge définitive supprime storage + DB. Tri : plus
+          récemment créés en premier.
         </p>
       </div>
       <AdminBooksClient initialRows={rows} initialNextCursor={initialNextCursor} />
