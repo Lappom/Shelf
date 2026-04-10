@@ -19,35 +19,64 @@ type KeyRow = {
   id: string;
   name: string;
   prefix: string;
+  scopes: string[];
   lastUsedAt: string | null;
   expiresAt: string | null;
   revokedAt: string | null;
   createdAt: string;
 };
 
-export function ApiKeysSettingsClient({ initialKeys }: { initialKeys: KeyRow[] }) {
+type ScopeOption = { id: string; label: string };
+
+export function ApiKeysSettingsClient({
+  initialKeys,
+  scopeOptions,
+}: {
+  initialKeys: KeyRow[];
+  scopeOptions: ScopeOption[];
+}) {
   const [keys, setKeys] = React.useState<KeyRow[]>(initialKeys);
   const [name, setName] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [newToken, setNewToken] = React.useState<string | null>(null);
+  const [restrictScopes, setRestrictScopes] = React.useState(false);
+  const [selectedScopes, setSelectedScopes] = React.useState<Set<string>>(() => new Set());
 
   const refresh = React.useCallback(async () => {
     const res = await listApiKeysAction();
-    if (res.ok) setKeys(res.keys);
+    if (res.ok) setKeys(res.keys as KeyRow[]);
   }, []);
+
+  const toggleScope = (id: string) => {
+    setSelectedScopes((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const onCreate = async () => {
     setError(null);
+    if (restrictScopes && selectedScopes.size === 0) {
+      setError("Choisissez au moins une portée ou désactivez la restriction.");
+      return;
+    }
     setBusy(true);
     try {
-      const res = await createApiKeyAction({ name: name.trim() || "MCP" });
+      const res = await createApiKeyAction({
+        name: name.trim() || "MCP",
+        scopes: restrictScopes ? Array.from(selectedScopes) : undefined,
+      });
       if (!res.ok) {
-        setError("Nom invalide.");
+        setError("Nom ou portées invalides.");
         return;
       }
       setNewToken(res.token);
       setName("");
+      setRestrictScopes(false);
+      setSelectedScopes(new Set());
       await refresh();
     } catch {
       setError("Échec de la création.");
@@ -84,28 +113,67 @@ export function ApiKeysSettingsClient({ initialKeys }: { initialKeys: KeyRow[] }
             après création.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1 space-y-1.5">
-            <label className="text-eleven-muted text-xs" htmlFor="key-name">
-              Nom
-            </label>
-            <Input
-              id="key-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ex. Cursor, Claude…"
-              maxLength={100}
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1 space-y-1.5">
+              <label className="text-eleven-muted text-xs" htmlFor="key-name">
+                Nom
+              </label>
+              <Input
+                id="key-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex. Cursor, Claude…"
+                maxLength={100}
+                disabled={busy}
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={() => void onCreate()}
               disabled={busy}
-            />
+              className="rounded-eleven-pill"
+            >
+              Générer
+            </Button>
           </div>
-          <Button
-            type="button"
-            onClick={() => void onCreate()}
-            disabled={busy}
-            className="rounded-eleven-pill"
-          >
-            Générer
-          </Button>
+
+          <div className="border-(--eleven-border-subtle) space-y-3 border-t pt-3">
+            <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={restrictScopes}
+                onChange={(e) => setRestrictScopes(e.target.checked)}
+                disabled={busy}
+              />
+              <span>
+                Restreindre les capacités MCP (scopes). Par défaut, la clé a un accès complet.
+              </span>
+            </label>
+            {restrictScopes ? (
+              <ul className="grid gap-2 sm:grid-cols-1">
+                {scopeOptions.map((opt) => (
+                  <li key={opt.id}>
+                    <label className="flex cursor-pointer items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={selectedScopes.has(opt.id)}
+                        onChange={() => toggleScope(opt.id)}
+                        disabled={busy}
+                      />
+                      <span>
+                        <span className="font-mono text-xs text-eleven-muted">{opt.id}</span>
+                        <br />
+                        {opt.label}
+                      </span>
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         </CardContent>
       </Card>
 
@@ -131,6 +199,20 @@ export function ApiKeysSettingsClient({ initialKeys }: { initialKeys: KeyRow[] }
                     <p className="text-eleven-muted font-mono text-xs">
                       {k.prefix}…
                       {k.revokedAt ? <span className="text-destructive ml-2">révoquée</span> : null}
+                    </p>
+                    <p className="text-eleven-muted mt-1 text-xs">
+                      {k.scopes.length === 0 ? (
+                        <span>Portée : accès complet</span>
+                      ) : (
+                        <span>
+                          Portées :{" "}
+                          {k.scopes.map((s) => (
+                            <code key={s} className="mr-1 text-[10px]">
+                              {s}
+                            </code>
+                          ))}
+                        </span>
+                      )}
                     </p>
                     <p className="text-eleven-muted text-xs">
                       Créée {new Date(k.createdAt).toLocaleString()}

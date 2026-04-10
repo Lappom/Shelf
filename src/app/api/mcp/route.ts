@@ -46,14 +46,20 @@ async function handleMcpRequest(req: Request): Promise<Response> {
     return res;
   }
 
+  const globalLimit = (() => {
+    const raw = process.env.MCP_RATE_LIMIT_PER_MINUTE;
+    const n = raw ? Number.parseInt(raw, 10) : 60;
+    return Number.isFinite(n) && n > 0 ? n : 60;
+  })();
+
   const rl = await rateLimit({
     key: `mcp:apikey:${resolved.apiKeyId}`,
-    limit: 60,
+    limit: globalLimit,
     windowMs: 60_000,
   });
   if (!rl.ok) {
     const res = jsonResponse(req, 429, {
-      error: "Rate limit exceeded (60 requests per minute per API key)",
+      error: `Rate limit exceeded (${globalLimit} requests per minute per API key)`,
     });
     logMcpRequest(method, t0, res);
     return res;
@@ -63,7 +69,12 @@ async function handleMcpRequest(req: Request): Promise<Response> {
 
   try {
     const out = await runWithMcpContext(
-      { userId: resolved.userId, role: resolved.role, apiKeyId: resolved.apiKeyId },
+      {
+        userId: resolved.userId,
+        role: resolved.role,
+        apiKeyId: resolved.apiKeyId,
+        scopes: resolved.scopes,
+      },
       async () => {
         const transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: undefined,

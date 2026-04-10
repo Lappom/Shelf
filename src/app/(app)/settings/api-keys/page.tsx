@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db/prisma";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
 
+import { ALL_MCP_SCOPES, MCP_SCOPE_LABELS_FR, parseMcpScopesFromJson } from "@/lib/mcp/scopes";
+
 import { ApiKeysSettingsClient } from "./ApiKeysSettingsClient";
 
 export default async function ApiKeysSettingsPage() {
@@ -21,6 +23,7 @@ export default async function ApiKeysSettingsPage() {
       id: true,
       name: true,
       prefix: true,
+      scopes: true,
       lastUsedAt: true,
       expiresAt: true,
       revokedAt: true,
@@ -32,10 +35,16 @@ export default async function ApiKeysSettingsPage() {
     id: r.id,
     name: r.name,
     prefix: r.prefix,
+    scopes: parseMcpScopesFromJson(r.scopes) ?? [],
     lastUsedAt: r.lastUsedAt?.toISOString() ?? null,
     expiresAt: r.expiresAt?.toISOString() ?? null,
     revokedAt: r.revokedAt?.toISOString() ?? null,
     createdAt: r.createdAt.toISOString(),
+  }));
+
+  const scopeOptions = ALL_MCP_SCOPES.map((id) => ({
+    id,
+    label: MCP_SCOPE_LABELS_FR[id],
   }));
 
   return (
@@ -52,7 +61,7 @@ export default async function ApiKeysSettingsPage() {
         </Button>
       </div>
 
-      <ApiKeysSettingsClient initialKeys={initialKeys} />
+      <ApiKeysSettingsClient initialKeys={initialKeys} scopeOptions={scopeOptions} />
     </div>
   );
 }

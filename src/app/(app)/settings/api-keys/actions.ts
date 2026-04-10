@@ -5,6 +5,11 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/rbac";
 import { generateApiKeyMaterial } from "@/lib/apiKeys/crypto";
+import {
+  ALL_MCP_SCOPES,
+  parseMcpScopesFromJson,
+  type McpScopeValue,
+} from "@/lib/mcp/scopes";
 import { prisma } from "@/lib/db/prisma";
 import { assertSameOriginFromHeaders } from "@/lib/security/origin";
 import { logShelfEvent } from "@/lib/observability/structuredLog";
@@ -36,6 +41,7 @@ export async function listApiKeysAction() {
       id: true,
       name: true,
       prefix: true,
+      scopes: true,
       lastUsedAt: true,
       expiresAt: true,
       revokedAt: true,
@@ -49,6 +55,7 @@ export async function listApiKeysAction() {
       id: r.id,
       name: r.name,
       prefix: r.prefix,
+      scopes: parseMcpScopesFromJson(r.scopes) ?? [],
       lastUsedAt: r.lastUsedAt?.toISOString() ?? null,
       expiresAt: r.expiresAt?.toISOString() ?? null,
       revokedAt: r.revokedAt?.toISOString() ?? null,
@@ -60,8 +67,19 @@ export async function listApiKeysAction() {
 const CreateSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
+    /** Omitted or empty = full MCP access */
+    scopes: z.array(z.string()).max(20).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((val, ctx) => {
+    if (!val.scopes?.length) return;
+    const allowed = new Set<string>(ALL_MCP_SCOPES);
+    for (const s of val.scopes) {
+      if (!allowed.has(s)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "INVALID_SCOPE", path: ["scopes"] });
+      }
+    }
+  });
 
 export async function createApiKeyAction(input: unknown) {
   await assertActionSecurity("create");
@@ -76,12 +94,18 @@ export async function createApiKeyAction(input: unknown) {
 
   const { token, hash, prefix } = generateApiKeyMaterial();
 
+  const rawScopes = parsed.data.scopes?.filter(Boolean) ?? [];
+  const scopesJson: McpScopeValue[] = rawScopes.filter((s): s is McpScopeValue =>
+    ALL_MCP_SCOPES.includes(s as McpScopeValue),
+  );
+
   const created = await prisma.apiKey.create({
     data: {
       userId,
       name: parsed.data.name,
       prefix,
       hash,
+      scopes: scopesJson.length > 0 ? scopesJson : undefined,
     },
     select: { id: true },
   });

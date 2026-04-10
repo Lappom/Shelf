@@ -6,6 +6,8 @@ export type McpRequestContext = {
   userId: string;
   role: UserRole;
   apiKeyId: string;
+  /** null or empty from DB means unrestricted MCP access */
+  scopes: string[] | null;
 };
 
 const storage = new AsyncLocalStorage<McpRequestContext>();

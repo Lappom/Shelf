@@ -5,6 +5,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { generateApiKeyMaterial } from "@/lib/apiKeys/crypto";
 import { assertIntegrationDatabaseOrThrow } from "@/lib/db/integrationDb";
 import { prisma } from "@/lib/db/prisma";
+import * as rateLimit from "@/lib/security/rateLimit";
 
 import { GET, POST } from "./route";
 
@@ -192,5 +193,130 @@ describe("POST /api/mcp (Streamable HTTP + API key)", () => {
     expect(text).toBe("Catalog provider unavailable");
 
     await transport.close();
+  });
+
+  test("scoped key without mcp:catalog:read cannot call search_catalog", async () => {
+    if (!dbAvailable) return;
+
+    const user = await prisma.user.create({
+      data: {
+        email: "mcp_scoped_catalog_only@test.local",
+        username: "mcp_scoped",
+        role: "reader",
+      },
+      select: { id: true },
+    });
+    const { token, hash, prefix } = generateApiKeyMaterial();
+    await prisma.apiKey.create({
+      data: {
+        userId: user.id,
+        name: "library-only",
+        hash,
+        prefix,
+        scopes: ["mcp:library:read"],
+      },
+    });
+
+    try {
+      const transport = new StreamableHTTPClientTransport(MCP_URL, {
+        fetch: mcpFetch,
+        requestInit: { headers: { Authorization: `Bearer ${token}` } },
+      });
+      const client = new Client({ name: "shelf-route-scoped", version: "0.0.0" });
+      await client.connect(transport);
+
+      const result = await client.callTool({
+        name: "search_catalog",
+        arguments: { q: "test", limit: 3 },
+      });
+      expect(result.isError).toBe(true);
+      const content = result.content as Array<{ type: string; text?: string }>;
+      const text = content.find((c) => c.type === "text")?.text ?? "";
+      expect(text).toContain("scope");
+
+      await transport.close();
+    } finally {
+      await prisma.adminAuditLog.deleteMany({ where: { actorId: user.id } });
+      await prisma.apiKey.deleteMany({ where: { userId: user.id } });
+      await prisma.user.delete({ where: { id: user.id } });
+    }
+  });
+
+  test("mcp_tool_call audit log includes durationMs after list_books", async () => {
+    if (!dbAvailable) return;
+
+    await prisma.adminAuditLog.deleteMany({ where: { actor: { email: MCP_TEST_EMAIL } } });
+
+    const transport = new StreamableHTTPClientTransport(MCP_URL, {
+      fetch: mcpFetch,
+      requestInit: { headers: { Authorization: `Bearer ${apiToken}` } },
+    });
+    const client = new Client({ name: "shelf-route-audit", version: "0.0.0" });
+    await client.connect(transport);
+
+    await client.callTool({
+      name: "list_books",
+      arguments: { page: 1, per_page: 2 },
+    });
+
+    await transport.close();
+
+    const row = await prisma.adminAuditLog.findFirst({
+      where: { action: "mcp_tool_call", actor: { email: MCP_TEST_EMAIL } },
+      orderBy: { createdAt: "desc" },
+      select: { meta: true },
+    });
+    expect(row).toBeTruthy();
+    const meta = row!.meta as Record<string, unknown>;
+    expect(typeof meta.durationMs).toBe("number");
+    expect(meta.toolName).toBe("list_books");
+    expect(meta.ok).toBe(true);
+  });
+
+  test("per-tool rate limit blocks second list_books when exhausted", async () => {
+    if (!dbAvailable) return;
+
+    let listBooksHits = 0;
+    const spy = vi.spyOn(rateLimit, "rateLimit").mockImplementation(async (args) => {
+      if (args.key.includes("mcp:apikey:")) {
+        return { ok: true, remaining: 59, resetAt: Date.now() + 60_000 };
+      }
+      if (args.key.includes(":list_books")) {
+        listBooksHits += 1;
+        if (listBooksHits >= 2) {
+          return { ok: false, remaining: 0, resetAt: Date.now() + 60_000 };
+        }
+      }
+      return { ok: true, remaining: 59, resetAt: Date.now() + 60_000 };
+    });
+
+    try {
+      const transport = new StreamableHTTPClientTransport(MCP_URL, {
+        fetch: mcpFetch,
+        requestInit: { headers: { Authorization: `Bearer ${apiToken}` } },
+      });
+      const client = new Client({ name: "shelf-route-rl", version: "0.0.0" });
+      await client.connect(transport);
+
+      const first = await client.callTool({
+        name: "list_books",
+        arguments: { page: 1, per_page: 2 },
+      });
+      expect(first.isError).not.toBe(true);
+
+      const second = await client.callTool({
+        name: "list_books",
+        arguments: { page: 1, per_page: 2 },
+      });
+      expect(second.isError).toBe(true);
+      const text = (second.content as Array<{ type: string; text?: string }>).find(
+        (c) => c.type === "text",
+      )?.text;
+      expect(text).toContain("Rate limit");
+
+      await transport.close();
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

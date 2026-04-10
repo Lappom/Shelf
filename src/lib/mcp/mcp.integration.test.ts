@@ -49,5 +49,36 @@ describe("MCP API key (integration)", () => {
     expect(resolved?.userId).toBe(user.id);
     expect(resolved?.role).toBe("admin");
     expect(resolved?.apiKeyId).toBeTruthy();
+    expect(resolved?.scopes).toBeNull();
+  });
+
+  test("resolveApiKeyUser returns stored scopes when set", async () => {
+    if (!dbAvailable) return;
+
+    const user = await prisma.user.create({
+      data: {
+        email: "mcp_key_scoped@test.local",
+        username: "mcp_key_scoped",
+        role: "reader",
+      },
+      select: { id: true },
+    });
+
+    const { token, hash, prefix } = generateApiKeyMaterial();
+    await prisma.apiKey.create({
+      data: {
+        userId: user.id,
+        name: "scoped",
+        hash,
+        prefix,
+        scopes: ["mcp:library:read", "mcp:catalog:read"],
+      },
+    });
+
+    const resolved = await resolveApiKeyUser(token);
+    expect(resolved?.scopes?.sort()).toEqual(["mcp:catalog:read", "mcp:library:read"].sort());
+
+    await prisma.apiKey.deleteMany({ where: { userId: user.id } });
+    await prisma.user.delete({ where: { id: user.id } });
   });
 });

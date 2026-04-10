@@ -1248,8 +1248,8 @@ Le serveur MCP est exposé sur `/api/mcp` et requiert un token d'authentificatio
 - Chaque utilisateur peut générer des **API keys** depuis ses paramètres (`/settings/api-keys`).
 - Les API keys sont des tokens opaques (préfixe `sk_shelf_`, 48 caractères aléatoires).
 - Hashées en base (SHA-256), jamais stockées en clair.
-- Permissions : chaque key hérite du rôle de l'utilisateur (admin ou reader).
-- Révocables individuellement.
+- Permissions : chaque key hérite du rôle de l'utilisateur (admin ou reader) ; les **scopes** MCP restreignent quels tools/resources/prompts la clé peut invoquer (voir ci-dessous).
+- Révocables individuellement ; **effet immédiat** : une clé révoquée (`revoked_at` non null) ne résout plus aucune requête MCP.
 
 Table `ApiKey` :
 
@@ -1260,10 +1260,32 @@ Table `ApiKey` :
 | name | VARCHAR(100) | Label choisi par l'utilisateur |
 | hash | VARCHAR(255) | SHA-256 hex du token (colonne `hash` / `key_hash` conceptuel) |
 | prefix | VARCHAR(16) | Début du token (`sk_shelf_` + suffixe) pour identification visuelle |
+| scopes | JSON | Tableau de chaînes (scopes MCP) ; `null` ou `[]` = accès complet (rétrocompatibilité) |
 | last_used_at | TIMESTAMPTZ | Nullable |
 | expires_at | TIMESTAMPTZ | Nullable |
 | created_at | TIMESTAMPTZ | |
 | revoked_at | TIMESTAMPTZ | Nullable |
+
+#### Scopes MCP (granularité fonctionnelle)
+
+Valeurs autorisées (chaînes exactes) :
+
+| Scope | Usage |
+|-------|--------|
+| `mcp:library:read` | `search_books`, `list_books`, `get_book` |
+| `mcp:library:content:read` | `get_book_content` |
+| `mcp:annotations:read` | `get_annotations`, `get_all_annotations` |
+| `mcp:annotations:write` | `create_annotation` |
+| `mcp:shelves:read` | `list_shelves`, `get_shelf_books` |
+| `mcp:shelves:write` | `add_to_shelf`, `remove_from_shelf`, `batch_shelf_operations` |
+| `mcp:recommendations:read` | `get_recommendations` |
+| `mcp:recommendations:write` | `dismiss_recommendation`, `recommendation_feedback` |
+| `mcp:catalog:read` | `search_catalog` (preview Open Library) |
+| `mcp:admin:books` | `add_book`, `update_book`, `delete_book`, `scan_duplicates`, `bulk_update_books` (rôle admin requis en plus) |
+
+Mapping resources → scopes : `shelf://library/stats`, `shelf://library/catalog`, `shelf://user/reading-list`, `shelf://user/favorites`, `shelf://book/{id}/metadata` → `mcp:library:read` ; `shelf://user/recent-annotations`, `shelf://book/{id}/annotations` → `mcp:annotations:read` ; `shelf://shelves` → `mcp:shelves:read` ; `shelf://jobs/import` → `mcp:admin:books` (et rôle admin).
+
+Mapping prompts → scopes : `summarize_book` → `mcp:library:read` + `mcp:annotations:read` ; `reading_insights` → `mcp:library:read` + `mcp:annotations:read` + `mcp:shelves:read` ; `find_similar` → `mcp:library:read` ; `shelf_curator` → `mcp:library:read` + `mcp:shelves:read` ; `quote_finder` → `mcp:annotations:read` ; `batch_shelf_helper` → `mcp:shelves:write` ; `bulk_metadata_helper` → `mcp:admin:books`.
 
 ### 17.4 Tools exposés
 
@@ -1271,7 +1293,7 @@ Table `ApiKey` :
 
 | Tool | Description | Paramètres |
 |------|-------------|------------|
-| `search_books` | Recherche full-text dans la bibliothèque | `query: string`, `filters?: object`, `limit?: number` |
+| `search_books` | Recherche full-text dans la bibliothèque (même moteur que l’UI) | `query: string`, `filters?: object`, `limit?: number`, `cursor?: string` (pagination, valeur de `nextCursor`), `include_snippets?: boolean` (extraits FTS courts, sans contenu fichier) |
 | `get_book` | Détail complet d'un livre | `book_id: string` |
 | `list_books` | Liste paginée avec filtres | `page?: number`, `per_page?: number`, `sort?: string`, `filters?: object` |
 | `get_book_content` | Extraire le texte d'un chapitre EPUB | `book_id: string`, `chapter?: number` (index **0-based** sur les items spine XHTML/HTML), `max_chars?: number` |
@@ -1293,6 +1315,7 @@ Table `ApiKey` :
 | `get_shelf_books` | Livres d'une étagère | `shelf_id: string` |
 | `add_to_shelf` | Ajouter un livre à une étagère | `book_id: string`, `shelf_id: string` |
 | `remove_from_shelf` | Retirer un livre | `book_id: string`, `shelf_id: string` |
+| `batch_shelf_operations` | Opérations d’étagère en lot (sûr, par item) | `operations: { op: 'add' \| 'remove', book_id: string, shelf_id: string }[]` (max 30) ; chaque `shelf_id` doit appartenir à l’utilisateur ; livre non soft-deleted. Réponse : `{ ok, applied, errors: [{ index, message }] }` |
 
 #### Recommandations
 
@@ -1308,6 +1331,7 @@ Table `ApiKey` :
 |------|-------------|------------|
 | `add_book` | Ajouter un livre (physique) | `title: string`, `authors: string[]`, `isbn?: string`, ... |
 | `update_book` | Modifier les métadonnées | `book_id: string`, `fields: object` |
+| `bulk_update_books` | Même whitelist de champs que `update_book`, plusieurs livres | `updates: { book_id: string, fields: object }[]` (max 20) ; pas de transaction globale — chaque item est appliqué indépendamment. Réponse : `{ ok, applied, failed, errors: [{ book_id, message }] }` |
 | `delete_book` | Soft delete | `book_id: string` |
 | `scan_duplicates` | Lancer un scan de doublons | — |
 
@@ -1335,6 +1359,8 @@ Les Resources MCP permettent à l'IA de consulter des données contextuelles :
 | `shelf://book/{id}/metadata` | Métadonnées complètes d'un livre |
 | `shelf://book/{id}/annotations` | Annotations du livre |
 | `shelf://shelves` | Liste des étagères avec nombre de livres |
+| `shelf://library/catalog` | Catalogue paginé léger (id, titre, premier auteur) ; `cursor` + `limit` en query (pas de chemins storage) |
+| `shelf://jobs/import` | **Admin** : derniers jobs d’import (`AdminImportJob` dont `created_by_id` = utilisateur de la clé) — statuts et compteurs agrégés uniquement |
 
 ### 17.6 Prompts pré-définis
 
@@ -1347,6 +1373,8 @@ Le serveur expose des prompts MCP que les clients IA peuvent proposer :
 | `find_similar` | "Trouve des livres similaires à [titre] dans ma bibliothèque" |
 | `shelf_curator` | "Suggère une organisation de mes étagères basée sur mon historique" |
 | `quote_finder` | "Retrouve des passages que j'ai annotés sur le thème [sujet]" |
+| `batch_shelf_helper` | Guide l’IA pour organiser des ajouts/retraits d’étagères via `batch_shelf_operations` |
+| `bulk_metadata_helper` | Guide l’IA pour des mises à jour métadonnées admin via `bulk_update_books` (après validation humaine) |
 
 ### 17.7 Configuration côté client
 
@@ -1369,9 +1397,22 @@ L'utilisateur configure son client IA avec :
 
 - Basé sur le SDK officiel `@modelcontextprotocol/sdk`.
 - Intégré comme API Route Next.js (`/api/mcp`).
-- Rate limiting : 60 requêtes/minute par API key.
-- Logging des appels MCP pour audit : utiliser `logMcpToolAudit` (`src/lib/mcp/audit.ts`) après résolution de l’utilisateur via API key, pour persister une ligne `AdminAuditLog` avec l’action `mcp_tool_call`.
-- `get_book_content` : extraction du texte par chapitre avec limite de tokens pour éviter de surcharger le contexte de l'IA.
+- **Rate limiting global** : 60 requêtes HTTP/minute par API key (toutes méthodes MCP sur `/api/mcp`). Configurable via `MCP_RATE_LIMIT_PER_MINUTE` (entier, défaut 60).
+- **Rate limiting par tool** (fenêtre 60 s, clé `mcp:tool:{apiKeyId}:{toolName}`) — plafonds indicatifs par défaut :
+
+| Tool / préfixe | Req / min |
+|----------------|-----------|
+| `get_book_content` | 20 |
+| `search_catalog` | 15 |
+| `bulk_update_books` | 10 |
+| `batch_shelf_operations` | 20 |
+| `get_all_annotations` | 30 |
+| Autres tools | 60 |
+| `resource:*` | 120 |
+| `prompt:*` | 60 |
+
+- Logging des appels MCP pour audit : `logMcpToolAudit` (`src/lib/mcp/audit.ts`) persiste `AdminAuditLog` avec l’action `mcp_tool_call` et un `meta` incluant au minimum : `toolName`, `ok`, `durationMs`, `resultSummary` (agrégats non sensibles), `errorMessage` tronqué si échec.
+- `get_book_content` : extraction du texte par chapitre avec limite de caractères pour éviter de surcharger le contexte de l'IA.
 
 ---
 

@@ -158,6 +158,8 @@ export type LibrarySearchBookRow = {
   createdAt: string;
   publishDate: string | null;
   progress: number | null;
+  /** Short FTS excerpt; only when `includeSnippets` + non-empty query */
+  snippet?: string | null;
 };
 
 export type SearchBooksForUserInput = {
@@ -182,6 +184,8 @@ export type SearchBooksForUserInput = {
   addedTo?: string;
   pagesMin?: number;
   pagesMax?: number;
+  /** When true with a text query, adds a bounded `ts_headline` excerpt per row */
+  includeSnippets?: boolean;
 };
 
 export async function searchBooksForUser(
@@ -241,6 +245,11 @@ export async function searchBooksForUser(
     : sql`TRUE`;
 
   const fuzzyMatchSql = hasQuery ? sql`similarity(b.title, ${q}) > 0.2` : sql`FALSE`;
+
+  const snippetSql =
+    input.includeSnippets && hasQuery
+      ? sql`ts_headline('simple', LEFT(COALESCE(b.description, b.title, ''), 8000), ${tsQuerySql}, 'MaxWords=25, MinWords=5')`
+      : sql`NULL::text`;
 
   let cursorCondSql: Sql = sql`TRUE`;
   let cursorDecoded: unknown = null;
@@ -362,6 +371,7 @@ export async function searchBooksForUser(
       progress: number | null;
       rank: number;
       sortValue: unknown;
+      snippet: string | null;
     }>
   >`
     SELECT
@@ -377,7 +387,8 @@ export async function searchBooksForUser(
       b.publish_date AS "publishDate",
       ubp.progress,
       ${rankSql} AS rank,
-      ${sortValueSql} AS "sortValue"
+      ${sortValueSql} AS "sortValue",
+      ${snippetSql} AS snippet
     FROM "books" b
     LEFT JOIN "user_book_progress" ubp
       ON ubp.book_id = b.id
@@ -406,7 +417,7 @@ export async function searchBooksForUser(
 
   const publicResults: LibrarySearchBookRow[] = results.map((r) => {
     const coverToken = r.coverUrl ? createCoverAccessToken(r.id) : null;
-    return {
+    const row: LibrarySearchBookRow = {
       id: r.id,
       title: r.title,
       authors: r.authors,
@@ -420,6 +431,10 @@ export async function searchBooksForUser(
       publishDate: r.publishDate,
       progress: r.progress,
     };
+    if (input.includeSnippets && hasQuery && r.snippet != null) {
+      row.snippet = r.snippet;
+    }
+    return row;
   });
 
   logShelfEvent("library_search", {

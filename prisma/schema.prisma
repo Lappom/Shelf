@@ -441,6 +441,8 @@ model ApiKey {
   name       String    @db.VarChar(100)
   prefix     String    @db.VarChar(16)
   hash       String    @db.VarChar(255)
+  /// JSON array of MCP scope strings; null or empty = full access
+  scopes     Json?     @map("scopes")
   lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz(6)
   expiresAt  DateTime? @map("expires_at") @db.Timestamptz(6)
   revokedAt  DateTime? @map("revoked_at") @db.Timestamptz(6)

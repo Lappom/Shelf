@@ -2,9 +2,13 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { logMcpToolAudit } from "@/lib/mcp/audit";
-import { logShelfEvent } from "@/lib/observability/structuredLog";
 import { requireMcpContext } from "@/lib/mcp/context";
+import { denyUnlessMcpScopes, MCP_TOOL_SCOPES } from "@/lib/mcp/scopes";
+import { summarizeMcpToolOutput } from "@/lib/mcp/toolResultSummary";
+import { getMcpToolRateLimit } from "@/lib/mcp/toolRateLimits";
 import { mcpErrorResult, mcpJsonResult, type McpToolResult } from "@/lib/mcp/toolResult";
+import { logShelfEvent } from "@/lib/observability/structuredLog";
+import { rateLimit } from "@/lib/security/rateLimit";
 import { createPhysicalBook, CreatePhysicalBookInputSchema } from "@/lib/books/createPhysicalBook";
 import { extractEpubChapterPlainText } from "@/lib/epub/chapterText";
 import {
@@ -66,34 +70,99 @@ async function runAuditedTool(
   fn: () => Promise<McpToolResult>,
 ): Promise<McpToolResult> {
   const ctx = requireMcpContext();
+  const required = MCP_TOOL_SCOPES[toolName];
+  if (!required) {
+    return mcpErrorResult(`Unknown tool configuration: ${toolName}`);
+  }
+
   const t0 = Date.now();
+  const scopeDenied = denyUnlessMcpScopes(ctx, required);
+  if (scopeDenied) {
+    const durationMs = Date.now() - t0;
+    await logMcpToolAudit({
+      actorUserId: ctx.userId,
+      toolName,
+      ok: false,
+      durationMs,
+      errorMessage: scopeDenied.content[0]?.type === "text" ? scopeDenied.content[0].text : "scope",
+      resultSummary: { resultKind: "scope_denied" },
+    });
+    logShelfEvent("mcp_tool", {
+      toolName,
+      ok: false,
+      durationMs,
+      userId: ctx.userId,
+      error: "MCP_SCOPE_DENIED",
+    });
+    return scopeDenied;
+  }
+
+  const rl = await rateLimit({
+    key: `mcp:tool:${ctx.apiKeyId}:${toolName}`,
+    limit: getMcpToolRateLimit(toolName),
+    windowMs: 60_000,
+  });
+  if (!rl.ok) {
+    const durationMs = Date.now() - t0;
+    await logMcpToolAudit({
+      actorUserId: ctx.userId,
+      toolName,
+      ok: false,
+      durationMs,
+      errorMessage: "RATE_LIMIT_TOOL",
+      resultSummary: { resultKind: "rate_limited" },
+    });
+    logShelfEvent("mcp_tool", {
+      toolName,
+      ok: false,
+      durationMs,
+      userId: ctx.userId,
+      error: "RATE_LIMIT_TOOL",
+    });
+    return mcpErrorResult("Rate limit exceeded for this tool. Try again later.");
+  }
+
   try {
     const out = await fn();
+    const durationMs = Date.now() - t0;
+    const resultSummary = summarizeMcpToolOutput(toolName, out);
     await logMcpToolAudit({
       actorUserId: ctx.userId,
       toolName,
       ok: !out.isError,
+      durationMs,
+      resultSummary,
+      ...(out.isError
+        ? {
+            errorMessage:
+              out.content[0]?.type === "text" ? out.content[0].text : "tool_error",
+          }
+        : {}),
     });
     logShelfEvent("mcp_tool", {
       toolName,
       ok: !out.isError,
-      durationMs: Date.now() - t0,
+      durationMs,
       userId: ctx.userId,
     });
     return out;
   } catch (e) {
+    const durationMs = Date.now() - t0;
+    const msg = e instanceof Error ? e.message : String(e);
     await logMcpToolAudit({
       actorUserId: ctx.userId,
       toolName,
       ok: false,
-      meta: { message: e instanceof Error ? e.message : String(e) },
+      durationMs,
+      errorMessage: msg,
+      resultSummary: { resultKind: "exception" },
     });
     logShelfEvent("mcp_tool", {
       toolName,
       ok: false,
-      durationMs: Date.now() - t0,
+      durationMs,
       userId: ctx.userId,
-      error: e instanceof Error ? e.message : String(e),
+      error: msg,
     });
     return mcpErrorResult(e instanceof Error ? e.message : "Internal error");
   }
@@ -106,15 +175,32 @@ function requireAdmin(ctx: { role: string }): McpToolResult | null {
   return null;
 }
 
+const UpdateBookFieldsSchema = z
+  .object({
+    title: z.string().min(1).max(500).optional(),
+    subtitle: z.string().max(500).nullable().optional(),
+    authors: z.array(z.string().min(1)).min(1).max(50).optional(),
+    description: z.string().nullable().optional(),
+    language: z.string().max(10).nullable().optional(),
+    publisher: z.string().max(255).nullable().optional(),
+    publishDate: z.string().max(50).nullable().optional(),
+    pageCount: z.number().int().positive().nullable().optional(),
+    subjects: z.array(z.string().min(1)).max(100).optional(),
+  })
+  .strict();
+
 export function registerShelfMcpTools(mcp: McpServer) {
   mcp.registerTool(
     "search_books",
     {
-      description: "Full-text search in the library (same engine as the web UI).",
+      description:
+        "Full-text search in the library (same engine as the web UI). Supports cursor pagination and optional FTS snippets.",
       inputSchema: {
         query: z.string().min(1).max(200),
         filters: FiltersSchema,
         limit: z.number().int().min(1).max(50).optional(),
+        cursor: z.string().min(1).max(2000).optional(),
+        include_snippets: z.boolean().optional(),
       },
     },
     async (args) =>
@@ -125,9 +211,11 @@ export function registerShelfMcpTools(mcp: McpServer) {
           userId: ctx.userId,
           q: args.query,
           limit,
+          cursor: args.cursor ?? null,
           mode: "websearch",
           sort: "relevance",
           dir: "desc",
+          includeSnippets: args.include_snippets === true,
           ...filtersToSearchInput(ctx.userId, args.filters),
         });
         if (!res.ok) return mcpErrorResult(res.error);
@@ -552,6 +640,78 @@ export function registerShelfMcpTools(mcp: McpServer) {
   );
 
   mcp.registerTool(
+    "batch_shelf_operations",
+    {
+      description:
+        "Apply multiple add/remove shelf operations (max 30). Each row is validated; failures are reported per index.",
+      inputSchema: {
+        operations: z
+          .array(
+            z
+              .object({
+                op: z.enum(["add", "remove"]),
+                book_id: z.string().uuid(),
+                shelf_id: z.string().uuid(),
+              })
+              .strict(),
+          )
+          .min(1)
+          .max(30),
+      },
+    },
+    async (args) =>
+      runAuditedTool("batch_shelf_operations", async () => {
+        const ctx = requireMcpContext();
+        const errors: { index: number; message: string }[] = [];
+        let applied = 0;
+        for (let i = 0; i < args.operations.length; i++) {
+          const op = args.operations[i]!;
+          const shelf = await prisma.shelf.findFirst({
+            where: { id: op.shelf_id, ownerId: ctx.userId },
+            select: { id: true, type: true },
+          });
+          if (!shelf) {
+            errors.push({ index: i, message: "Shelf not found" });
+            continue;
+          }
+          if (shelf.type === "reading") {
+            errors.push({ index: i, message: "Cannot modify reading shelf" });
+            continue;
+          }
+          const book = await prisma.book.findFirst({
+            where: { id: op.book_id, deletedAt: null },
+            select: { id: true },
+          });
+          if (!book) {
+            errors.push({ index: i, message: "Book not found" });
+            continue;
+          }
+          if (op.op === "add") {
+            await prisma.bookShelf.upsert({
+              where: { bookId_shelfId: { bookId: op.book_id, shelfId: shelf.id } },
+              update: {},
+              create: { bookId: op.book_id, shelfId: shelf.id },
+            });
+            if (shelf.type === "favorites") {
+              scheduleRecommendationsRecompute(ctx.userId);
+            }
+          } else {
+            await prisma.bookShelf.deleteMany({
+              where: { shelfId: shelf.id, bookId: op.book_id },
+            });
+          }
+          applied += 1;
+        }
+        return mcpJsonResult({
+          ok: errors.length === 0,
+          applied,
+          failed: errors.length,
+          errors,
+        });
+      }),
+  );
+
+  mcp.registerTool(
     "search_catalog",
     {
       description:
@@ -649,20 +809,6 @@ export function registerShelfMcpTools(mcp: McpServer) {
       }),
   );
 
-  const UpdateBookFieldsSchema = z
-    .object({
-      title: z.string().min(1).max(500).optional(),
-      subtitle: z.string().max(500).nullable().optional(),
-      authors: z.array(z.string().min(1)).min(1).max(50).optional(),
-      description: z.string().nullable().optional(),
-      language: z.string().max(10).nullable().optional(),
-      publisher: z.string().max(255).nullable().optional(),
-      publishDate: z.string().max(50).nullable().optional(),
-      pageCount: z.number().int().positive().nullable().optional(),
-      subjects: z.array(z.string().min(1)).max(100).optional(),
-    })
-    .strict();
-
   mcp.registerTool(
     "add_book",
     {
@@ -724,6 +870,73 @@ export function registerShelfMcpTools(mcp: McpServer) {
         });
         await updateBookSearchVector(book.id);
         return mcpJsonResult({ ok: true });
+      }),
+  );
+
+  mcp.registerTool(
+    "bulk_update_books",
+    {
+      description:
+        "Admin: update metadata for up to 20 books in one call. Same field whitelist as update_book; each item is independent.",
+      inputSchema: {
+        updates: z
+          .array(
+            z
+              .object({
+                book_id: z.string().uuid(),
+                fields: UpdateBookFieldsSchema,
+              })
+              .strict(),
+          )
+          .min(1)
+          .max(20),
+      },
+    },
+    async (args) =>
+      runAuditedTool("bulk_update_books", async () => {
+        const ctx = requireMcpContext();
+        const denied = requireAdmin(ctx);
+        if (denied) return denied;
+
+        const errors: { book_id: string; message: string }[] = [];
+        let applied = 0;
+        for (const u of args.updates) {
+          const book = await prisma.book.findFirst({
+            where: { id: u.book_id },
+            select: { id: true, deletedAt: true },
+          });
+          if (!book || book.deletedAt) {
+            errors.push({ book_id: u.book_id, message: "Book not found" });
+            continue;
+          }
+          const f = u.fields;
+          try {
+            await prisma.book.update({
+              where: { id: book.id },
+              data: {
+                ...(f.title != null ? { title: f.title } : {}),
+                ...(f.subtitle !== undefined ? { subtitle: f.subtitle } : {}),
+                ...(f.authors != null ? { authors: f.authors } : {}),
+                ...(f.description !== undefined ? { description: f.description } : {}),
+                ...(f.language !== undefined ? { language: f.language } : {}),
+                ...(f.publisher !== undefined ? { publisher: f.publisher } : {}),
+                ...(f.publishDate !== undefined ? { publishDate: f.publishDate } : {}),
+                ...(f.pageCount !== undefined ? { pageCount: f.pageCount } : {}),
+                ...(f.subjects != null ? { subjects: f.subjects } : {}),
+              },
+            });
+            await updateBookSearchVector(book.id);
+            applied += 1;
+          } catch {
+            errors.push({ book_id: u.book_id, message: "Update failed" });
+          }
+        }
+        return mcpJsonResult({
+          ok: errors.length === 0,
+          applied,
+          failed: errors.length,
+          errors,
+        });
       }),
   );
 

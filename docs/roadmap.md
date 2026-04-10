@@ -858,20 +858,20 @@
 ## Phase 31 — MCP V2 (gouvernance et capacités)
 
 ### 31.1 Nouvelles capacités MCP
-- [ ] Ajouter des tools orientées gestion bibliothèque (bulk update, recherche enrichie, opérations batch sûres).
-- [ ] Ajouter des resources documentaires utiles (catalogue, stats, état jobs) sans fuite de données sensibles.
-- [ ] Étendre prompts MCP côté serveur en respectant la spec.
+- [x] Ajouter des tools orientées gestion bibliothèque (bulk update, recherche enrichie, opérations batch sûres).
+- [x] Ajouter des resources documentaires utiles (catalogue, stats, état jobs) sans fuite de données sensibles.
+- [x] Étendre prompts MCP côté serveur en respectant la spec.
 
 ### 31.2 Sécurité et gouvernance
-- [ ] Scopes granulaires par API key (lecture/écriture/domaines fonctionnels).
-- [ ] Quotas et rate limits par clé + par tool.
-- [ ] Rotation/révocation clé avec effet immédiat.
-- [ ] Audit détaillé des appels MCP (tool, latence, résultat, erreur).
+- [x] Scopes granulaires par API key (lecture/écriture/domaines fonctionnels).
+- [x] Quotas et rate limits par clé + par tool.
+- [x] Rotation/révocation clé avec effet immédiat.
+- [x] Audit détaillé des appels MCP (tool, latence, résultat, erreur).
 
 ### 31.3 Critères d’acceptation
-- [ ] Aucun endpoint MCP hors spec.
-- [ ] Tests integration sur authz/scopes/rate-limit/audit.
-- [ ] Logs suffisants pour investigation incident.
+- [x] Aucun endpoint MCP hors spec.
+- [x] Tests integration sur authz/scopes/rate-limit/audit.
+- [x] Logs suffisants pour investigation incident.
 
 ---
 

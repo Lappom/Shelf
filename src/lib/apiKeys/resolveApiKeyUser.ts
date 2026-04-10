@@ -1,5 +1,6 @@
 import type { UserRole } from "@prisma/client";
 
+import { parseMcpScopesFromJson } from "@/lib/mcp/scopes";
 import { prisma } from "@/lib/db/prisma";
 
 import { hashApiKeyToken } from "./crypto";
@@ -8,6 +9,8 @@ export type ResolvedApiKeyUser = {
   userId: string;
   role: UserRole;
   apiKeyId: string;
+  /** null = unrestricted MCP access (legacy / full-access keys) */
+  scopes: string[] | null;
 };
 
 /**
@@ -25,6 +28,7 @@ export async function resolveApiKeyUser(rawToken: string): Promise<ResolvedApiKe
     select: {
       id: true,
       userId: true,
+      scopes: true,
       user: { select: { role: true, deletedAt: true } },
     },
   });
@@ -33,6 +37,7 @@ export async function resolveApiKeyUser(rawToken: string): Promise<ResolvedApiKe
     apiKeyId: row.id,
     userId: row.userId,
     role: row.user.role,
+    scopes: parseMcpScopesFromJson(row.scopes),
   };
 }
 
