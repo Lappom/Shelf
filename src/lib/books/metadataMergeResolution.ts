@@ -146,14 +146,16 @@ export function analyzeMetadataMerge(args: {
     { field: "openLibraryId" as const, mergeWithEpub: false },
   ];
 
-  const mergedProbe: Pick<SyncMetadata, "isbn10" | "isbn13" | "language" | "publishDate" | "title"> =
-    {
-      isbn10: mergedDb.isbn10,
-      isbn13: mergedDb.isbn13,
-      language: mergedDb.language,
-      publishDate: mergedDb.publishDate,
-      title: mergedDb.title,
-    };
+  const mergedProbe: Pick<
+    SyncMetadata,
+    "isbn10" | "isbn13" | "language" | "publishDate" | "title"
+  > = {
+    isbn10: mergedDb.isbn10,
+    isbn13: mergedDb.isbn13,
+    language: mergedDb.language,
+    publishDate: mergedDb.publishDate,
+    title: mergedDb.title,
+  };
 
   const analyses: FieldMergeAnalysis[] = fieldsConfig.map(({ field, mergeWithEpub }) => {
     const r = fields.find((x) => x.field === field)!;
@@ -276,7 +278,8 @@ function safeParseManualField(
   field: keyof SyncMetadata,
   manual: unknown,
 ): { ok: true; value: unknown } | { ok: false; error: string } {
-  if (manual === undefined) return { ok: false, error: `Missing manual value for ${String(field)}` };
+  if (manual === undefined)
+    return { ok: false, error: `Missing manual value for ${String(field)}` };
 
   switch (field) {
     case "title":
@@ -338,9 +341,10 @@ function getMaxEpubBytesForMerge() {
   return MAX_BYTES_DEFAULT;
 }
 
-export async function loadMetadataMergeBookContext(bookId: string): Promise<
-  | { ok: true; ctx: MetadataMergeContext; file: MetadataMergeFileRow }
-  | { ok: false; error: string }
+export async function loadMetadataMergeBookContext(
+  bookId: string,
+): Promise<
+  { ok: true; ctx: MetadataMergeContext; file: MetadataMergeFileRow } | { ok: false; error: string }
 > {
   const book = await prisma.book.findFirst({
     where: { id: bookId, deletedAt: null },

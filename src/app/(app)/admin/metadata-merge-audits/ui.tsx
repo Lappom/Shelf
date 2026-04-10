@@ -51,7 +51,10 @@ export function AdminMetadataMergeAuditsClient() {
   }, []);
 
   useEffect(() => {
-    void load(null);
+    const id = window.setTimeout(() => {
+      void load(null);
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [load]);
 
   return (

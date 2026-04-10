@@ -48,9 +48,12 @@ describe("GET /api/admin/books/[id]/metadata-merge", () => {
 
     const { GET } = await import("./route");
     const bookId = "00000000-0000-4000-8000-000000000001";
-    const res = await GET(new Request(`http://test.local/api/admin/books/${bookId}/metadata-merge`), {
-      params: Promise.resolve({ id: bookId }),
-    });
+    const res = await GET(
+      new Request(`http://test.local/api/admin/books/${bookId}/metadata-merge`),
+      {
+        params: Promise.resolve({ id: bookId }),
+      },
+    );
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.bookId).toBe("b1");

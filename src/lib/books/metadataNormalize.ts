@@ -89,8 +89,6 @@ export function normalizeSyncMetadata(meta: SyncMetadata): SyncMetadata {
     publishDate: normalizePublishDateString(base.publishDate),
     subjects: normalizeStringList(base.subjects, 200),
     pageCount: normalizeNullableInt(base.pageCount),
-    openLibraryId: base.openLibraryId
-      ? normalizeWhitespace(base.openLibraryId).slice(0, 50)
-      : null,
+    openLibraryId: base.openLibraryId ? normalizeWhitespace(base.openLibraryId).slice(0, 50) : null,
   };
 }

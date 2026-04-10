@@ -7,15 +7,15 @@ import { extractEpubMetadata, writeEpubOpfMetadata, type EpubMetadata } from "@/
 import { updateBookSearchVector } from "@/lib/search/searchVector";
 
 import { normalizeSyncMetadata } from "./metadataNormalize";
-import {
+import { threeWayMergeAllFields, type MergeFieldResult } from "./metadataThreeWayMerge";
+import { type SyncMetadata, SyncMetadataSchema } from "./syncMetadataSchema";
+
+export { SyncMetadataSchema, type SyncMetadata } from "./syncMetadataSchema";
+export {
   threeWayMergeAllFields,
   type MergeDecision,
   type MergeFieldResult,
 } from "./metadataThreeWayMerge";
-import { type SyncMetadata, SyncMetadataSchema } from "./syncMetadataSchema";
-
-export { SyncMetadataSchema, type SyncMetadata } from "./syncMetadataSchema";
-export { threeWayMergeAllFields, type MergeDecision, type MergeFieldResult } from "./metadataThreeWayMerge";
 
 const MAX_BYTES_DEFAULT = 100 * 1024 * 1024;
 

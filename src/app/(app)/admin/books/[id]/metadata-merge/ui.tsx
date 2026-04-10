@@ -5,13 +5,7 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 type BusinessConflictCode =
   | "isbn_mismatch"
@@ -145,7 +139,10 @@ export function AdminMetadataMergeClient({ bookId }: { bookId: string }) {
   }, [bookId]);
 
   useEffect(() => {
-    void load();
+    const id = window.setTimeout(() => {
+      void load();
+    }, 0);
+    return () => window.clearTimeout(id);
   }, [load]);
 
   const decisionList = useMemo(() => buildPayload(decisions), [decisions]);

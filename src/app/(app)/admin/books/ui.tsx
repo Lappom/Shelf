@@ -167,7 +167,9 @@ export function AdminBooksClient({
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       {b.format === "epub" && (
                         <Button variant="outline" size="sm" disabled={busy} asChild>
-                          <Link href={`/admin/books/${b.id}/metadata-merge`}>Merge métadonnées</Link>
+                          <Link href={`/admin/books/${b.id}/metadata-merge`}>
+                            Merge métadonnées
+                          </Link>
                         </Button>
                       )}
                       <Button
