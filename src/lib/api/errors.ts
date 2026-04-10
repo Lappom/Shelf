@@ -35,7 +35,8 @@ export function apiErrorPayload(e: unknown): ApiErrorPayload {
     if (e.message === "UNSUPPORTED") return { error: "Unsupported" };
     if (e.message === "INVALID_CURSOR") return { error: "Invalid cursor" };
     if (e.message === "QUERY_REQUIRED") return { error: "query is required when cursor is absent" };
-    if (e.message === "QUERY_WITH_CURSOR") return { error: "query must be omitted when cursor is provided" };
+    if (e.message === "QUERY_WITH_CURSOR")
+      return { error: "query must be omitted when cursor is provided" };
     if (e.message === AUTH_ERROR.UNAUTHENTICATED) return { error: "Unauthenticated" };
     if (e.message === AUTH_ERROR.FORBIDDEN) return { error: "Forbidden" };
     return { error: e.message || "Error" };

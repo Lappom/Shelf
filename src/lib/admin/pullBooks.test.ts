@@ -11,7 +11,9 @@ vi.mock("@/lib/db/prisma", () => ({
 }));
 
 vi.mock("@/lib/metadata/openlibrary", () => ({
-  buildOpenLibraryCoverUrl: vi.fn((isbn: string) => `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`),
+  buildOpenLibraryCoverUrl: vi.fn(
+    (isbn: string) => `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
+  ),
   searchOpenLibraryCatalogPaged: vi.fn(),
 }));
 

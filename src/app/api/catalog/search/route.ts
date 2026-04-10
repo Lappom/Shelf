@@ -5,12 +5,7 @@ import { requireUser } from "@/lib/auth/rbac";
 import { runApiRoute } from "@/lib/api/route";
 import { corsPreflight, getClientIp } from "@/lib/api/http";
 import { asUuidOrThrow } from "@/lib/api/errors";
-import { normalizeIsbn } from "@/lib/books/isbn";
-import {
-  buildOpenLibraryCoverUrl,
-  searchOpenLibraryCatalog,
-  type OpenLibrarySearchCandidate,
-} from "@/lib/metadata/openlibrary";
+import { searchCatalogPreview } from "@/lib/catalog/searchCatalogPreview";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const QuerySchema = z
@@ -23,37 +18,22 @@ const QuerySchema = z
   .superRefine((data, ctx) => {
     const hasQ = Boolean(data.q && data.q.length > 0);
     const hasTitle = Boolean(data.title && data.title.length > 0);
-    if (hasQ && hasTitle) {
+    const hasAuthor = Boolean(data.author && data.author.length > 0);
+    if (hasQ === hasTitle) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Provide either q or title, not both",
+        message: "Provide exactly one of q or title",
         path: ["q"],
       });
     }
-    if (!hasQ && !hasTitle) {
+    if (hasQ && hasAuthor) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Provide q or title",
-        path: ["q"],
+        message: "author is only allowed with title search",
+        path: ["author"],
       });
     }
   });
-
-export type CatalogSearchCandidate = OpenLibrarySearchCandidate & {
-  coverPreviewUrl: string | null;
-};
-
-function withCoverPreview(c: OpenLibrarySearchCandidate): CatalogSearchCandidate {
-  let coverPreviewUrl: string | null = null;
-  for (const raw of c.isbns) {
-    const n = normalizeIsbn(raw);
-    if (n) {
-      coverPreviewUrl = buildOpenLibraryCoverUrl(n);
-      break;
-    }
-  }
-  return { ...c, coverPreviewUrl };
-}
 
 export async function OPTIONS(req: Request) {
   return corsPreflight(req);
@@ -87,22 +67,11 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: first }, { status: 400 });
       }
 
-      const { q, title, author, limit } = parsed.data;
-
       try {
-        const candidates = await searchOpenLibraryCatalog({
-          q: q && q.length > 0 ? q : undefined,
-          title: title && title.length > 0 ? title : undefined,
-          author: author && author.length > 0 ? author : undefined,
-          limit,
-        });
-        const out: CatalogSearchCandidate[] = candidates.map(withCoverPreview);
-        return NextResponse.json({ candidates: out }, { status: 200 });
-      } catch (e) {
-        return NextResponse.json(
-          { error: e instanceof Error ? e.message : "OpenLibrary error" },
-          { status: 502 },
-        );
+        const result = await searchCatalogPreview(parsed.data);
+        return NextResponse.json(result, { status: 200 });
+      } catch {
+        return NextResponse.json({ error: "Catalog provider unavailable" }, { status: 502 });
       }
     },
   );

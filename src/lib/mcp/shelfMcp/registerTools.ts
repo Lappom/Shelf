@@ -20,6 +20,7 @@ import { sanitizePlainText } from "@/lib/security/sanitize";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
 import { getStorageAdapter } from "@/lib/storage";
 import { StorageError } from "@/lib/storage";
+import { CatalogSearchInputSchema, searchCatalogPreview } from "@/lib/catalog/searchCatalogPreview";
 
 const MCP_DEFAULT_CFI = "mcp:synthetic";
 
@@ -547,6 +548,24 @@ export function registerShelfMcpTools(mcp: McpServer) {
         });
 
         return mcpJsonResult({ ok: true });
+      }),
+  );
+
+  mcp.registerTool(
+    "search_catalog",
+    {
+      description:
+        "Search external catalog preview (Open Library). Preview only: no database writes.",
+      inputSchema: CatalogSearchInputSchema,
+    },
+    async (args) =>
+      runAuditedTool("search_catalog", async () => {
+        try {
+          const result = await searchCatalogPreview(args);
+          return mcpJsonResult(result);
+        } catch {
+          return mcpErrorResult("Catalog provider unavailable");
+        }
       }),
   );
 

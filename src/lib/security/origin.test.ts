@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from "vitest";
+import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import { assertSameOriginFromHeaders } from "./origin";
 
@@ -7,6 +7,7 @@ describe("assertSameOriginFromHeaders", () => {
 
   beforeEach(() => {
     process.env.NEXTAUTH_URL = prev;
+    vi.unstubAllEnvs();
   });
 
   it("accepts when NEXTAUTH_URL is missing", () => {
@@ -60,18 +61,13 @@ describe("assertSameOriginFromHeaders", () => {
   });
 
   it("in production, rejects loopback host alias mismatch", () => {
-    const prevNode = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     process.env.NEXTAUTH_URL = "http://127.0.0.1:3000";
-    try {
-      expect(() =>
-        assertSameOriginFromHeaders({
-          origin: "http://localhost:3000",
-          host: "localhost:3000",
-        }),
-      ).toThrow("BAD_ORIGIN");
-    } finally {
-      process.env.NODE_ENV = prevNode;
-    }
+    expect(() =>
+      assertSameOriginFromHeaders({
+        origin: "http://localhost:3000",
+        host: "localhost:3000",
+      }),
+    ).toThrow("BAD_ORIGIN");
   });
 });

@@ -94,8 +94,7 @@ export async function POST(req: Request) {
       }
 
       const durationMs = Date.now() - t0;
-      const qForAudit =
-        cursor && cursor.length > 0 ? null : (query ?? "").trim() || null;
+      const qForAudit = cursor && cursor.length > 0 ? null : (query ?? "").trim() || null;
       const queryLen = qForAudit ? qForAudit.length : 0;
       const queryHash = qForAudit ? hashPullBooksQuery(qForAudit) : null;
 

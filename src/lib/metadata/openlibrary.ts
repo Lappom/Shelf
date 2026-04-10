@@ -329,7 +329,8 @@ export async function searchOpenLibraryCatalogPaged(args: {
 
   const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`;
   const json = await fetchJson<OpenLibrarySearchResponse>(url, "search");
-  const numFound = typeof json.numFound === "number" && Number.isFinite(json.numFound) ? json.numFound : 0;
+  const numFound =
+    typeof json.numFound === "number" && Number.isFinite(json.numFound) ? json.numFound : 0;
   const start = typeof json.start === "number" && Number.isFinite(json.start) ? json.start : offset;
   const candidates = mapSearchDocsToCandidates(json.docs, limit);
   const result: OpenLibraryPagedSearchResult = { candidates, numFound, start };

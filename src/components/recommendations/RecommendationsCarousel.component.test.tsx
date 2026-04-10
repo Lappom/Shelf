@@ -25,6 +25,8 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/image", () => ({
   default({ alt, src, className }: { alt?: string; src?: string; className?: string }) {
+    // Test mock: using <img> is sufficient here.
+    // eslint-disable-next-line @next/next/no-img-element
     return <img alt={alt ?? ""} src={src} className={className} />;
   },
 }));

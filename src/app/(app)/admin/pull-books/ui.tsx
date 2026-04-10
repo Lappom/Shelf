@@ -89,7 +89,7 @@ export function AdminPullBooksClient() {
 
   return (
     <div className="space-y-6">
-      <div className="grid max-w-xl gap-4 rounded-2xl border border-black/5 bg-white p-6 shadow-eleven-card">
+      <div className="shadow-eleven-card grid max-w-xl gap-4 rounded-2xl border border-black/5 bg-white p-6">
         <div className="space-y-2">
           <label htmlFor="pull-query" className="text-sm font-medium">
             Requête Open Library
@@ -97,10 +97,10 @@ export function AdminPullBooksClient() {
           <Input
             id="pull-query"
             value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setNextCursor(null);
-              }}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setNextCursor(null);
+            }}
             placeholder="Ex. bible, science fiction…"
             disabled={busy}
             className="rounded-xl"
@@ -188,7 +188,10 @@ export function AdminPullBooksClient() {
               </thead>
               <tbody>
                 {last.items.map((it, i) => (
-                  <tr key={`${it.open_library_id ?? it.title}-${i}`} className="border-t border-black/5">
+                  <tr
+                    key={`${it.open_library_id ?? it.title}-${i}`}
+                    className="border-t border-black/5"
+                  >
                     <td className="px-3 py-2">
                       <span
                         className={

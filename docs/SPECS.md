@@ -1141,6 +1141,17 @@ Table `ApiKey` :
 | `delete_book` | Soft delete | `book_id: string` |
 | `scan_duplicates` | Lancer un scan de doublons | — |
 
+#### Catalogue externe (preview-only)
+
+| Tool | Description | Paramètres |
+|------|-------------|------------|
+| `search_catalog` | Recherche dans le catalogue externe (Open Library) en mode preview uniquement, sans écriture DB | `q?: string` xor `title?: string`, `author?: string` (uniquement avec `title`), `limit?: number` (1..10, défaut 10) |
+
+Contraintes :
+- `search_catalog` ne crée ni ne modifie aucun `Book`.
+- La création d'un livre après sélection utilisateur passe explicitement par `add_book` (admin uniquement).
+- Réponse attendue : `{ candidates: [{ key, title, authors, firstPublishYear, isbns, coverPreviewUrl }] }`.
+
 ### 17.5 Resources exposées
 
 Les Resources MCP permettent à l'IA de consulter des données contextuelles :

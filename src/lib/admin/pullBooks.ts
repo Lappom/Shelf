@@ -1,5 +1,8 @@
 import type { OpenLibrarySearchCandidate } from "@/lib/metadata/openlibrary";
-import { buildOpenLibraryCoverUrl, searchOpenLibraryCatalogPaged } from "@/lib/metadata/openlibrary";
+import {
+  buildOpenLibraryCoverUrl,
+  searchOpenLibraryCatalogPaged,
+} from "@/lib/metadata/openlibrary";
 import { normalizeIsbn } from "@/lib/books/isbn";
 import { prisma } from "@/lib/db/prisma";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
@@ -170,8 +173,7 @@ export async function executeAdminPullBooks(args: {
     const isbn = isbn13 ?? normalizeIsbn(c.isbns[0] ?? "") ?? null;
     const isbn10 = isbn && isbn.length === 10 ? isbn : null;
     const isbn13Final = isbn && isbn.length === 13 ? isbn : null;
-    const publishDate =
-      typeof c.firstPublishYear === "number" ? String(c.firstPublishYear) : null;
+    const publishDate = typeof c.firstPublishYear === "number" ? String(c.firstPublishYear) : null;
     const coverUrl = isbn13Final ? buildOpenLibraryCoverUrl(isbn13Final) : null;
 
     const book = await prisma.book.create({
@@ -211,9 +213,7 @@ export async function executeAdminPullBooks(args: {
   const returned = candidates.length;
   const effectiveStart = Number.isFinite(start) ? start : offset;
   const nextOffset = effectiveStart + returned;
-  const hasMore =
-    returned > 0 &&
-    (numFound > 0 ? nextOffset < numFound : returned >= args.limit);
+  const hasMore = returned > 0 && (numFound > 0 ? nextOffset < numFound : returned >= args.limit);
   const nextCursor = hasMore ? encodePullBooksCursor({ v: 1, q, offset: nextOffset }) : null;
 
   return { created, skipped, nextCursor, items };
