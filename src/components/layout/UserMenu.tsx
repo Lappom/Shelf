@@ -40,9 +40,9 @@ export function UserMenu({ email }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="rounded-eleven-pill eleven-body-airy"
+          className="rounded-eleven-pill eleven-body-airy border-(--eleven-border-subtle) bg-background/80 shadow-eleven-button-white hover:bg-secondary hover:shadow-eleven-card"
           disabled={busy}
         >
           {email ?? "Compte"}
