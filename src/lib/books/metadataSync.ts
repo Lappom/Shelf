@@ -1,11 +1,21 @@
 import { createHash } from "node:crypto";
-import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";
 import { getStorageAdapter } from "@/lib/storage";
 import { buildBookFileStoragePath } from "@/lib/storage/paths";
 import { extractEpubMetadata, writeEpubOpfMetadata, type EpubMetadata } from "@/lib/epub";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
+
+import { normalizeSyncMetadata } from "./metadataNormalize";
+import {
+  threeWayMergeAllFields,
+  type MergeDecision,
+  type MergeFieldResult,
+} from "./metadataThreeWayMerge";
+import { type SyncMetadata, SyncMetadataSchema } from "./syncMetadataSchema";
+
+export { SyncMetadataSchema, type SyncMetadata } from "./syncMetadataSchema";
+export { threeWayMergeAllFields, type MergeDecision, type MergeFieldResult } from "./metadataThreeWayMerge";
 
 const MAX_BYTES_DEFAULT = 100 * 1024 * 1024;
 
@@ -49,36 +59,6 @@ function normalizeNullableInt(v: unknown) {
   return n;
 }
 
-export const SyncMetadataSchema = z.object({
-  title: z.string().nullable(),
-  authors: z.array(z.string()).max(200),
-  language: z.string().nullable(),
-  description: z.string().nullable(),
-  isbn10: z.string().nullable(),
-  isbn13: z.string().nullable(),
-  publisher: z.string().nullable(),
-  publishDate: z.string().nullable(),
-  subjects: z.array(z.string()).max(200),
-  // DB-only (kept in snapshot+diff, not merged against EPUB unless present)
-  pageCount: z.number().int().positive().nullable(),
-  openLibraryId: z.string().nullable(),
-});
-
-export type SyncMetadata = z.infer<typeof SyncMetadataSchema>;
-
-export type MergeDecision = "no_change" | "take_epub" | "take_db" | "conflict_take_epub";
-
-export type MergeFieldResult = {
-  field: keyof SyncMetadata;
-  decision: MergeDecision;
-  changed: boolean;
-  epubValue: unknown;
-  dbValue: unknown;
-  snapValue: unknown;
-  chosenValue: unknown;
-  conflict: boolean;
-};
-
 export type ResyncResult =
   | {
       ok: true;
@@ -94,98 +74,190 @@ export type ResyncResult =
       error: string;
     };
 
-function deepEqual(a: unknown, b: unknown) {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
+export type ApplyResolvedMetadataMode =
+  | { kind: "resync"; mergeFields: MergeFieldResult[] }
+  | { kind: "admin" };
 
-function threeWayMergeField(args: {
-  field: keyof SyncMetadata;
-  epubValue: unknown;
-  dbValue: unknown;
-  snapValue: unknown;
-  // If false, the field is treated as DB-only (no EPUB comparison).
-  mergeWithEpub: boolean;
-}): MergeFieldResult {
-  const { field, epubValue, dbValue, snapValue, mergeWithEpub } = args;
+export async function applyResolvedSyncMetadata(args: {
+  bookId: string;
+  mergedDb: SyncMetadata;
+  epubRawCurrent: EpubMetadata;
+  epubBytes: Buffer;
+  file: {
+    id: string;
+    storagePath: string;
+    filename: string;
+    mimeType: string;
+    contentHash: string;
+  };
+  snapshotId: string;
+  bookTitleFallback: string;
+  oldContentHash: string | null;
+  requiresWriteback: boolean;
+  mode: ApplyResolvedMetadataMode;
+}): Promise<
+  | { ok: true; writeback: boolean; oldContentHash: string | null; newContentHash: string | null }
+  | { ok: false; error: string }
+> {
+  const {
+    bookId,
+    mergedDb,
+    epubRawCurrent,
+    epubBytes,
+    file,
+    snapshotId,
+    bookTitleFallback,
+    oldContentHash,
+    requiresWriteback,
+    mode,
+  } = args;
 
-  if (!mergeWithEpub) {
-    // DB-only: treat as a simple “DB vs snapshot” track; no writeback.
-    if (deepEqual(dbValue, snapValue)) {
+  const adapter = getStorageAdapter();
+
+  if (requiresWriteback) {
+    const updatedEpubBytes = await writeEpubOpfMetadata(epubBytes, {
+      title: mergedDb.title,
+      authors: mergedDb.authors,
+      language: mergedDb.language,
+      description: mergedDb.description,
+      isbn10: mergedDb.isbn10,
+      isbn13: mergedDb.isbn13,
+      publisher: mergedDb.publisher,
+      publishDate: mergedDb.publishDate,
+      subjects: mergedDb.subjects,
+    });
+    const epubRawAfter = await extractEpubMetadata(updatedEpubBytes);
+
+    const newHash = sha256Hex(updatedEpubBytes);
+
+    const collision = await prisma.book.findFirst({
+      where: { id: { not: bookId }, deletedAt: null, contentHash: newHash },
+      select: { id: true },
+    });
+    if (collision) {
       return {
-        field,
-        decision: "no_change",
-        changed: false,
-        epubValue,
-        dbValue,
-        snapValue,
-        chosenValue: dbValue,
-        conflict: false,
+        ok: false,
+        error: "Writeback would create a duplicate (content hash collision).",
       };
     }
 
+    const newStoragePath = buildBookFileStoragePath({
+      format: "epub",
+      author: mergedDb.authors[0] ?? "unknown",
+      filename: file.filename,
+    });
+
+    await adapter.upload(updatedEpubBytes, newStoragePath);
+    if (newStoragePath !== file.storagePath) {
+      await adapter.delete(file.storagePath).catch(() => undefined);
+    }
+
+    const now = new Date();
+    await prisma.$transaction(async (tx) => {
+      await tx.book.update({
+        where: { id: bookId },
+        data: {
+          title: mergedDb.title ?? bookTitleFallback,
+          authors: mergedDb.authors,
+          language: mergedDb.language,
+          description: mergedDb.description,
+          isbn10: mergedDb.isbn10,
+          isbn13: mergedDb.isbn13,
+          publisher: mergedDb.publisher,
+          publishDate: mergedDb.publishDate,
+          subjects: mergedDb.subjects,
+          pageCount: mergedDb.pageCount,
+          openLibraryId: mergedDb.openLibraryId,
+          contentHash: newHash,
+          updatedAt: now,
+        },
+      });
+
+      await tx.bookFile.update({
+        where: { id: file.id },
+        data: {
+          storagePath: newStoragePath,
+          fileSize: BigInt(updatedEpubBytes.byteLength),
+          contentHash: newHash,
+        },
+      });
+
+      await tx.bookMetadataSnapshot.update({
+        where: { id: snapshotId },
+        data: {
+          epubMetadata: epubRawAfter,
+          dbMetadata: mergedDb,
+          syncedAt: now,
+        },
+      });
+    });
+
+    await updateBookSearchVector(bookId);
+
     return {
-      field,
-      decision: "take_db",
-      changed: true,
-      epubValue,
-      dbValue,
-      snapValue,
-      chosenValue: dbValue,
-      conflict: false,
+      ok: true,
+      writeback: true,
+      oldContentHash,
+      newContentHash: newHash,
     };
   }
 
-  const epubEqSnap = deepEqual(epubValue, snapValue);
-  const dbEqSnap = deepEqual(dbValue, snapValue);
+  const anyDbUpdate =
+    mode.kind === "admin"
+      ? true
+      : mode.mergeFields.some(
+          (r) =>
+            r.decision === "take_epub" ||
+            r.decision === "conflict_take_epub" ||
+            (r.decision === "take_db" && (r.field === "pageCount" || r.field === "openLibraryId")),
+        );
 
-  if (epubEqSnap && dbEqSnap) {
+  if (!anyDbUpdate) {
     return {
-      field,
-      decision: "no_change",
-      changed: false,
-      epubValue,
-      dbValue,
-      snapValue,
-      chosenValue: dbValue,
-      conflict: false,
+      ok: true,
+      writeback: false,
+      oldContentHash,
+      newContentHash: oldContentHash,
     };
   }
 
-  if (!epubEqSnap && dbEqSnap) {
-    return {
-      field,
-      decision: "take_epub",
-      changed: true,
-      epubValue,
-      dbValue,
-      snapValue,
-      chosenValue: epubValue,
-      conflict: false,
-    };
-  }
+  const now = new Date();
+  await prisma.$transaction(async (tx) => {
+    await tx.book.update({
+      where: { id: bookId },
+      data: {
+        title: mergedDb.title ?? bookTitleFallback,
+        authors: mergedDb.authors,
+        language: mergedDb.language,
+        description: mergedDb.description,
+        isbn10: mergedDb.isbn10,
+        isbn13: mergedDb.isbn13,
+        publisher: mergedDb.publisher,
+        publishDate: mergedDb.publishDate,
+        subjects: mergedDb.subjects,
+        pageCount: mergedDb.pageCount,
+        openLibraryId: mergedDb.openLibraryId,
+        updatedAt: now,
+      },
+    });
 
-  if (!dbEqSnap && epubEqSnap) {
-    return {
-      field,
-      decision: "take_db",
-      changed: true,
-      epubValue,
-      dbValue,
-      snapValue,
-      chosenValue: dbValue,
-      conflict: false,
-    };
-  }
+    await tx.bookMetadataSnapshot.update({
+      where: { id: snapshotId },
+      data: {
+        epubMetadata: epubRawCurrent,
+        dbMetadata: mergedDb,
+        syncedAt: now,
+      },
+    });
+  });
+
+  await updateBookSearchVector(bookId);
 
   return {
-    field,
-    decision: "conflict_take_epub",
-    changed: true,
-    epubValue,
-    dbValue,
-    snapValue,
-    chosenValue: epubValue,
-    conflict: true,
+    ok: true,
+    writeback: false,
+    oldContentHash,
+    newContentHash: oldContentHash,
   };
 }
 
@@ -202,7 +274,7 @@ export function extractSyncMetadataFromDb(book: {
   pageCount: number | null;
   openLibraryId: string | null;
 }): SyncMetadata {
-  return {
+  const raw: SyncMetadata = {
     title: normalizeNullableString(book.title) ?? null,
     authors: normalizeStringArray(book.authors),
     language: normalizeNullableString(book.language),
@@ -215,6 +287,7 @@ export function extractSyncMetadataFromDb(book: {
     pageCount: normalizeNullableInt(book.pageCount),
     openLibraryId: normalizeNullableString(book.openLibraryId),
   };
+  return normalizeSyncMetadata(raw);
 }
 
 export async function extractSyncMetadataFromEpub(epubBytes: Buffer): Promise<SyncMetadata> {
@@ -222,10 +295,8 @@ export async function extractSyncMetadataFromEpub(epubBytes: Buffer): Promise<Sy
   return extractSyncMetadataFromEpubRaw(raw);
 }
 
-function extractSyncMetadataFromEpubRaw(raw: EpubMetadata): SyncMetadata {
-  // Note: `extractEpubMetadata` extracts a stable subset. Extended fields are filled
-  // with null/empty to avoid false conflicts on DB-only fields.
-  return {
+export function extractSyncMetadataFromEpubRaw(raw: EpubMetadata): SyncMetadata {
+  const rawMeta: SyncMetadata = {
     title: raw.title ? normalizeWhitespace(raw.title) : null,
     authors: raw.authors.map(normalizeWhitespace).filter(Boolean),
     language: raw.language ? normalizeWhitespace(raw.language) : null,
@@ -238,14 +309,15 @@ function extractSyncMetadataFromEpubRaw(raw: EpubMetadata): SyncMetadata {
     pageCount: null,
     openLibraryId: null,
   };
+  return normalizeSyncMetadata(rawMeta);
 }
 
-function normalizeSnapshot(v: unknown): SyncMetadata {
+export function normalizeSnapshotDbMetadata(v: unknown): SyncMetadata {
   const parsed = SyncMetadataSchema.safeParse(v);
-  if (parsed.success) return parsed.data;
+  if (parsed.success) return normalizeSyncMetadata(parsed.data);
 
   const o = (v ?? {}) as Record<string, unknown>;
-  return SyncMetadataSchema.parse({
+  const raw = SyncMetadataSchema.parse({
     title: normalizeNullableString(o.title),
     authors: normalizeStringArray(o.authors),
     language: normalizeNullableString(o.language),
@@ -258,53 +330,7 @@ function normalizeSnapshot(v: unknown): SyncMetadata {
     pageCount: normalizeNullableInt(o.pageCount),
     openLibraryId: normalizeNullableString(o.openLibraryId),
   });
-}
-
-export function threeWayMergeAllFields(args: {
-  epub: SyncMetadata;
-  db: SyncMetadata;
-  snapshot: SyncMetadata;
-}): { mergedDb: SyncMetadata; fields: MergeFieldResult[]; requiresWriteback: boolean } {
-  const { epub, db, snapshot } = args;
-
-  const fieldsConfig = [
-    { field: "title", mergeWithEpub: true },
-    { field: "authors", mergeWithEpub: true },
-    { field: "language", mergeWithEpub: true },
-    { field: "description", mergeWithEpub: true },
-    { field: "isbn10", mergeWithEpub: true },
-    { field: "isbn13", mergeWithEpub: true },
-    { field: "publisher", mergeWithEpub: true },
-    { field: "publishDate", mergeWithEpub: true },
-    { field: "subjects", mergeWithEpub: true },
-    // DB-only in V1 (kept for snapshot+diff; not compared to EPUB)
-    { field: "pageCount", mergeWithEpub: false },
-    { field: "openLibraryId", mergeWithEpub: false },
-  ] as const;
-
-  const fieldResults = fieldsConfig.map(({ field, mergeWithEpub }) =>
-    threeWayMergeField({
-      field,
-      epubValue: epub[field],
-      dbValue: db[field],
-      snapValue: snapshot[field],
-      mergeWithEpub,
-    }),
-  );
-
-  const mergedDb = { ...db } as SyncMetadata;
-  for (const r of fieldResults) {
-    if (r.decision === "take_epub" || r.decision === "conflict_take_epub") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mergedDb as any)[r.field] = r.chosenValue;
-    }
-  }
-
-  const requiresWriteback = fieldResults.some(
-    (r) => r.decision === "take_db" && r.field !== "pageCount" && r.field !== "openLibraryId",
-  );
-
-  return { mergedDb, fields: fieldResults, requiresWriteback };
+  return normalizeSyncMetadata(raw);
 }
 
 export async function resyncBookMetadata(bookId: string): Promise<ResyncResult> {
@@ -354,159 +380,33 @@ export async function resyncBookMetadata(bookId: string): Promise<ResyncResult> 
   const dbMeta = extractSyncMetadataFromDb(book);
   const epubRaw = await extractEpubMetadata(epubBytes);
   const epubMeta = extractSyncMetadataFromEpubRaw(epubRaw);
-  const snapMeta = normalizeSnapshot(snapshot.dbMetadata);
+  const snapMeta = normalizeSnapshotDbMetadata(snapshot.dbMetadata);
 
   const merge = threeWayMergeAllFields({ epub: epubMeta, db: dbMeta, snapshot: snapMeta });
 
-  // If DB wins for at least one mergeable field, we must write back to the EPUB.
-  if (merge.requiresWriteback) {
-    const updatedEpubBytes = await writeEpubOpfMetadata(epubBytes, {
-      title: merge.mergedDb.title,
-      authors: merge.mergedDb.authors,
-      language: merge.mergedDb.language,
-      description: merge.mergedDb.description,
-      isbn10: merge.mergedDb.isbn10,
-      isbn13: merge.mergedDb.isbn13,
-      publisher: merge.mergedDb.publisher,
-      publishDate: merge.mergedDb.publishDate,
-      subjects: merge.mergedDb.subjects,
-    });
-    const epubRawAfter = await extractEpubMetadata(updatedEpubBytes);
-
-    const newHash = sha256Hex(updatedEpubBytes);
-
-    const collision = await prisma.book.findFirst({
-      where: { id: { not: bookId }, deletedAt: null, contentHash: newHash },
-      select: { id: true },
-    });
-    if (collision) {
-      return {
-        ok: false,
-        bookId,
-        error: "Writeback would create a duplicate (content hash collision).",
-      };
-    }
-
-    const newStoragePath = buildBookFileStoragePath({
-      format: "epub",
-      author: merge.mergedDb.authors[0] ?? "unknown",
-      filename: file.filename,
-    });
-
-    await adapter.upload(updatedEpubBytes, newStoragePath);
-    if (newStoragePath !== file.storagePath) {
-      await adapter.delete(file.storagePath).catch(() => undefined);
-    }
-
-    const now = new Date();
-    await prisma.$transaction(async (tx) => {
-      await tx.book.update({
-        where: { id: bookId },
-        data: {
-          title: merge.mergedDb.title ?? book.title,
-          authors: merge.mergedDb.authors,
-          language: merge.mergedDb.language,
-          description: merge.mergedDb.description,
-          isbn10: merge.mergedDb.isbn10,
-          isbn13: merge.mergedDb.isbn13,
-          publisher: merge.mergedDb.publisher,
-          publishDate: merge.mergedDb.publishDate,
-          subjects: merge.mergedDb.subjects,
-          pageCount: merge.mergedDb.pageCount,
-          openLibraryId: merge.mergedDb.openLibraryId,
-          contentHash: newHash,
-          updatedAt: now,
-        },
-      });
-
-      await tx.bookFile.update({
-        where: { id: file.id },
-        data: {
-          storagePath: newStoragePath,
-          fileSize: BigInt(updatedEpubBytes.byteLength),
-          contentHash: newHash,
-        },
-      });
-
-      await tx.bookMetadataSnapshot.update({
-        where: { id: snapshot.id },
-        data: {
-          epubMetadata: epubRawAfter,
-          dbMetadata: merge.mergedDb,
-          syncedAt: now,
-        },
-      });
-    });
-
-    await updateBookSearchVector(bookId);
-
-    return {
-      ok: true,
-      bookId,
-      writeback: true,
-      oldContentHash: book.contentHash,
-      newContentHash: newHash,
-      fields: merge.fields,
-    };
-  }
-
-  // No writeback: EPUB wins (or no changes). Update DB + snapshot if needed.
-  const anyDbUpdate = merge.fields.some(
-    (r) =>
-      r.decision === "take_epub" ||
-      r.decision === "conflict_take_epub" ||
-      (r.decision === "take_db" && (r.field === "pageCount" || r.field === "openLibraryId")),
-  );
-
-  if (!anyDbUpdate) {
-    return {
-      ok: true,
-      bookId,
-      writeback: false,
-      oldContentHash: book.contentHash,
-      newContentHash: book.contentHash,
-      fields: merge.fields,
-    };
-  }
-
-  const now = new Date();
-  await prisma.$transaction(async (tx) => {
-    await tx.book.update({
-      where: { id: bookId },
-      data: {
-        title: merge.mergedDb.title ?? book.title,
-        authors: merge.mergedDb.authors,
-        language: merge.mergedDb.language,
-        description: merge.mergedDb.description,
-        isbn10: merge.mergedDb.isbn10,
-        isbn13: merge.mergedDb.isbn13,
-        publisher: merge.mergedDb.publisher,
-        publishDate: merge.mergedDb.publishDate,
-        subjects: merge.mergedDb.subjects,
-        pageCount: merge.mergedDb.pageCount,
-        openLibraryId: merge.mergedDb.openLibraryId,
-        updatedAt: now,
-      },
-    });
-
-    await tx.bookMetadataSnapshot.update({
-      where: { id: snapshot.id },
-      data: {
-        epubMetadata: epubRaw,
-        dbMetadata: merge.mergedDb,
-        syncedAt: now,
-      },
-    });
+  const applied = await applyResolvedSyncMetadata({
+    bookId,
+    mergedDb: merge.mergedDb,
+    epubRawCurrent: epubRaw,
+    epubBytes,
+    file,
+    snapshotId: snapshot.id,
+    bookTitleFallback: book.title,
+    oldContentHash: book.contentHash,
+    requiresWriteback: merge.requiresWriteback,
+    mode: { kind: "resync", mergeFields: merge.fields },
   });
 
-  await updateBookSearchVector(bookId);
+  if (!applied.ok) {
+    return { ok: false, bookId, error: applied.error };
+  }
 
   return {
     ok: true,
     bookId,
-    writeback: false,
-    oldContentHash: book.contentHash,
-    newContentHash: book.contentHash,
+    writeback: applied.writeback,
+    oldContentHash: applied.oldContentHash,
+    newContentHash: applied.newContentHash,
     fields: merge.fields,
   };
 }

@@ -816,21 +816,21 @@
 ## Phase 29 — Métadonnées & three-way merge V2
 
 ### 29.1 Qualité et normalisation des métadonnées
-- [ ] Règles de normalisation déterministes (auteurs, langues, séries, dates, identifiants).
-- [ ] Détection de conflits “métier” (valeurs incohérentes multi-sources).
-- [ ] Score de confiance par champ pour aider l’arbitrage.
-- [ ] Historique des corrections importantes.
+- [x] Règles de normalisation déterministes (auteurs, langues, séries, dates, identifiants).
+- [x] Détection de conflits “métier” (valeurs incohérentes multi-sources).
+- [x] Score de confiance par champ pour aider l’arbitrage.
+- [x] Historique des corrections importantes.
 
 ### 29.2 Expérience admin de résolution de conflits
-- [ ] UI de comparaison source vs DB vs snapshot (par champ).
-- [ ] Actions rapides (accepter source, garder DB, merge manuel).
-- [ ] Prévisualisation avant validation finale.
-- [ ] Traçabilité complète des décisions de merge.
+- [x] UI de comparaison source vs DB vs snapshot (par champ).
+- [x] Actions rapides (accepter source, garder DB, merge manuel).
+- [x] Prévisualisation avant validation finale.
+- [x] Traçabilité complète des décisions de merge.
 
 ### 29.3 Critères d’acceptation
-- [ ] Réduction mesurable des métadonnées incomplètes/incohérentes.
-- [ ] Temps moyen de résolution de conflit sous objectif.
-- [ ] Couverture de tests sur chemins de merge critiques.
+- [x] Réduction mesurable des métadonnées incomplètes/incohérentes.
+- [x] Temps moyen de résolution de conflit sous objectif.
+- [x] Couverture de tests sur chemins de merge critiques.
 
 ---
 

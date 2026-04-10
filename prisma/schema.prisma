@@ -101,6 +101,8 @@ enum AdminAuditAction {
   pull_books_job_create
   pull_books_job_cancel
   pull_books_job_retry
+  metadata_merge_preview
+  metadata_merge_commit
 }
 
 enum AdminImportJobType {
@@ -139,6 +141,7 @@ model User {
   duplicateAudits DuplicateResolutionAudit[]
   adminAuditLogs  AdminAuditLog[]
   importJobs      AdminImportJob[]
+  metadataMergeResolutionAudits MetadataMergeResolutionAudit[]
 
   @@map("users")
 }
@@ -183,6 +186,7 @@ model Book {
   duplicatePairsMergedInto DuplicatePair[]            @relation("DuplicatePairMergedIntoBook")
   duplicateAuditsPrimary   DuplicateResolutionAudit[] @relation("DuplicateAuditPrimaryBook")
   duplicateAuditsAbsorbed  DuplicateResolutionAudit[] @relation("DuplicateAuditAbsorbedBook")
+  metadataMergeResolutionAudits MetadataMergeResolutionAudit[]
 
   @@index([contentHash])
   @@index([isbn13])
@@ -452,6 +456,28 @@ model AdminAuditLog {
   @@index([createdAt])
   @@index([action, createdAt])
   @@map("admin_audit_logs")
+}
+
+// Detailed audit trail for admin metadata merge decisions (three-way + manual arbitration).
+model MetadataMergeResolutionAudit {
+  id                  String   @id @default(uuid()) @db.Uuid
+  bookId              String   @map("book_id") @db.Uuid
+  actorId             String   @map("actor_id") @db.Uuid
+  snapshotSyncedAtIso String?  @map("snapshot_synced_at_iso") @db.VarChar(40)
+  input               Json     @default("{}")
+  fieldDecisions      Json     @default("[]") @map("field_decisions")
+  result              Json     @default("{}")
+  writeback           Boolean  @default(false)
+  oldContentHash      String?  @map("old_content_hash") @db.VarChar(64)
+  newContentHash      String?  @map("new_content_hash") @db.VarChar(64)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  book  Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@index([bookId, createdAt])
+  @@index([actorId, createdAt])
+  @@map("metadata_merge_resolution_audits")
 }
 
 model AdminImportJob {

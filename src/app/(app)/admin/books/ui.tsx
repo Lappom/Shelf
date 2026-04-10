@@ -164,13 +164,20 @@ export function AdminBooksClient({
                   <td className="px-3 py-2">{b.format}</td>
                   <td className="text-muted-foreground px-3 py-2">{formatWhen(b.createdAt)}</td>
                   <td className="px-3 py-2 text-right">
-                    <Button
-                      variant="outline"
-                      disabled={busy}
-                      onClick={() => setConfirm({ type: "soft_delete", book: b })}
-                    >
-                      Soft delete
-                    </Button>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                      {b.format === "epub" && (
+                        <Button variant="outline" size="sm" disabled={busy} asChild>
+                          <Link href={`/admin/books/${b.id}/metadata-merge`}>Merge métadonnées</Link>
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        disabled={busy}
+                        onClick={() => setConfirm({ type: "soft_delete", book: b })}
+                      >
+                        Soft delete
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

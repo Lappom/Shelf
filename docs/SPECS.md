@@ -179,6 +179,23 @@ Snapshot de la dernière synchronisation pour le three-way merge.
 | db_metadata | JSONB | Métadonnées DB au dernier sync |
 | synced_at | TIMESTAMPTZ | Dernière synchronisation |
 
+#### `MetadataMergeResolutionAudit`
+
+Journal détaillé des résolutions admin (merge manuel EPUB / DB / snapshot).
+
+| Colonne | Type | Description |
+|---------|------|-------------|
+| id | UUID | PK |
+| book_id | UUID | FK → Book |
+| actor_id | UUID | FK → User (admin) |
+| snapshot_synced_at_iso | VARCHAR(40) | Point de cohérence optionnel (optimistic concurrency) |
+| input | JSONB | Triple normalisé + contexte au moment du commit |
+| field_decisions | JSONB | Décisions par champ (`use_source` / `use_db` / `use_snapshot` / `manual`) |
+| result | JSONB | Métadonnées fusionnées appliquées + flags |
+| writeback | BOOLEAN | OPF réécrit dans l’EPUB |
+| old_content_hash / new_content_hash | VARCHAR(64) | Nullable si pas de changement de fichier |
+| created_at | TIMESTAMPTZ | |
+
 #### `Shelf`
 
 | Colonne | Type | Description |
@@ -372,6 +389,10 @@ Pour chaque champ (titre, auteurs, description, etc.) :
 ```
 
 **Écriture retour dans l'EPUB** : quand la DB est source de vérité (cas 3), les métadonnées modifiées sont écrites dans le fichier EPUB (OPF metadata). Le fichier est re-hashé et le `content_hash` mis à jour.
+
+**Normalisation V2 (déterministe)** : avant comparaison, les trois sources passent par les mêmes règles (espaces, ISBN via `normalizeIsbn`, listes auteurs/sujets dédupliquées et triées, langue raccourcie, etc.) pour limiter les faux conflits.
+
+**Admin — résolution manuelle** : UI `/admin/books/:id/metadata-merge` + API `GET/POST` sous `/api/admin/books/:id/metadata-merge` (analyse, preview, commit). Chaque commit crée une ligne `MetadataMergeResolutionAudit` et des entrées `AdminAuditLog` (`metadata_merge_preview`, `metadata_merge_commit`). Liste paginée : `GET /api/admin/metadata-merge-audits`.
 
 ### 5.4 Soft delete et restauration
 
@@ -747,6 +768,10 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | POST | `/api/admin/pull-books` | Pull catalogue externe → créer des `Book` **sans fichiers** (idempotent, cursor) |
 | GET | `/api/admin/users` | Liste des utilisateurs |
 | GET | `/api/admin/audit-logs` | Journal d’audit admin (pagination `limit`, `before`, `beforeId`) |
+| GET | `/api/admin/books/:id/metadata-merge` | Analyse three-way (EPUB/DB/snapshot normalisés), scores de confiance, conflits métier |
+| POST | `/api/admin/books/:id/metadata-merge/preview` | Preview fusion selon décisions par champ (JSON `{ decisions }`, même origine requise) |
+| POST | `/api/admin/books/:id/metadata-merge/commit` | Applique la fusion + audit ; body JSON `{ decisions, expectedSnapshotSyncedAtIso? }` |
+| GET | `/api/admin/metadata-merge-audits` | Liste des audits de merge (query `bookId?`, `limit`, `before`, `beforeId`) |
 | POST / GET | `/api/cron/recommendations` | Recalcul batch des recommandations (secret `SHELF_CRON_SECRET`, voir §12.1) |
 
 ### 12.2.1 Catalogue externe — preview (`GET /api/catalog/search`)
@@ -1039,7 +1064,7 @@ volumes:
 - **CORS** : restrictif, uniquement l'origine de l'app.
 - **Rate limiting** : sur les endpoints d'auth et d'upload.
 - **Storage** : les fichiers ne sont jamais servis directement depuis le stockage ; pas d’URL publique ni de présignage exposé au client (`getUrl` des adapters lève une erreur). Téléchargements et streams uniquement via endpoints authentifiés avec contrôles d’accès. **Modèle V1** : catalogue partagé — tout utilisateur authentifié (`reader` ou `admin`) peut lire tout livre non supprimé via `GET /api/books/:id/file` et le reader (voir §4.2). Une évolution « collections par utilisateur » imposerait des jointures supplémentaires sur ces endpoints.
-- **Audit admin** : table `AdminAuditLog` — événements : ingestion EPUB, import Calibre, purge livre, ignore/merge doublons ; extension prévue pour les clés API (CRUD) et les appels MCP (`logMcpToolAudit`, action `mcp_tool_call`). Lecture via `GET /api/admin/audit-logs` (admin uniquement).
+- **Audit admin** : table `AdminAuditLog` — événements : ingestion EPUB, import Calibre, purge livre, ignore/merge doublons, **preview/commit merge métadonnées** (`metadata_merge_preview`, `metadata_merge_commit`), jobs pull-books ; extension prévue pour les clés API (CRUD) et les appels MCP (`logMcpToolAudit`, action `mcp_tool_call`). Lecture via `GET /api/admin/audit-logs` (admin uniquement). Détail merge : table `MetadataMergeResolutionAudit` + `GET /api/admin/metadata-merge-audits`.
 
 ---
 
