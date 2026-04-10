@@ -134,4 +134,42 @@ describe("admin duplicates actions", () => {
       }),
     );
   });
+
+  it("mergeDuplicatePairsBatchAction merges each open pair with chosen primary side", async () => {
+    const pairId = crypto.randomUUID();
+    const a = crypto.randomUUID();
+    const b = crypto.randomUUID();
+
+    prismaMock.duplicatePair.findFirst.mockResolvedValueOnce({
+      id: pairId,
+      status: "open",
+      bookIdA: a,
+      bookIdB: b,
+    });
+    txMock.duplicatePair.findFirst.mockResolvedValueOnce({
+      id: pairId,
+      status: "open",
+      bookIdA: a,
+      bookIdB: b,
+    });
+    txMock.book.findFirst.mockResolvedValueOnce({ id: b });
+    txMock.book.findFirst.mockResolvedValueOnce({ id: a });
+    txMock.bookShelf.findMany.mockResolvedValueOnce([]);
+    txMock.bookTag.findMany.mockResolvedValueOnce([]);
+    txMock.userBookProgress.findMany.mockResolvedValueOnce([]);
+    txMock.userRecommendation.findMany.mockResolvedValueOnce([]);
+    txMock.bookMetadataSnapshot.findFirst.mockResolvedValueOnce(null);
+    txMock.bookMetadataSnapshot.findFirst.mockResolvedValueOnce(null);
+
+    const { mergeDuplicatePairsBatchAction } = await import("./actions");
+    const fd = new FormData();
+    fd.set("payload", JSON.stringify({ pairIds: [pairId], primarySide: "B" }));
+
+    const res = await mergeDuplicatePairsBatchAction(fd);
+
+    expect(res.merged).toBe(1);
+    expect(res.mergedPairIds).toEqual([pairId]);
+    expect(res.failed).toHaveLength(0);
+    expect(prismaMock.$transaction).toHaveBeenCalled();
+  });
 });

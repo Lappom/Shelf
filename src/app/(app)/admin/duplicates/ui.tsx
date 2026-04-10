@@ -13,7 +13,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ignoreDuplicatePairAction, mergeDuplicatePairAction } from "./actions";
+import {
+  ignoreDuplicatePairAction,
+  mergeDuplicatePairAction,
+  mergeDuplicatePairsBatchAction,
+} from "./actions";
 
 export type AdminDuplicateBook = {
   id: string;
@@ -61,7 +65,9 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
     | null
     | { type: "ignore"; pair: AdminDuplicateRow }
     | { type: "merge"; pair: AdminDuplicateRow; primary: "A" | "B" }
+    | { type: "merge-all"; primary: "A" | "B"; pairIds: string[] }
   >(null);
+  const [batchInfo, setBatchInfo] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
@@ -70,6 +76,11 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
       return true;
     });
   }, [rows, mode, status]);
+
+  const openPairsInFilter = useMemo(
+    () => filtered.filter((r) => r.status === "open"),
+    [filtered],
+  );
 
   async function runScan(scanMode: "hash" | "fuzzy") {
     setError(null);
@@ -135,17 +146,27 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
       ? "Ignorer cette paire ?"
       : confirm?.type === "merge"
         ? "Merger ces livres ?"
-        : "";
+        : confirm?.type === "merge-all"
+          ? "Merger toutes les paires ouvertes affichées ?"
+          : "";
 
   const confirmDescription =
     confirm?.type === "ignore"
       ? "La paire passera en statut ignored et ne sera plus proposée en open."
       : confirm?.type === "merge"
         ? "Le livre absorbé sera soft-deleted. Les relations (étagères/tags/annotations/progress/recos) seront transférées vers le livre primaire."
-        : "";
+        : confirm?.type === "merge-all"
+          ? `Chaque fusion utilisera la colonne ${confirm.primary === "A" ? "A" : "B"} comme livre conservé (primaire). Les paires déjà ignorées ou fusionnées dans la liste sont exclues. Les fusions s’exécutent une par une : si un livre a déjà été absorbé, les paires suivantes qui le référencent peuvent échouer.`
+          : "";
 
   const confirmActionText =
-    confirm?.type === "ignore" ? "Ignorer" : confirm?.type === "merge" ? "Merger" : "OK";
+    confirm?.type === "ignore"
+      ? "Ignorer"
+      : confirm?.type === "merge"
+        ? "Merger"
+        : confirm?.type === "merge-all"
+          ? `Merger ${confirm.pairIds.length} paire(s)`
+          : "OK";
 
   async function onConfirm() {
     if (!confirm) return;
@@ -153,8 +174,47 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
     setConfirm(null);
     startTransition(async () => {
       try {
+        setBatchInfo(null);
         if (local.type === "ignore") await ignorePair(local.pair.id);
         if (local.type === "merge") await mergePair(local.pair, local.primary);
+        if (local.type === "merge-all") {
+          const fd = new FormData();
+          fd.set(
+            "payload",
+            JSON.stringify({ pairIds: local.pairIds, primarySide: local.primary }),
+          );
+          const res = await mergeDuplicatePairsBatchAction(fd);
+          const primarySide = local.primary;
+          setRows((prev) =>
+            prev.map((r) =>
+              res.mergedPairIds.includes(r.id)
+                ? {
+                    ...r,
+                    status: "merged" as const,
+                    mergedIntoBookId: primarySide === "A" ? r.bookA.id : r.bookB.id,
+                  }
+                : r,
+            ),
+          );
+          const failHint =
+            res.failed.length > 0
+              ? ` Échecs : ${res.failed
+                  .slice(0, 8)
+                  .map((f) => f.message)
+                  .join(" · ")}${res.failed.length > 8 ? "…" : ""}`
+              : "";
+          if (res.failed.length > 0) {
+            setError(
+              `${res.merged} fusion(s), ${res.skipped} ignorée(s) (statut ou introuvable), ${res.failed.length} erreur(s).${failHint}`,
+            );
+          } else {
+            setError(null);
+            setBatchInfo(
+              `${res.merged} paire(s) fusionnée(s).` +
+                (res.skipped > 0 ? ` ${res.skipped} ignorée(s).` : ""),
+            );
+          }
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Erreur");
       }
@@ -166,6 +226,11 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
           {error}
+        </div>
+      )}
+      {batchInfo && !error && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+          {batchInfo}
         </div>
       )}
 
@@ -258,6 +323,22 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
             >
               Fuzzy
             </Button>
+
+            <div className="bg-border w-px self-stretch" />
+
+            <Button
+              variant="secondary"
+              disabled={busy || openPairsInFilter.length === 0}
+              onClick={() =>
+                setConfirm({
+                  type: "merge-all",
+                  primary: "A",
+                  pairIds: openPairsInFilter.map((p) => p.id),
+                })
+              }
+            >
+              Merger tout (open)
+            </Button>
           </div>
         </div>
 
@@ -345,6 +426,29 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
             <DialogTitle>{confirmTitle}</DialogTitle>
             <DialogDescription>{confirmDescription}</DialogDescription>
           </DialogHeader>
+          {confirm?.type === "merge-all" && (
+            <div className="flex flex-wrap items-center gap-2 py-2">
+              <span className="text-muted-foreground text-sm">Livre primaire :</span>
+              <Button
+                type="button"
+                size="sm"
+                variant={confirm.primary === "A" ? "default" : "outline"}
+                disabled={busy}
+                onClick={() => setConfirm({ ...confirm, primary: "A" })}
+              >
+                Colonne A
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={confirm.primary === "B" ? "default" : "outline"}
+                disabled={busy}
+                onClick={() => setConfirm({ ...confirm, primary: "B" })}
+              >
+                Colonne B
+              </Button>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" disabled={busy} onClick={() => setConfirm(null)}>
               Annuler
