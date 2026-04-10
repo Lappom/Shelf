@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { loadShelfBooksPage } from "@/lib/shelves/shelfBooksPage";
 import { ShelfDetailClient, type ShelfDetailShelf } from "@/components/shelf/ShelfDetailClient";
@@ -8,7 +8,7 @@ import { ShelfDetailClient, type ShelfDetailShelf } from "@/components/shelf/She
 const ParamsSchema = z.object({ id: z.string().uuid() });
 
 export default async function ShelfDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUserPage();
   const userId = z
     .string()
     .uuid()

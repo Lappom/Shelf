@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { Button } from "@/components/ui/button";
 
 function AdminNav() {
@@ -29,7 +29,7 @@ function AdminNav() {
 }
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
+  await requireAdminPage();
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 px-6 py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">

@@ -1,8 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { redirect, unstable_rethrow } from "next/navigation";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { AuthError } from "next-auth";
 
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword } from "@/lib/auth/password";
@@ -85,7 +86,7 @@ export async function registerAction(formData: FormData) {
       redirectTo: "/library",
     });
   } catch (e) {
-    unstable_rethrow(e);
-    redirect("/register?error=auth");
+    if (e instanceof AuthError) redirect("/register?error=auth");
+    throw e;
   }
 }

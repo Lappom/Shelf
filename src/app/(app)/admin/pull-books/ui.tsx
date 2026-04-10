@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertCircleIcon,
+  BanIcon,
+  CheckCircle2Icon,
+  Loader2Icon,
+  ListOrderedIcon,
+  OctagonAlertIcon,
+  Trash2Icon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +43,60 @@ type PullJobDetail = {
   };
 };
 
+function isJobActive(status: string) {
+  return status === "queued" || status === "running";
+}
+
+function JobStatusDisplay({ status }: { status: string }) {
+  const iconClass = "size-4 shrink-0";
+  switch (status) {
+    case "running":
+      return (
+        <span className="inline-flex items-center gap-2">
+          <Loader2Icon className={`${iconClass} text-emerald-600 animate-spin`} aria-hidden />
+          <span>{status}</span>
+        </span>
+      );
+    case "queued":
+      return (
+        <span className="inline-flex items-center gap-2">
+          <ListOrderedIcon className={`${iconClass} text-amber-600`} aria-hidden />
+          <span>{status}</span>
+        </span>
+      );
+    case "cancelled":
+      return (
+        <span className="inline-flex items-center gap-2">
+          <BanIcon className={`${iconClass} text-stone-500`} aria-hidden />
+          <span>{status}</span>
+        </span>
+      );
+    case "succeeded":
+      return (
+        <span className="inline-flex items-center gap-2">
+          <CheckCircle2Icon className={`${iconClass} text-emerald-600`} aria-hidden />
+          <span>{status}</span>
+        </span>
+      );
+    case "failed":
+      return (
+        <span className="inline-flex items-center gap-2">
+          <AlertCircleIcon className={`${iconClass} text-red-600`} aria-hidden />
+          <span>{status}</span>
+        </span>
+      );
+    case "dead_letter":
+      return (
+        <span className="inline-flex items-center gap-2">
+          <OctagonAlertIcon className={`${iconClass} text-orange-700`} aria-hidden />
+          <span>{status}</span>
+        </span>
+      );
+    default:
+      return <span>{status}</span>;
+  }
+}
+
 export function AdminPullBooksClient() {
   const [query, setQuery] = useState("");
   const [chunkSize, setChunkSize] = useState(20);
@@ -43,13 +106,16 @@ export function AdminPullBooksClient() {
   const [selectedJob, setSelectedJob] = useState<PullJobDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [jobsInitialLoadDone, setJobsInitialLoadDone] = useState(false);
+  const selectedJobIdRef = useRef<string | null>(null);
+  selectedJobIdRef.current = selectedJob?.job.id ?? null;
   const hasQuery = query.trim().length > 0;
   const effectiveChunkSize = useMemo(
     () => Math.max(1, Math.min(50, Math.trunc(chunkSize || 20))),
     [chunkSize],
   );
 
-  const reloadJobs = useCallback(async () => {
+  const reloadJobs = useCallback(async (): Promise<PullJob[]> => {
     const res = await fetch("/api/admin/pull-books/jobs?limit=25", {
       method: "GET",
       headers: { Accept: "application/json" },
@@ -57,8 +123,22 @@ export function AdminPullBooksClient() {
     });
     const json = (await res.json().catch(() => ({}))) as { jobs?: PullJob[]; error?: string };
     if (!res.ok) throw new Error(json.error || `Erreur ${res.status}`);
-    setJobs(json.jobs ?? []);
+    const list = json.jobs ?? [];
+    setJobs(list);
+    return list;
   }, []);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        await reloadJobs();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erreur au chargement des jobs");
+      } finally {
+        setJobsInitialLoadDone(true);
+      }
+    })();
+  }, [reloadJobs]);
 
   const loadDetail = useCallback(async (jobId: string) => {
     const res = await fetch(`/api/admin/pull-books/jobs/${jobId}`, {
@@ -73,6 +153,29 @@ export function AdminPullBooksClient() {
     if (!res.ok || !json.job) throw new Error(json.error || `Erreur ${res.status}`);
     setSelectedJob({ job: json.job });
   }, []);
+
+  useEffect(() => {
+    const active = jobs.some((j) => isJobActive(j.status));
+    if (!active) return;
+    const id = window.setInterval(() => {
+      void (async () => {
+        if (document.visibilityState === "hidden") return;
+        try {
+          const list = await reloadJobs();
+          const sid = selectedJobIdRef.current;
+          if (sid) {
+            const row = list.find((j) => j.id === sid);
+            if (row && isJobActive(row.status)) {
+              await loadDetail(sid);
+            }
+          }
+        } catch {
+          // Ignore background poll errors
+        }
+      })();
+    }, 2500);
+    return () => clearInterval(id);
+  }, [jobs, reloadJobs, loadDetail]);
 
   const runPull = useCallback(async () => {
     setError(null);
@@ -137,6 +240,34 @@ export function AdminPullBooksClient() {
       }
     },
     [loadDetail, reloadJobs],
+  );
+
+  const deleteJob = useCallback(
+    async (jobId: string) => {
+      if (!window.confirm("Supprimer définitivement ce job et son rapport d’exécution ?")) {
+        return;
+      }
+      setError(null);
+      setBusy(true);
+      try {
+        const res = await fetch(`/api/admin/pull-books/jobs/${jobId}`, {
+          method: "DELETE",
+          headers: { Accept: "application/json" },
+          credentials: "same-origin",
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          throw new Error(json.error || `Erreur ${res.status}`);
+        }
+        setSelectedJob((prev) => (prev?.job.id === jobId ? null : prev));
+        await reloadJobs();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erreur réseau");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [reloadJobs],
   );
 
   const exportSelectedCsv = useCallback(() => {
@@ -240,7 +371,16 @@ export function AdminPullBooksClient() {
             type="button"
             variant="secondary"
             disabled={busy}
-            onClick={() => void reloadJobs()}
+            onClick={() => {
+              void (async () => {
+                try {
+                  setError(null);
+                  await reloadJobs();
+                } catch (e) {
+                  setError(e instanceof Error ? e.message : "Erreur réseau");
+                }
+              })();
+            }}
           >
             Rafraîchir les jobs
           </Button>
@@ -253,7 +393,16 @@ export function AdminPullBooksClient() {
         </div>
       ) : null}
 
-      {jobs.length > 0 ? (
+      {!jobsInitialLoadDone ? (
+        <div
+          className="text-muted-foreground flex items-center justify-center gap-2 rounded-2xl border border-black/5 bg-white py-10 text-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <Loader2Icon className="text-muted-foreground size-5 animate-spin" aria-hidden />
+          Chargement des jobs…
+        </div>
+      ) : jobs.length > 0 ? (
         <div className="space-y-3">
           <div className="overflow-x-auto rounded-2xl border border-black/5">
             <table className="w-full text-left text-sm">
@@ -270,13 +419,15 @@ export function AdminPullBooksClient() {
                 {jobs.map((job) => (
                   <tr key={job.id} className="border-t border-black/5">
                     <td className="px-3 py-2 font-mono text-xs">{job.id.slice(0, 8)}...</td>
-                    <td className="px-3 py-2">{job.status}</td>
+                    <td className="px-3 py-2">
+                      <JobStatusDisplay status={job.status} />
+                    </td>
                     <td className="px-3 py-2">{job.processedCandidates} candidats</td>
                     <td className="px-3 py-2">
                       +{job.createdCount} / ={job.skippedCount} / !{job.errorCount}
                     </td>
                     <td className="px-3 py-2">
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           type="button"
                           size="sm"
@@ -308,6 +459,22 @@ export function AdminPullBooksClient() {
                         >
                           Retry
                         </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="text-destructive hover:text-destructive"
+                          disabled={busy || job.status === "running"}
+                          title={
+                            job.status === "running"
+                              ? "Annulez le job avant de le supprimer"
+                              : "Supprimer ce job"
+                          }
+                          onClick={() => void deleteJob(job.id)}
+                          aria-label="Supprimer le job"
+                        >
+                          <Trash2Icon className="size-4" aria-hidden />
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -316,13 +483,16 @@ export function AdminPullBooksClient() {
             </table>
           </div>
         </div>
-      ) : null}
+      ) : (
+        <p className="text-muted-foreground text-sm">Aucun job pull-books pour le moment.</p>
+      )}
 
       {selectedJob ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium">
-              Job {selectedJob.job.id} · {selectedJob.job.status}
+            <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+              <span className="font-mono text-xs">{selectedJob.job.id}</span>
+              <JobStatusDisplay status={selectedJob.job.status} />
             </p>
             <Button type="button" variant="secondary" onClick={exportSelectedCsv}>
               Export CSV

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { SearchPageClient } from "@/components/search/SearchPageClient";
 
 export default async function SearchPage() {
-  const user = await requireUser();
+  const user = await requireUserPage();
   const userId = z
     .string()
     .uuid()

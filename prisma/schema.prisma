@@ -101,6 +101,7 @@ enum AdminAuditAction {
   pull_books_job_create
   pull_books_job_cancel
   pull_books_job_retry
+  pull_books_job_delete
   metadata_merge_preview
   metadata_merge_commit
 }

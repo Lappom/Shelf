@@ -35,6 +35,8 @@ vi.mock("@/lib/metadata/openlibrary", () => ({
     subjects: ["S"],
     pageCount: 10,
     coverUrl: "https://covers.openlibrary.org/b/isbn/9781234567890-L.jpg",
+    publisher: null,
+    language: null,
   })),
 }));
 

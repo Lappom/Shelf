@@ -14,7 +14,27 @@ vi.mock("@/lib/metadata/openlibrary", () => ({
   buildOpenLibraryCoverUrl: vi.fn(
     (isbn: string) => `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
   ),
+  buildOpenLibraryCoverUrlByCoverId: vi.fn(
+    (id: number) => `https://covers.openlibrary.org/b/id/${id}-L.jpg`,
+  ),
+  enrichFromOpenLibraryForSearchCandidate: vi.fn(async () => ({
+    description: null,
+    subjects: [] as string[],
+    pageCount: null,
+    publisher: null,
+    language: null,
+    openLibraryId: null,
+  })),
+  normalizeOpenLibraryDocKey: vi.fn((raw: string) => {
+    const k = raw.trim();
+    if (!k) return null;
+    return k.startsWith("/") ? k : `/${k}`;
+  }),
   searchOpenLibraryCatalogPaged: vi.fn(),
+}));
+
+vi.mock("@/lib/catalog/fetchCatalogCover", () => ({
+  fetchCatalogCoverFromUrl: vi.fn(async () => ({ ok: false as const, code: "NETWORK" as const })),
 }));
 
 vi.mock("@/lib/search/searchVector", () => ({
@@ -59,6 +79,7 @@ describe("findExistingBookForCandidate", () => {
       authors: ["A"],
       firstPublishYear: 2000,
       isbns: [],
+      coverI: null,
     });
     expect(existing).toEqual({ id: "book-1" });
   });
@@ -73,6 +94,7 @@ describe("findExistingBookForCandidate", () => {
       authors: ["A"],
       firstPublishYear: 2000,
       isbns: ["9780306406157"],
+      coverI: null,
     });
     expect(existing).toEqual({ id: "book-2" });
   });
@@ -88,6 +110,7 @@ describe("findExistingBookForCandidate", () => {
       authors: ["Jane"],
       firstPublishYear: null,
       isbns: [],
+      coverI: null,
     });
     expect(existing).toEqual({ id: "book-3" });
     expect(findFirst).not.toHaveBeenCalled();
@@ -113,6 +136,7 @@ describe("executeAdminPullBooks", () => {
           authors: ["A"],
           firstPublishYear: 2001,
           isbns: ["9780306406157"],
+          coverI: null,
         },
       ],
       numFound: 1,
@@ -148,6 +172,7 @@ describe("executeAdminPullBooks", () => {
           authors: ["Author One"],
           firstPublishYear: 2002,
           isbns: ["9780306406157"],
+          coverI: null,
         },
       ],
       numFound: 1,

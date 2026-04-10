@@ -1,9 +1,9 @@
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { getAppNameFromEnv, pickServerEnvVars } from "@/lib/env/server";
 import { Card } from "@/components/ui/card";
 
 export default async function AdminSettingsPage() {
-  await requireAdmin();
+  await requireAdminPage();
 
   const env = pickServerEnvVars(process.env);
   const appName = getAppNameFromEnv(process.env);

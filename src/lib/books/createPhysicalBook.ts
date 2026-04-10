@@ -40,6 +40,8 @@ export async function createPhysicalBook(args: {
   const subjects = create.subjects?.length ? create.subjects : (enrichment?.subjects ?? []);
   const pageCount = create.pageCount ?? enrichment?.pageCount ?? null;
   const description = create.description ?? enrichment?.description ?? null;
+  const publisher = create.publisher?.trim() || enrichment?.publisher || null;
+  const language = create.language?.trim() || enrichment?.language || null;
   const metadataSource = enrichment ? "openlibrary" : "manual";
 
   const book = await prisma.book.create({
@@ -48,9 +50,9 @@ export async function createPhysicalBook(args: {
       authors: create.authors,
       isbn10: isbn && isbn.length === 10 ? isbn : null,
       isbn13: isbn && isbn.length === 13 ? isbn : null,
-      publisher: create.publisher?.trim() || null,
+      publisher,
       publishDate: create.publishDate?.trim() || null,
-      language: create.language?.trim() || null,
+      language,
       pageCount: pageCount ?? null,
       description,
       subjects,

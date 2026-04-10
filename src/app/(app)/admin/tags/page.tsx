@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/db/prisma";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { AdminTagsClient, type AdminTagRow } from "./ui";
 
 export default async function AdminTagsPage() {
-  await requireAdmin();
+  await requireAdminPage();
 
   const tags = await prisma.tag.findMany({
     select: { id: true, name: true, color: true },

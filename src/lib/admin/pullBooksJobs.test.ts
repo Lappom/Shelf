@@ -18,6 +18,7 @@ vi.mock("@/lib/db/prisma", () => ({
       create: vi.fn(),
       findFirst: vi.fn(),
       updateMany: vi.fn(),
+      deleteMany: vi.fn(),
       findUnique: vi.fn(),
       update: vi.fn(),
       findMany: vi.fn(),
@@ -33,6 +34,7 @@ vi.mock("@/lib/admin/pullBooks", () => ({
 }));
 
 import {
+  deletePullBooksJob,
   enqueuePullBooksJob,
   requestCancelPullBooksJob,
   retryPullBooksJob,
@@ -70,6 +72,25 @@ describe("pullBooksJobs service", () => {
     const ok = await requestCancelPullBooksJob("job-1");
     expect(ok).toBe(true);
     expect(updateManyMock).toHaveBeenCalled();
+  });
+
+  it("deletes pull-books job when not running", async () => {
+    const deleteManyMock = prisma.adminImportJob.deleteMany as unknown as ReturnType<typeof vi.fn>;
+    deleteManyMock.mockResolvedValue({ count: 1 });
+
+    const out = await deletePullBooksJob("job-1");
+    expect(out).toEqual({ ok: true });
+    expect(deleteManyMock).toHaveBeenCalled();
+  });
+
+  it("refuses delete when job is running", async () => {
+    const deleteManyMock = prisma.adminImportJob.deleteMany as unknown as ReturnType<typeof vi.fn>;
+    const findFirstMock = prisma.adminImportJob.findFirst as unknown as ReturnType<typeof vi.fn>;
+    deleteManyMock.mockResolvedValue({ count: 0 });
+    findFirstMock.mockResolvedValue({ id: "job-1", status: "running" });
+
+    const out = await deletePullBooksJob("job-1");
+    expect(out).toEqual({ ok: false, reason: "running" });
   });
 
   it("requeues terminal job on retry", async () => {

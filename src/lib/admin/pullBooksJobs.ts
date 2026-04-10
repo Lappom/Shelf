@@ -206,6 +206,34 @@ export async function requestCancelPullBooksJob(jobId: string) {
   return updated.count > 0;
 }
 
+export type DeletePullBooksJobResult =
+  | { ok: true }
+  | { ok: false; reason: "not_found" | "running" };
+
+/**
+ * Removes a pull-books job and its items. Jobs in `running` must be cancelled first.
+ */
+export async function deletePullBooksJob(jobId: string): Promise<DeletePullBooksJobResult> {
+  const result = await prisma.adminImportJob.deleteMany({
+    where: {
+      id: jobId,
+      type: AdminImportJobType.pull_books,
+      status: { not: AdminImportJobStatus.running },
+    },
+  });
+  if (result.count > 0) {
+    return { ok: true };
+  }
+  const exists = await prisma.adminImportJob.findFirst({
+    where: { id: jobId, type: AdminImportJobType.pull_books },
+    select: { id: true, status: true },
+  });
+  if (!exists) {
+    return { ok: false, reason: "not_found" };
+  }
+  return { ok: false, reason: "running" };
+}
+
 export async function retryPullBooksJob(jobId: string) {
   const updated = await prisma.adminImportJob.updateMany({
     where: {

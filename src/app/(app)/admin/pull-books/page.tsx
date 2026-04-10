@@ -1,9 +1,9 @@
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 
 import { AdminPullBooksClient } from "./ui";
 
 export default async function AdminPullBooksPage() {
-  await requireAdmin();
+  await requireAdminPage();
 
   return (
     <div className="space-y-6">

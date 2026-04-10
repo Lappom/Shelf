@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/db/prisma";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { ADMIN_BOOKS_PAGE, encodeAdminBooksCursor, toAdminBookRow } from "./adminBooksShared";
 import { AdminBooksClient, type AdminBookRow } from "./ui";
 
 export default async function AdminBooksPage() {
-  await requireAdmin();
+  await requireAdminPage();
 
   const fetched = await prisma.book.findMany({
     select: {

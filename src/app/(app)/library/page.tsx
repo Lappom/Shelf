@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { UploadEpubDialog } from "@/components/book/UploadEpubDialog";
 import { AddPhysicalBookDialog } from "@/components/book/AddPhysicalBookDialog";
@@ -7,7 +7,7 @@ import { LibraryPageClient } from "@/components/library/LibraryPageClient";
 import { loadRecommendationsPage } from "@/lib/recommendations/loadRecommendationsPage";
 
 export default async function LibraryPage() {
-  const user = await requireUser();
+  const user = await requireUserPage();
   if (!user.id) throw new Error("User id is missing");
   const userId = user.id;
   const role = (user as { role?: unknown }).role;

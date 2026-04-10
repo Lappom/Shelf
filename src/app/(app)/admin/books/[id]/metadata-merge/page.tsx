@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 
 import { AdminMetadataMergeClient } from "./ui";
 
@@ -7,7 +7,7 @@ export default async function AdminMetadataMergePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminPage();
   const { id } = await params;
   return (
     <div className="space-y-6">

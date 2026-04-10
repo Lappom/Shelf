@@ -5,6 +5,7 @@ import { normalizeIsbn } from "@/lib/books/isbn";
 import { searchGoogleBooksCatalog } from "@/lib/metadata/googlebooks";
 import {
   buildOpenLibraryCoverUrl,
+  buildOpenLibraryCoverUrlByCoverId,
   searchOpenLibraryCatalog,
   type OpenLibrarySearchCandidate,
 } from "@/lib/metadata/openlibrary";
@@ -68,6 +69,9 @@ function withCoverPreviewOpenLibrary(c: OpenLibrarySearchCandidate): CatalogSear
     if (!n) continue;
     coverPreviewUrl = buildOpenLibraryCoverUrl(n);
     break;
+  }
+  if (!coverPreviewUrl && c.coverI != null) {
+    coverPreviewUrl = buildOpenLibraryCoverUrlByCoverId(c.coverI);
   }
   return {
     provider: "openlibrary",

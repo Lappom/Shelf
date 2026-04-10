@@ -1,12 +1,12 @@
 import Link from "next/link";
 
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { getCircuitBreakerSnapshot } from "@/lib/resilience/circuitBreaker";
 import { Button } from "@/components/ui/button";
 
 export default async function AdminOpsPage() {
-  await requireAdmin();
+  await requireAdminPage();
 
   const byStatusType = await prisma.adminImportJob.groupBy({
     by: ["status", "type"],

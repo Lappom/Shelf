@@ -3,8 +3,10 @@ import { z } from "zod";
 
 import { runApiRoute } from "@/lib/api/route";
 import { corsPreflight, getClientIp } from "@/lib/api/http";
+import { asUuidOrThrow } from "@/lib/api/errors";
+import { logAdminAudit } from "@/lib/admin/auditLog";
+import { deletePullBooksJob, getPullBooksJob } from "@/lib/admin/pullBooksJobs";
 import { requireAdmin } from "@/lib/auth/rbac";
-import { getPullBooksJob } from "@/lib/admin/pullBooksJobs";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
@@ -56,6 +58,48 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
         },
         { status: 200 },
       );
+    },
+  );
+}
+
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  return runApiRoute(
+    req,
+    {
+      sameOrigin: true,
+      auth: requireAdmin,
+      rateLimit: async ({ req, user }) => {
+        const ip = getClientIp(req);
+        const adminId = String((user as { id?: unknown }).id ?? "unknown");
+        await rateLimitOrThrow({
+          key: `admin:pull_books_job_delete:${adminId}:${ip}`,
+          limit: 60,
+          windowMs: 60_000,
+        });
+      },
+    },
+    async ({ user }) => {
+      const parsed = ParamsSchema.safeParse(await ctx.params);
+      if (!parsed.success) {
+        return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+      }
+      const adminId = asUuidOrThrow((user as { id?: unknown }).id);
+      const out = await deletePullBooksJob(parsed.data.id);
+      if (!out.ok) {
+        if (out.reason === "not_found") {
+          return NextResponse.json({ error: "Not found" }, { status: 404 });
+        }
+        return NextResponse.json(
+          { error: "Cannot delete a running job; cancel it first" },
+          { status: 409 },
+        );
+      }
+      await logAdminAudit({
+        action: "pull_books_job_delete",
+        actorId: adminId,
+        meta: { jobId: parsed.data.id },
+      });
+      return NextResponse.json({ deleted: true }, { status: 200 });
     },
   );
 }

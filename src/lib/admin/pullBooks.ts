@@ -1,10 +1,16 @@
+import { normalizeIsbn } from "@/lib/books/isbn";
+import { fetchCatalogCoverFromUrl } from "@/lib/catalog/fetchCatalogCover";
 import type { OpenLibrarySearchCandidate } from "@/lib/metadata/openlibrary";
 import {
   buildOpenLibraryCoverUrl,
+  buildOpenLibraryCoverUrlByCoverId,
+  enrichFromOpenLibraryForSearchCandidate,
+  normalizeOpenLibraryDocKey,
   searchOpenLibraryCatalogPaged,
 } from "@/lib/metadata/openlibrary";
-import { normalizeIsbn } from "@/lib/books/isbn";
 import { prisma } from "@/lib/db/prisma";
+import { getStorageAdapter } from "@/lib/storage";
+import { buildCoverStoragePath } from "@/lib/storage/paths";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
 import {
   decodePullBooksCursor,
@@ -31,9 +37,7 @@ export type AdminPullBooksResult = {
 
 /** Normalize Open Library document key for storage and dedup. */
 export function normalizeOpenLibraryId(raw: string): string | null {
-  const k = raw.trim();
-  if (!k) return null;
-  return k.startsWith("/") ? k : `/${k}`;
+  return normalizeOpenLibraryDocKey(raw);
 }
 
 function firstIsbn13FromCandidate(c: OpenLibrarySearchCandidate): string | null {
@@ -41,6 +45,18 @@ function firstIsbn13FromCandidate(c: OpenLibrarySearchCandidate): string | null 
     const n = normalizeIsbn(raw);
     if (n && n.length === 13) return n;
   }
+  return null;
+}
+
+/** Best-effort Open Library cover image URL for server-side fetch (ISBN or cover id). */
+function openLibraryCoverSourceUrl(c: OpenLibrarySearchCandidate): string | null {
+  const isbn13 = firstIsbn13FromCandidate(c);
+  if (isbn13) return buildOpenLibraryCoverUrl(isbn13);
+  for (const raw of c.isbns) {
+    const n = normalizeIsbn(raw);
+    if (n) return buildOpenLibraryCoverUrl(n);
+  }
+  if (c.coverI != null) return buildOpenLibraryCoverUrlByCoverId(c.coverI);
   return null;
 }
 
@@ -174,7 +190,11 @@ export async function executeAdminPullBooks(args: {
     const isbn10 = isbn && isbn.length === 10 ? isbn : null;
     const isbn13Final = isbn && isbn.length === 13 ? isbn : null;
     const publishDate = typeof c.firstPublishYear === "number" ? String(c.firstPublishYear) : null;
-    const coverUrl = isbn13Final ? buildOpenLibraryCoverUrl(isbn13Final) : null;
+    const coverSourceUrl = openLibraryCoverSourceUrl(c);
+
+    let seed = await enrichFromOpenLibraryForSearchCandidate(c).catch(() => null);
+    const openLibraryIdStored =
+      (seed?.openLibraryId ? normalizeOpenLibraryId(seed.openLibraryId) : null) ?? olStored;
 
     const book = await prisma.book.create({
       data: {
@@ -182,21 +202,39 @@ export async function executeAdminPullBooks(args: {
         authors: c.authors,
         isbn10,
         isbn13: isbn13Final,
-        publisher: null,
+        publisher: seed?.publisher ?? null,
         publishDate,
-        language: null,
-        description: null,
-        pageCount: null,
-        subjects: [],
-        coverUrl,
+        language: seed?.language ?? null,
+        description: seed?.description ?? null,
+        pageCount: seed?.pageCount ?? null,
+        subjects: seed?.subjects?.length ? seed.subjects : [],
+        coverUrl: null,
         format: "physical",
         contentHash: null,
-        openLibraryId: olStored,
+        openLibraryId: openLibraryIdStored,
         metadataSource: "openlibrary",
         addedById: args.adminUserId,
       },
       select: { id: true },
     });
+
+    if (coverSourceUrl) {
+      const fetched = await fetchCatalogCoverFromUrl(coverSourceUrl);
+      if (fetched.ok) {
+        try {
+          const adapter = getStorageAdapter();
+          const storagePath = buildCoverStoragePath({ bookId: book.id, ext: fetched.ext });
+          await adapter.upload(fetched.bytes, storagePath);
+          await prisma.book.update({
+            where: { id: book.id },
+            data: { coverUrl: storagePath },
+            select: { id: true },
+          });
+        } catch {
+          // Keep book without cover if storage fails
+        }
+      }
+    }
 
     await updateBookSearchVector(book.id);
 

@@ -99,14 +99,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user, account, profile }) {
-      if (user) {
-        // Persist role for RBAC in session.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (token as any).role = (user as any).role;
-        token.sub = user.id;
+      // Legacy bug: OIDC stored the provider `sub` in token.sub instead of our User.id. Heal on each JWT refresh.
+      const rawSub = typeof token.sub === "string" ? token.sub : "";
+      const subIsUuid = rawSub.length > 0 && z.string().uuid().safeParse(rawSub).success;
+      if (rawSub && !subIsUuid) {
+        const linked = await prisma.user.findFirst({
+          where: { oidcProvider: "oidc", oidcSub: rawSub, deletedAt: null },
+          select: { id: true, role: true },
+        });
+        if (linked) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (token as any).oidcSub = rawSub;
+          token.sub = linked.id;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (token as any).role = linked.role;
+        }
       }
 
-      if (account?.provider === "oidc" && profile && !token.sub) {
+      // OIDC: always resolve DB user on sign-in. Do not use OAuth `user.id` as token.sub (it is not our User.id UUID).
+      if (account?.provider === "oidc" && profile) {
         const sub = (profile as { sub?: string }).sub;
         const email = (profile as { email?: string }).email?.toLowerCase();
         const preferredUsername =
@@ -175,7 +186,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           await ensureSystemShelves(dbUser.id);
           token.sub = dbUser.id;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (token as any).oidcSub = sub;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (token as any).role = dbUser.role;
+        }
+      }
+
+      if (user && account?.provider !== "oidc") {
+        // Credentials (and any non-OIDC): session id is the DB user id.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (token as any).role = (user as any).role;
+        token.sub = user.id;
+      }
+
+      // Orphan JWT: valid-looking User.id UUID but no row (DB reset, wrong DATABASE_URL, etc.).
+      const resolvedSub = typeof token.sub === "string" ? token.sub : "";
+      if (resolvedSub.length > 0 && z.string().uuid().safeParse(resolvedSub).success) {
+        const row = await prisma.user.findFirst({
+          where: { id: resolvedSub, deletedAt: null },
+          select: { id: true, role: true },
+        });
+        if (!row) {
+          token.sub = undefined;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (token as any).role;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          delete (token as any).oidcSub;
+        } else {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (token as any).role = row.role;
         }
       }
 
@@ -183,7 +222,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.sub ?? session.user.id;
+        // Do not fall back to a previous session user id when token.sub was cleared (invalid session).
+        session.user.id = typeof token.sub === "string" && token.sub.length > 0 ? token.sub : "";
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).role = (token as any).role;
       }

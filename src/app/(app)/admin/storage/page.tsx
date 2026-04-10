@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { Card } from "@/components/ui/card";
 
@@ -16,7 +16,7 @@ function formatBytes(n: bigint | number) {
 }
 
 export default async function AdminStoragePage() {
-  await requireAdmin();
+  await requireAdminPage();
 
   const [fileAgg, bookCount] = await Promise.all([
     prisma.bookFile.aggregate({

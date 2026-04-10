@@ -1,5 +1,14 @@
 import { normalizeIsbn } from "@/lib/books/isbn";
+import { fetchCatalogCoverFromUrl } from "@/lib/catalog/fetchCatalogCover";
 import { prisma } from "@/lib/db/prisma";
+import {
+  buildOpenLibraryCoverUrl,
+  enrichFromOpenLibraryForSearchCandidate,
+  normalizeOpenLibraryDocKey,
+  type OpenLibrarySearchCandidate,
+} from "@/lib/metadata/openlibrary";
+import { getStorageAdapter } from "@/lib/storage";
+import { buildCoverStoragePath } from "@/lib/storage/paths";
 import { updateBookSearchVector } from "@/lib/search/searchVector";
 
 export type AddCatalogBookInput = {
@@ -86,22 +95,47 @@ export async function addBookFromCatalog(
   );
   if (fuzzyMatch) return { status: "potential_conflict", bookId: fuzzyMatch.id };
 
+  let olSeed: Awaited<ReturnType<typeof enrichFromOpenLibraryForSearchCandidate>> | null = null;
+  if (input.provider === "openlibrary") {
+    const fyRaw = input.publishDate?.trim();
+    let firstPublishYear: number | null = null;
+    if (fyRaw) {
+      const n = /^\d{4}$/.test(fyRaw) ? Number(fyRaw) : Number.parseInt(fyRaw, 10);
+      firstPublishYear = Number.isFinite(n) ? n : null;
+    }
+    const cand: OpenLibrarySearchCandidate = {
+      key: providerId,
+      title: input.title,
+      authors: input.authors,
+      firstPublishYear,
+      isbns: input.isbns ?? [],
+      coverI: null,
+    };
+    olSeed = await enrichFromOpenLibraryForSearchCandidate(cand).catch(() => null);
+  }
+
+  const openLibraryIdForDb =
+    input.provider === "openlibrary"
+      ? (olSeed?.openLibraryId ? normalizeOpenLibraryDocKey(olSeed.openLibraryId) : null) ??
+        normalizeOpenLibraryDocKey(providerId)
+      : null;
+
   const created = await prisma.book.create({
     data: {
       title: input.title.trim().slice(0, 500),
       authors: input.authors.slice(0, 50),
       isbn10: null,
       isbn13: isbn13 ?? null,
-      publisher: null,
+      publisher: olSeed?.publisher ?? null,
       publishDate: input.publishDate?.trim() || null,
-      language: input.language?.trim() || null,
-      description: null,
-      pageCount: null,
-      subjects: [],
-      coverUrl: input.coverUrl?.trim() || null,
+      language: input.language?.trim() || olSeed?.language || null,
+      description: olSeed?.description ?? null,
+      pageCount: olSeed?.pageCount ?? null,
+      subjects: olSeed?.subjects?.length ? olSeed.subjects : [],
+      coverUrl: null,
       format: "physical",
       contentHash: null,
-      openLibraryId: input.provider === "openlibrary" ? providerId : null,
+      openLibraryId: openLibraryIdForDb,
       externalCatalogProvider: input.provider,
       externalCatalogId: providerId,
       externalCatalogQuery: input.query?.trim() || null,
@@ -110,6 +144,23 @@ export async function addBookFromCatalog(
     },
     select: { id: true },
   });
+
+  const trimmedCover = input.coverUrl?.trim() || null;
+  const fallbackOlCoverUrl = !trimmedCover && isbn13 ? buildOpenLibraryCoverUrl(isbn13) : null;
+  const coverSourceUrl = trimmedCover || fallbackOlCoverUrl;
+  if (coverSourceUrl) {
+    const fetched = await fetchCatalogCoverFromUrl(coverSourceUrl);
+    if (fetched.ok) {
+      const adapter = getStorageAdapter();
+      const storagePath = buildCoverStoragePath({ bookId: created.id, ext: fetched.ext });
+      await adapter.upload(fetched.bytes, storagePath);
+      await prisma.book.update({
+        where: { id: created.id },
+        data: { coverUrl: storagePath },
+        select: { id: true },
+      });
+    }
+  }
 
   await updateBookSearchVector(created.id);
   return { status: "added", bookId: created.id };

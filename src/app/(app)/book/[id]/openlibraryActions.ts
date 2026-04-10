@@ -201,6 +201,8 @@ export async function openLibraryApplyEnrichmentAction(
       description: merged.description,
       subjects: merged.subjects,
       pageCount: merged.pageCount,
+      publisher: merged.publisher,
+      language: merged.language,
       openLibraryId: merged.openLibraryId,
       isbn10,
       isbn13,

@@ -1,6 +1,7 @@
 "use server";
 
-import { redirect, unstable_rethrow } from "next/navigation";
+import { redirect } from "next/navigation";
+import { AuthError } from "next-auth";
 
 import { signIn } from "@/auth";
 
@@ -8,7 +9,7 @@ export async function oidcSignInAction() {
   try {
     await signIn("oidc", { redirectTo: "/library" });
   } catch (e) {
-    unstable_rethrow(e);
-    redirect("/login?error=auth");
+    if (e instanceof AuthError) redirect("/login?error=auth");
+    throw e;
   }
 }

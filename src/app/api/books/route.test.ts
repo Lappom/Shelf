@@ -45,6 +45,8 @@ vi.mock("@/lib/metadata/openlibrary", () => ({
     subjects: ["A"],
     pageCount: 10,
     coverUrl: "https://covers.openlibrary.org/b/isbn/x-L.jpg",
+    publisher: null,
+    language: null,
   })),
   searchOpenLibraryByTitleAuthor: vi.fn(async () => [
     {

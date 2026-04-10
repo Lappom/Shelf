@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from "vitest";
 
 import {
   enrichFromOpenLibraryByIsbn,
+  enrichFromOpenLibraryForSearchCandidate,
   searchOpenLibraryByTitleAuthor,
   searchOpenLibraryCatalog,
 } from "./openlibrary";
@@ -23,6 +24,8 @@ describe("enrichFromOpenLibraryByIsbn", () => {
           json: async () => ({
             key: "/books/OL1M",
             number_of_pages: 123,
+            publishers: ["Test Pub"],
+            languages: [{ key: "/languages/eng" }],
             works: [{ key: "/works/OLW1W" }],
           }),
         };
@@ -49,6 +52,8 @@ describe("enrichFromOpenLibraryByIsbn", () => {
     expect(res.subjects).toEqual(["A", "B"]);
     expect(res.pageCount).toBe(123);
     expect(res.coverUrl).toMatch(/covers\.openlibrary\.org/);
+    expect(res.publisher).toBe("Test Pub");
+    expect(res.language).toBe("en");
   });
 
   it("retries on transient errors", async () => {
@@ -65,6 +70,8 @@ describe("enrichFromOpenLibraryByIsbn", () => {
         json: async () => ({
           key: "/books/OL1M",
           number_of_pages: 123,
+          publishers: ["Test Pub"],
+          languages: [{ key: "/languages/eng" }],
           works: [{ key: "/works/OLW1W" }],
         }),
       };
@@ -115,6 +122,7 @@ describe("searchOpenLibraryByTitleAuthor", () => {
         authors: ["Ada Lovelace"],
         firstPublishYear: 1843,
         isbns: ["9781234567890", "123456789X"],
+        coverI: null,
       },
     ]);
   });
@@ -122,6 +130,59 @@ describe("searchOpenLibraryByTitleAuthor", () => {
   it("returns [] when title or author missing", async () => {
     await expect(searchOpenLibraryByTitleAuthor({ title: "", author: "x" })).resolves.toEqual([]);
     await expect(searchOpenLibraryByTitleAuthor({ title: "x", author: "" })).resolves.toEqual([]);
+  });
+});
+
+describe("enrichFromOpenLibraryForSearchCandidate", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    // @ts-expect-error - test runtime
+    global.fetch = vi.fn(async (url: string) => {
+      if (url.endsWith("/works/OLONLYW.json")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            key: "/works/OLONLYW",
+            description: "Work only",
+            subjects: ["Sci-Fi"],
+          }),
+        };
+      }
+      if (url.includes("/works/OLONLYW/editions.json")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            entries: [
+              {
+                number_of_pages: 400,
+                publishers: ["PubCo"],
+                languages: [{ key: "/languages/fre" }],
+              },
+            ],
+          }),
+        };
+      }
+      throw new Error(`Unexpected URL: ${url}`);
+    });
+  });
+
+  it("uses work + first edition when no ISBN", async () => {
+    const res = await enrichFromOpenLibraryForSearchCandidate({
+      key: "/works/OLONLYW",
+      title: "T",
+      authors: ["A"],
+      firstPublishYear: 2000,
+      isbns: [],
+      coverI: null,
+    });
+    expect(res.description).toBe("Work only");
+    expect(res.subjects).toContain("Sci-Fi");
+    expect(res.pageCount).toBe(400);
+    expect(res.publisher).toBe("PubCo");
+    expect(res.language).toBe("fr");
+    expect(res.openLibraryId).toBe("/works/OLONLYW");
   });
 });
 

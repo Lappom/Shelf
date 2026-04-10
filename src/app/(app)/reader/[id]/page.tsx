@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { EpubReaderLazy } from "@/components/reader/EpubReaderLazy";
 
@@ -9,7 +9,7 @@ const ParamsSchema = z.object({
 });
 
 export default async function ReaderPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUserPage();
   const userId = z
     .string()
     .uuid()

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { Button } from "@/components/ui/button";
 import { z } from "zod";
@@ -10,7 +10,7 @@ import { ALL_MCP_SCOPES, MCP_SCOPE_LABELS_FR, parseMcpScopesFromJson } from "@/l
 import { ApiKeysSettingsClient } from "./ApiKeysSettingsClient";
 
 export default async function ApiKeysSettingsPage() {
-  const user = await requireUser();
+  const user = await requireUserPage();
   const userId = z
     .string()
     .uuid()

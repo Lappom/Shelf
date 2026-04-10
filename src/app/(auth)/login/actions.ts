@@ -1,8 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { redirect, unstable_rethrow } from "next/navigation";
+import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { AuthError } from "next-auth";
 
 import { signIn } from "@/auth";
 import { assertSameOriginFromHeaders } from "@/lib/security/origin";
@@ -50,7 +51,8 @@ export async function loginAction(formData: FormData) {
       redirectTo: "/library",
     });
   } catch (e) {
-    unstable_rethrow(e);
-    redirect("/login?error=auth");
+    // Propagate Next.js redirect() (not an AuthError). See next-auth signIn() docs.
+    if (e instanceof AuthError) redirect("/login?error=auth");
+    throw e;
   }
 }

@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { encodeRecoCursor } from "@/lib/recommendations/recoCursor";
 import { loadRecommendationsPage } from "@/lib/recommendations/loadRecommendationsPage";
@@ -6,7 +6,7 @@ import { loadRecommendationsPage } from "@/lib/recommendations/loadRecommendatio
 import { RecommendationsPageClient } from "./RecommendationsPageClient";
 
 export default async function RecommendationsPage() {
-  const user = await requireUser();
+  const user = await requireUserPage();
   const userId = user.id;
   if (!userId) throw new Error("User id is missing");
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db/prisma";
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { AdminDuplicatesClient, type AdminDuplicateRow } from "./ui";
 
 function normalizeAuthors(authors: unknown): string[] {
@@ -8,7 +8,7 @@ function normalizeAuthors(authors: unknown): string[] {
 }
 
 export default async function AdminDuplicatesPage() {
-  await requireAdmin();
+  await requireAdminPage();
 
   const pairs = await prisma.duplicatePair.findMany({
     select: {

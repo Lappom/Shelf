@@ -29,6 +29,8 @@ export function mergeOpenLibraryIntoBookMetadata(args: {
 
   const description = base.description ?? enrichment.description ?? null;
   const pageCount = base.pageCount ?? enrichment.pageCount ?? null;
+  const publisher = base.publisher ?? enrichment.publisher ?? null;
+  const language = base.language ?? enrichment.language ?? null;
 
   return {
     ...base,
@@ -36,6 +38,8 @@ export function mergeOpenLibraryIntoBookMetadata(args: {
     description,
     subjects,
     pageCount,
+    publisher,
+    language,
     // coverUrl handled separately; never point DB to a remote Open Library URL.
   };
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +37,7 @@ function formatPercent(p: number | null) {
 }
 
 export default async function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUserPage();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const role = (user as any).role as string | undefined;
   const isAdmin = role === "admin";

@@ -1,11 +1,11 @@
 import Link from "next/link";
 
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { ShelvesPageClient, type ShelfListItem } from "@/components/shelf";
 
 export default async function ShelvesPage() {
-  const user = await requireUser();
+  const user = await requireUserPage();
 
   type ShelfRow = {
     id: string;

@@ -38,8 +38,8 @@ export async function GET(req: Request) {
       if (!parsed.success) {
         return NextResponse.json({ error: "Invalid query" }, { status: 400 });
       }
-      // Kick the worker when listing jobs to improve crash recovery.
-      await triggerPullBooksWorker();
+      // Kick the worker without blocking the response (await would drain the whole queue).
+      void triggerPullBooksWorker();
       const jobs = await listPullBooksJobs(parsed.data.limit);
       return NextResponse.json(
         {

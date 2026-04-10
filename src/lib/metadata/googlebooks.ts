@@ -24,6 +24,10 @@ type GoogleBooksVolumeResponse = {
       language?: string;
       industryIdentifiers?: Array<{ type?: string; identifier?: string }>;
       imageLinks?: {
+        extraLarge?: string;
+        large?: string;
+        medium?: string;
+        small?: string;
         thumbnail?: string;
         smallThumbnail?: string;
       };
@@ -147,8 +151,15 @@ function mapToCandidates(
         volume?.industryIdentifiers
           ?.map((identifier) => identifier.identifier?.trim() ?? "")
           .filter(Boolean) ?? [];
+      const links = volume?.imageLinks;
       const coverPreviewUrl =
-        volume?.imageLinks?.thumbnail ?? volume?.imageLinks?.smallThumbnail ?? null;
+        links?.extraLarge ??
+        links?.large ??
+        links?.medium ??
+        links?.small ??
+        links?.thumbnail ??
+        links?.smallThumbnail ??
+        null;
       return {
         providerId,
         title,

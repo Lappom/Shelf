@@ -1,9 +1,9 @@
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { AdminUsersClient } from "./ui";
 
 export default async function AdminUsersPage() {
-  const sessionUser = await requireAdmin();
+  const sessionUser = await requireAdminPage();
   const actorId = String((sessionUser as { id?: unknown }).id ?? "");
 
   const rows = await prisma.user.findMany({

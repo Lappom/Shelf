@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { requireAdmin } from "@/lib/auth/rbac";
+import { requireAdminPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { Button } from "@/components/ui/button";
 
@@ -20,7 +20,7 @@ export default async function AdminDuplicateDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminPage();
   const { id } = await params;
 
   const pair = await prisma.duplicatePair.findFirst({

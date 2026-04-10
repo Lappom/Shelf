@@ -1,3 +1,4 @@
+import { normalizeIsbn } from "@/lib/books/isbn";
 import { getCachedJson, setCachedJson } from "@/lib/metadata/openlibrary-cache";
 import { logShelfEvent } from "@/lib/observability/structuredLog";
 import { withCircuitBreaker } from "@/lib/resilience/circuitBreaker";
@@ -8,14 +9,16 @@ type OpenLibraryEdition = {
   title?: string;
   description?: string | { value?: string };
   number_of_pages?: number;
-  subjects?: string[];
+  subjects?: unknown[];
   works?: Array<{ key?: string }>;
+  publishers?: unknown[];
+  languages?: Array<{ key?: string }>;
 };
 
 type OpenLibraryWork = {
   key?: string;
   description?: string | { value?: string };
-  subjects?: string[];
+  subjects?: unknown[];
 };
 
 export type OpenLibraryEnrichment = {
@@ -24,6 +27,8 @@ export type OpenLibraryEnrichment = {
   subjects: string[];
   pageCount: number | null;
   coverUrl: string | null;
+  publisher: string | null;
+  language: string | null;
 };
 
 export type OpenLibrarySearchCandidate = {
@@ -32,6 +37,8 @@ export type OpenLibrarySearchCandidate = {
   authors: string[];
   firstPublishYear: number | null;
   isbns: string[];
+  /** Open Library cover id from search.json (when no ISBN cover is available). */
+  coverI: number | null;
 };
 
 function sleep(ms: number) {
@@ -81,6 +88,69 @@ function coerceText(v: unknown): string | null {
     if (typeof o.value === "string") return o.value.trim() || null;
   }
   return null;
+}
+
+/** Normalize Open Library document key (/works/..., /books/...). */
+export function normalizeOpenLibraryDocKey(raw: string): string | null {
+  const k = raw.trim();
+  if (!k) return null;
+  return k.startsWith("/") ? k : `/${k}`;
+}
+
+function normalizeOlSubjects(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const x of raw) {
+    if (typeof x === "string") {
+      const t = x.trim();
+      if (t) out.push(t);
+    } else if (x && typeof x === "object" && "name" in x) {
+      const n = (x as { name?: unknown }).name;
+      if (typeof n === "string" && n.trim()) out.push(n.trim());
+    }
+  }
+  return out;
+}
+
+function firstPublisherFromEdition(edition: OpenLibraryEdition): string | null {
+  const publishers = edition.publishers;
+  if (!Array.isArray(publishers) || publishers.length === 0) return null;
+  const p = publishers[0];
+  if (typeof p === "string") {
+    const t = p.trim();
+    return t ? t.slice(0, 255) : null;
+  }
+  if (p && typeof p === "object" && "name" in p) {
+    const n = (p as { name?: unknown }).name;
+    if (typeof n === "string" && n.trim()) return n.trim().slice(0, 255);
+  }
+  return null;
+}
+
+const OL_LANG_TO_BCP47: Record<string, string> = {
+  eng: "en",
+  fre: "fr",
+  spa: "es",
+  ger: "de",
+  ita: "it",
+  por: "pt",
+  dut: "nl",
+  pol: "pl",
+  rus: "ru",
+  cze: "cs",
+  swe: "sv",
+};
+
+function firstLanguageFromEdition(edition: OpenLibraryEdition): string | null {
+  const languages = edition.languages;
+  if (!Array.isArray(languages) || languages.length === 0) return null;
+  const lang = languages[0];
+  if (!lang || typeof lang !== "object" || !("key" in lang)) return null;
+  const key = String((lang as { key?: string }).key || "");
+  const m = key.match(/\/languages\/([a-z]{3})(?:\/[^/]*)?$/i);
+  if (!m?.[1]) return null;
+  const ol = m[1].toLowerCase();
+  return (OL_LANG_TO_BCP47[ol] ?? ol).slice(0, 10);
 }
 
 async function fetchJsonInner<T>(url: string, operation: "enrich" | "search"): Promise<T> {
@@ -164,7 +234,7 @@ async function fetchJson<T>(url: string, operation: "enrich" | "search"): Promis
 }
 
 function isbnKey(isbn: string) {
-  return `openlibrary:isbn:${isbn}`;
+  return `openlibrary:isbn:v2:${isbn}`;
 }
 
 function workKey(workKey: string) {
@@ -181,6 +251,10 @@ function stableHash(input: string) {
 
 export function buildOpenLibraryCoverUrl(isbn: string) {
   return `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-L.jpg`;
+}
+
+export function buildOpenLibraryCoverUrlByCoverId(coverId: number) {
+  return `https://covers.openlibrary.org/b/id/${encodeURIComponent(String(coverId))}-L.jpg`;
 }
 
 export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLibraryEnrichment> {
@@ -203,13 +277,15 @@ export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLib
   }
 
   const description = coerceText(edition.description) ?? coerceText(work?.description) ?? null;
-  const subjects = Array.from(
-    new Set([...(edition.subjects ?? []), ...(work?.subjects ?? [])].filter(Boolean)),
-  ).slice(0, 50);
+  const editionSubjects = normalizeOlSubjects(edition.subjects);
+  const workSubjects = normalizeOlSubjects(work?.subjects);
+  const subjects = Array.from(new Set([...editionSubjects, ...workSubjects])).slice(0, 50);
 
   const openLibraryId = (work?.key ?? edition.key ?? null) || null;
   const pageCount = typeof edition.number_of_pages === "number" ? edition.number_of_pages : null;
   const coverUrl = buildOpenLibraryCoverUrl(isbn);
+  const publisher = firstPublisherFromEdition(edition);
+  const language = firstLanguageFromEdition(edition);
 
   const enrichment: OpenLibraryEnrichment = {
     openLibraryId,
@@ -217,10 +293,121 @@ export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLib
     subjects,
     pageCount,
     coverUrl,
+    publisher,
+    language,
   };
 
   await setCachedJson(isbnKey(isbn), enrichment);
   return enrichment;
+}
+
+function workSeedKey(workKey: string) {
+  return `openlibrary:workseed:v1:${workKey}`;
+}
+
+export type OpenLibrarySearchSeed = {
+  description: string | null;
+  subjects: string[];
+  pageCount: number | null;
+  publisher: string | null;
+  language: string | null;
+  openLibraryId: string | null;
+};
+
+/**
+ * Work + first edition when search has no usable ISBN for /isbn/...json.
+ */
+export async function enrichFromOpenLibraryWorkOnly(workKey: string): Promise<OpenLibrarySearchSeed> {
+  const cached = await getCachedJson<OpenLibrarySearchSeed>(workSeedKey(workKey));
+  if (cached) return cached;
+
+  const work = await fetchJson<OpenLibraryWork>(`https://openlibrary.org${workKey}.json`, "enrich");
+
+  type EditionsResponse = { entries?: OpenLibraryEdition[] };
+  let pageCount: number | null = null;
+  let publisher: string | null = null;
+  let language: string | null = null;
+  let editionDescription: string | null = null;
+  let editionSubjects: string[] = [];
+
+  const editionsJson = await fetchJson<EditionsResponse>(
+    `https://openlibrary.org${workKey}/editions.json?limit=1`,
+    "enrich",
+  ).catch(() => null);
+  const firstEd = editionsJson?.entries?.[0];
+  if (firstEd) {
+    if (typeof firstEd.number_of_pages === "number") pageCount = firstEd.number_of_pages;
+    publisher = firstPublisherFromEdition(firstEd);
+    language = firstLanguageFromEdition(firstEd);
+    editionDescription = coerceText(firstEd.description);
+    editionSubjects = normalizeOlSubjects(firstEd.subjects);
+  }
+
+  const workDescription = coerceText(work.description);
+  const description = editionDescription ?? workDescription;
+  const wSubjects = normalizeOlSubjects(work.subjects);
+  const subjects = Array.from(new Set([...wSubjects, ...editionSubjects])).slice(0, 50);
+
+  const normalizedWorkKey =
+    typeof work.key === "string" && work.key.trim()
+      ? normalizeOpenLibraryDocKey(work.key)
+      : workKey;
+
+  const seed: OpenLibrarySearchSeed = {
+    description,
+    subjects,
+    pageCount,
+    publisher,
+    language,
+    openLibraryId: normalizedWorkKey ?? workKey,
+  };
+
+  await setCachedJson(workSeedKey(workKey), seed);
+  return seed;
+}
+
+/**
+ * Best-effort metadata for pull/search: ISBN (edition+work) when possible, else work+first edition.
+ */
+export async function enrichFromOpenLibraryForSearchCandidate(
+  candidate: OpenLibrarySearchCandidate,
+): Promise<OpenLibrarySearchSeed> {
+  const workKey = normalizeOpenLibraryDocKey(candidate.key);
+
+  for (const raw of candidate.isbns) {
+    const isbn = normalizeIsbn(raw);
+    if (!isbn || (isbn.length !== 10 && isbn.length !== 13)) continue;
+    try {
+      const e = await enrichFromOpenLibraryByIsbn(isbn);
+      return {
+        description: e.description,
+        subjects: e.subjects,
+        pageCount: e.pageCount,
+        publisher: e.publisher,
+        language: e.language,
+        openLibraryId: e.openLibraryId ?? workKey,
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  if (workKey?.startsWith("/works/")) {
+    try {
+      return await enrichFromOpenLibraryWorkOnly(workKey);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return {
+    description: null,
+    subjects: [],
+    pageCount: null,
+    publisher: null,
+    language: null,
+    openLibraryId: workKey,
+  };
 }
 
 type OpenLibrarySearchResponse = {
@@ -232,6 +419,7 @@ type OpenLibrarySearchResponse = {
     author_name?: string[];
     first_publish_year?: number;
     isbn?: string[];
+    cover_i?: number;
   }>;
 };
 
@@ -257,7 +445,11 @@ function mapSearchDocsToCandidates(
       const isbns = Array.isArray(d.isbn)
         ? d.isbn.map((x) => String(x).trim()).filter(Boolean)
         : [];
-      return { key, title: t, authors, firstPublishYear, isbns };
+      const coverI =
+        typeof d.cover_i === "number" && Number.isFinite(d.cover_i) && d.cover_i > 0
+          ? Math.trunc(d.cover_i)
+          : null;
+      return { key, title: t, authors, firstPublishYear, isbns, coverI };
     })
     .filter((c) => c.key && c.title)
     .slice(0, limit);

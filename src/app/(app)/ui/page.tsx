@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth/rbac";
+import { requireUserPage } from "@/lib/auth/rbac";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default async function UiShowcasePage() {
-  await requireUser();
+  await requireUserPage();
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-10 px-6 py-10">

@@ -22,6 +22,14 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   // Playwright / E2E often uses 127.0.0.1 while dev defaults may use localhost.
   allowedDevOrigins: ["127.0.0.1"],
+  images: {
+    localPatterns: [
+      // Cover optimizer fetches /api/books/:id/cover with a signed `t` query param (see lib/cover/coverToken.ts).
+      { pathname: "/api/books/*/cover" },
+      // Same-origin static assets under public/ etc. (no query string).
+      { pathname: "**", search: "" },
+    ],
+  },
   async headers() {
     return [
       {

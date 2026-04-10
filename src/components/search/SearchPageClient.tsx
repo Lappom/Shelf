@@ -536,10 +536,13 @@ export function SearchPageClient({
                     <img
                       src={c.coverPreviewUrl}
                       alt=""
-                      className="h-28 w-20 shrink-0 rounded-lg border border-(--eleven-border-subtle) object-cover"
+                      loading="lazy"
+                      decoding="async"
+                      referrerPolicy="no-referrer"
+                      className="h-36 w-24 shrink-0 rounded-lg border border-(--eleven-border-subtle) bg-muted/30 object-cover shadow-sm"
                     />
                   ) : (
-                    <div className="bg-muted/40 text-muted-foreground flex h-28 w-20 shrink-0 items-center justify-center rounded-lg border border-(--eleven-border-subtle) text-xs">
+                    <div className="bg-muted/40 text-muted-foreground flex h-36 w-24 shrink-0 items-center justify-center rounded-lg border border-(--eleven-border-subtle) text-xs">
                       —
                     </div>
                   )}
