@@ -111,14 +111,39 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
         select: { id: true, format: true },
       });
       if (!book) return NextResponse.json({ error: "Not found" }, { status: 404 });
-      if (book.format !== "epub") {
-        return NextResponse.json({ error: "Not an EPUB" }, { status: 400 });
+
+      const isEpub = book.format === "epub";
+      const rawBody = body as Record<string, unknown>;
+
+      if (!isEpub) {
+        if ("currentCfi" in rawBody || "currentPage" in rawBody) {
+          return NextResponse.json(
+            { error: "Reader position fields are only supported for EPUB" },
+            { status: 400 },
+          );
+        }
+        if (parsedBody.data.status === undefined) {
+          return NextResponse.json({ error: "status is required for non-EPUB books" }, { status: 400 });
+        }
+        const p = parsedBody.data.progress;
+        if (typeof p === "number" && p !== 0 && p !== 1) {
+          return NextResponse.json(
+            { error: "progress for non-EPUB books must be 0 or 1" },
+            { status: 400 },
+          );
+        }
       }
 
-      const nextProgress = parsedBody.data.progress;
-      const nextStatus =
-        parsedBody.data.status ??
-        (typeof nextProgress === "number" && nextProgress > 0 ? "reading" : undefined);
+      let nextProgress = parsedBody.data.progress;
+      const nextStatus: "not_started" | "reading" | "finished" | "abandoned" | undefined = isEpub
+        ? parsedBody.data.status ??
+          (typeof nextProgress === "number" && nextProgress > 0 ? "reading" : undefined)
+        : parsedBody.data.status;
+
+      if (!isEpub && typeof nextProgress !== "number") {
+        nextProgress =
+          nextStatus === "finished" ? 1 : nextStatus === "abandoned" ? 0 : 0;
+      }
 
       let refTime = new Date();
       if (parsedBody.data.clientNow) {
@@ -153,6 +178,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
       let lastProgressClientAt = existing?.lastProgressClientAt ?? null;
 
       const shouldCreditTime =
+        isEpub &&
         isReadingLike &&
         (parsedBody.data.progress !== undefined ||
           parsedBody.data.currentCfi !== undefined ||
@@ -180,8 +206,8 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
           userId,
           bookId: parsedParams.data.bookId,
           progress: nextProgress ?? 0,
-          currentCfi: parsedBody.data.currentCfi ?? null,
-          currentPage: parsedBody.data.currentPage ?? null,
+          currentCfi: isEpub ? (parsedBody.data.currentCfi ?? null) : null,
+          currentPage: isEpub ? (parsedBody.data.currentPage ?? null) : null,
           status: (nextStatus ?? "not_started") as never,
           startedAt: nextStatus === "reading" ? now : null,
           finishedAt: nextStatus === "finished" ? now : null,
@@ -190,10 +216,16 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
         },
         update: {
           progress: typeof nextProgress === "number" ? nextProgress : undefined,
-          currentCfi:
-            parsedBody.data.currentCfi !== undefined ? parsedBody.data.currentCfi : undefined,
-          currentPage:
-            parsedBody.data.currentPage !== undefined ? parsedBody.data.currentPage : undefined,
+          currentCfi: isEpub
+            ? parsedBody.data.currentCfi !== undefined
+              ? parsedBody.data.currentCfi
+              : undefined
+            : undefined,
+          currentPage: isEpub
+            ? parsedBody.data.currentPage !== undefined
+              ? parsedBody.data.currentPage
+              : undefined
+            : undefined,
           status: nextStatus ? (nextStatus as never) : undefined,
           startedAt: nextStatus === "reading" ? now : undefined,
           finishedAt: nextStatus === "finished" ? now : undefined,

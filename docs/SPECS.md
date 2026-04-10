@@ -761,8 +761,8 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | DELETE | `/api/shelves/:id` | Supprimer |
 | POST | `/api/shelves/:id/books` | Ajouter un livre |
 | DELETE | `/api/shelves/:id/books/:bookId` | Retirer un livre |
-| GET | `/api/progress/:bookId` | Progression de lecture |
-| PUT | `/api/progress/:bookId` | Sauvegarder la progression |
+| GET | `/api/progress/:bookId` | Progression de lecture (tous formats ; même ligne `UserBookProgress`) |
+| PUT | `/api/progress/:bookId` | **EPUB** : progression fractionnaire, `currentCfi` / `currentPage`, crédit de temps de lecture. **Autres formats** : `status` obligatoire ; interdit d’envoyer `currentCfi` ou `currentPage` ; `progress` optionnel, uniquement `0` ou `1` (sinon dérivé : `finished` → 1, sinon 0). |
 | GET | `/api/books/:id/annotations` | Annotations |
 | POST | `/api/books/:id/annotations` | Créer annotation |
 | PATCH | `/api/annotations/:id` | Modifier |
@@ -1202,6 +1202,7 @@ Valeurs de référence implémentation : `w_content=0.55`, `w_collab=0.20`, `w_c
 - **Langue** : langue majoritaire des seeds → léger malus si le candidat a une langue connue et différente.
 - **Disponibilité fichier** : petit bonus si le livre a au moins un `BookFile` (sans exclure les fiches sans fichier).
 - **Ancres négatives** : similarité de contenu maximale vers les livres en *dislike* ou *dismiss* → pénalité ; **ancres positives** : *like* explicite → léger bonus.
+- **Exclusion du top stocké** : tout livre ayant un enregistrement `UserRecommendationFeedback` (j’aime ou moins) pour cet utilisateur est **retiré du pool de candidats** pour `UserRecommendation` : le signal continue d’influencer les *autres* livres via les ancres, mais le titre concerné n’est plus proposé dans « Pour vous » tant que le feedback existe.
 
 **Diversité (sélection top stocké)** : pénalité gloutonne sur répétition d’auteur ; pénalité additionnelle sur redondance de sujets (TF-IDF) dans le top conservé en base.
 
@@ -1261,6 +1262,7 @@ Index : `(user_id, created_at)`, `(event, created_at)`
 - Chaque recommandation affiche la raison principale ("Parce que vous avez aimé *Fondation*") ; codes raison incluant *co-lecture* (`read_together`) lorsque le signal co-occurrence est fort.
 - Actions : **J’aime**, **Moins** (dislike), **Pas intéressé** (dismiss) ; liens vers la fiche livre portent `?reco=1` pour traçabilité URL.
 - Page dédiée `/recommendations` : mêmes actions, filtres par raison, texte de confidentialité (signaux stockés, pas d’exposition d’identité de voisins).
+- **Fiche livre** : rappel / modification du feedback explicite (j’aime, moins, retrait de l’avis) ; lien vers `/recommendations`.
 
 ---
 

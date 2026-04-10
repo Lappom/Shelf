@@ -111,4 +111,89 @@ describe("PUT /api/progress/[bookId]", () => {
     const res = await PUT(req, { params: Promise.resolve({ bookId: crypto.randomUUID() }) });
     expect(res.status).toBe(404);
   });
+
+  it("rejects non-EPUB without status", async () => {
+    const { prisma } = await import("@/lib/db/prisma");
+    (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: crypto.randomUUID(),
+      format: "physical",
+    });
+
+    const { PUT } = await import("./route");
+    const req = new Request("http://test.local/api/progress/x", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const res = await PUT(req, { params: Promise.resolve({ bookId: crypto.randomUUID() }) });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects non-EPUB with fractional progress", async () => {
+    const { prisma } = await import("@/lib/db/prisma");
+    (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: crypto.randomUUID(),
+      format: "physical",
+    });
+
+    const { PUT } = await import("./route");
+    const req = new Request("http://test.local/api/progress/x", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "reading", progress: 0.25 }),
+    });
+    const res = await PUT(req, { params: Promise.resolve({ bookId: crypto.randomUUID() }) });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects non-EPUB with currentCfi", async () => {
+    const { prisma } = await import("@/lib/db/prisma");
+    (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: crypto.randomUUID(),
+      format: "physical",
+    });
+
+    const { PUT } = await import("./route");
+    const req = new Request("http://test.local/api/progress/x", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "reading", currentCfi: "x" }),
+    });
+    const res = await PUT(req, { params: Promise.resolve({ bookId: crypto.randomUUID() }) });
+    expect(res.status).toBe(400);
+  });
+
+  it("upserts status-only progress for physical book", async () => {
+    const { prisma } = await import("@/lib/db/prisma");
+    (prisma.book.findFirst as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: crypto.randomUUID(),
+      format: "physical",
+    });
+    (prisma.userBookProgress.findUnique as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(
+      null,
+    );
+    (prisma.userBookProgress.upsert as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+      progress: 1,
+      currentCfi: null,
+      currentPage: null,
+      status: "finished",
+      startedAt: null,
+      finishedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      totalReadingSeconds: 0,
+      lastProgressClientAt: null,
+    });
+
+    const { PUT } = await import("./route");
+    const req = new Request("http://test.local/api/progress/x", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "finished" }),
+    });
+    const res = await PUT(req, { params: Promise.resolve({ bookId: crypto.randomUUID() }) });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.status).toBe("finished");
+    expect(json.progress).toBe(1);
+  });
 });

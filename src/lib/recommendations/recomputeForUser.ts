@@ -15,6 +15,7 @@ import { buildCooccurrenceScores } from "./cooccurrence";
 import { collaborativeScoreForBook, findNeighbors } from "./collaborative";
 import type { BookFeatures } from "./types";
 import { authorOverlap, contentSimilarity, sparseCosine, tagJaccard } from "./similarity";
+import { mergeExplicitFeedbackIntoExcluded } from "./mergeExplicitFeedbackIntoExcluded";
 import {
   bestWeightedSeed,
   reasonLikedBook,
@@ -243,6 +244,7 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
   }
   for (const id of dismissedSet) excluded.add(id);
   for (const f of favoriteRows) excluded.add(f.bookId);
+  mergeExplicitFeedbackIntoExcluded(excluded, feedbackRows);
 
   const seedWeights = new Map<string, number>();
   for (const [bid, w] of targetAff) {

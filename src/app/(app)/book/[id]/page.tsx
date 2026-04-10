@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ResyncMetadataPanel } from "@/components/book/ResyncMetadataPanel";
 import { OpenLibraryEnrichmentPanel } from "@/components/book/OpenLibraryEnrichmentPanel";
 import { BookTagsPanel, type BookTagItem } from "@/components/book/BookTagsPanel";
+import { BookReadingStatusSelect } from "@/components/book/BookReadingStatusSelect";
+import { BookRecoFeedbackPanel } from "@/components/book/BookRecoFeedbackPanel";
+import { FavoriteToggle } from "@/components/book/FavoriteToggle";
 import { AddToShelfMenu, type AddToShelfMenuShelf } from "@/components/shelf/AddToShelfMenu";
 import { createCoverAccessToken } from "@/lib/cover/coverToken";
 
@@ -72,7 +75,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
 
   if (!book) return <div className="p-6">Introuvable.</div>;
 
-  const [progress, annotations] = await Promise.all([
+  const [progress, annotations, recoFeedback] = await Promise.all([
     prisma.userBookProgress.findUnique({
       where: { userId_bookId: { userId, bookId: book.id } },
       select: { progress: true, status: true, updatedAt: true },
@@ -82,6 +85,10 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
       select: { id: true, type: true, content: true, note: true, color: true, createdAt: true },
       orderBy: [{ createdAt: "desc" }],
       take: 200,
+    }),
+    prisma.userRecommendationFeedback.findUnique({
+      where: { userId_bookId: { userId, bookId: book.id } },
+      select: { kind: true },
     }),
   ]);
 
@@ -116,6 +123,14 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
     type: s.type as AddToShelfMenuShelf["type"],
     checked: memberSet.has(s.id),
   }));
+
+  const favoritesShelf = shelves.find((s) => s.type === "favorites");
+  const progressStatus = (progress?.status ?? "not_started") as
+    | "not_started"
+    | "reading"
+    | "finished"
+    | "abandoned";
+  const recoKind = recoFeedback?.kind === "like" || recoFeedback?.kind === "dislike" ? recoFeedback.kind : null;
 
   const authorList = normalizeAuthors(book.authors);
   const coverToken = book.coverUrl ? createCoverAccessToken(book.id) : null;
@@ -156,9 +171,13 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                 }}
               />
             </div>
-            <div className="text-eleven-muted text-xs">
-              Statut: <span className="text-foreground">{progress?.status ?? "not_started"}</span>
-            </div>
+            <BookReadingStatusSelect
+              bookId={book.id}
+              bookFormat={book.format}
+              initialStatus={progressStatus}
+              className="pt-1"
+            />
+            <BookRecoFeedbackPanel bookId={book.id} initialKind={recoKind} className="border-eleven-border-subtle border-t pt-3" />
           </div>
         </Card>
 
@@ -195,6 +214,13 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
                     Télécharger
                   </a>
                 </Button>
+              ) : null}
+              {favoritesShelf ? (
+                <FavoriteToggle
+                  bookId={book.id}
+                  favoritesShelfId={favoritesShelf.id}
+                  initialFavorite={memberSet.has(favoritesShelf.id)}
+                />
               ) : null}
               <AddToShelfMenu bookId={book.id} shelves={shelfMenuItems} />
               <Button asChild variant="outline" className="rounded-eleven-pill">

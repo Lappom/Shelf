@@ -144,6 +144,25 @@ export async function setRecommendationFeedbackAction(input: unknown) {
   return { ok: true as const };
 }
 
+export async function clearRecommendationFeedbackAction(input: unknown) {
+  await assertRecoSecurity("feedback_clear");
+  const user = await requireUser();
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
+
+  const Schema = z.object({ bookId: z.string().uuid() }).strict();
+  const parsed = Schema.safeParse(input);
+  if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
+
+  await prisma.userRecommendationFeedback.deleteMany({
+    where: { userId, bookId: parsed.data.bookId },
+  });
+
+  return { ok: true as const };
+}
+
 export async function logRecommendationAnalyticsBatchAction(input: unknown) {
   const user = await requireUser();
   const userId = z
