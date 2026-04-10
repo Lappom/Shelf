@@ -9,7 +9,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --font-heading: var(--font-display);
+  --font-heading: var(--font-display), ui-serif, Georgia, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -798,6 +798,15 @@
       animation: reader-toc-item-in 0.32s cubic-bezier(0.25, 1, 0.5, 1) both;
       animation-delay: var(--reader-toc-delay, 0ms);
     }
+
+    .marketing-hero-enter {
+      animation: shelf-hero-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .marketing-block-enter {
+      animation: shelf-hero-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--marketing-enter-delay, 0ms);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -875,30 +884,115 @@
     .reader-toc-item-enter {
       animation: none;
     }
+
+    .marketing-hero-enter,
+    .marketing-block-enter {
+      animation: none;
+    }
   }
 
-  /* Library route: warm “reading room” backdrop + grain (scoped to .library-shell) */
+  /* Marketing landing (/) — DESIGN.md atmosphere */
+  .marketing-shell {
+    position: relative;
+    isolation: isolate;
+    min-height: 100vh;
+    background:
+      radial-gradient(
+        ellipse 120% 62% at 50% -14%,
+        oklch(0.97 0.014 78 / 0.38) 0%,
+        transparent 56%
+      ),
+      var(--background);
+  }
+
+  .dark .marketing-shell {
+    background:
+      radial-gradient(
+        ellipse 120% 62% at 50% -14%,
+        oklch(0.27 0.032 78 / 0.32) 0%,
+        transparent 52%
+      ),
+      var(--background);
+  }
+
+  .marketing-shell::before {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(127, 255, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(127, 255, 255, 0.07) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(
+      ellipse 68% 52% at 50% 32%,
+      rgb(0 0 0) 0%,
+      transparent 72%
+    );
+    -webkit-mask-image: radial-gradient(
+      ellipse 68% 52% at 50% 32%,
+      rgb(0 0 0) 0%,
+      transparent 72%
+    );
+  }
+
+  .marketing-shell::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='a'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23a)'/%3E%3C/svg%3E");
+  }
+
+  .marketing-shell > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .marketing-features-band {
+    margin-top: 0.25rem;
+    border-radius: calc(var(--radius) * 1.25);
+    border: 1px solid var(--eleven-border-subtle);
+    background: oklch(0.965 0.008 78);
+    padding: 1.75rem 1rem;
+    box-shadow: var(--eleven-shadow-inset-border);
+  }
+
+  .dark .marketing-features-band {
+    background: oklch(0.23 0.018 78 / 0.55);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .marketing-feature-card {
+      transition:
+        transform 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+        box-shadow 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .marketing-feature-card:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        var(--eleven-shadow-inset-border),
+        rgba(0, 0, 0, 0.06) 0px 0px 0px 1px,
+        rgba(0, 0, 0, 0.05) 0px 6px 14px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marketing-feature-card:hover {
+      transform: none;
+    }
+  }
+
+  /* Library route: flat backdrop + grain (no gradients on shell) */
   .library-shell {
     position: relative;
     isolation: isolate;
     min-height: 100%;
-    background:
-      radial-gradient(
-        ellipse 130% 70% at 50% -18%,
-        oklch(0.96 0.025 78 / 0.55) 0%,
-        transparent 58%
-      ),
-      var(--background);
-  }
-
-  .dark .library-shell {
-    background:
-      radial-gradient(
-        ellipse 130% 70% at 50% -18%,
-        oklch(0.32 0.04 75 / 0.45) 0%,
-        transparent 55%
-      ),
-      var(--background);
+    background: var(--background);
   }
 
   .library-shell::after {
@@ -926,20 +1020,71 @@
   .library-hero-band {
     border-radius: var(--eleven-radius-warm);
     border: 1px solid var(--eleven-border-subtle);
-    background: linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--secondary) 88%, transparent) 0%,
-      color-mix(in oklch, var(--card) 92%, transparent) 100%
-    );
+    background: var(--card);
     box-shadow: var(--eleven-shadow-inset-border), var(--eleven-shadow-soft);
   }
 
   .dark .library-hero-band {
-    background: linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--secondary) 55%, transparent) 0%,
-      color-mix(in oklch, var(--card) 70%, transparent) 100%
-    );
+    background: var(--card);
+  }
+
+  /* Recommendations strip on /library: flat surface (no gradients) */
+  .library-reco-section {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--eleven-radius-warm);
+    border: 1px solid var(--eleven-border-subtle);
+    padding: 1.35rem 1.35rem 1.1rem;
+    background: var(--card);
+    box-shadow: var(--eleven-shadow-inset-border), var(--eleven-shadow-soft);
+  }
+
+  .dark .library-reco-section {
+    background: var(--card);
+  }
+
+  @keyframes library-reco-kicker-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.3rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes library-reco-title-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.45rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes library-reco-actions-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.35rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes library-reco-card-in {
+    from {
+      opacity: 0;
+      transform: translateX(0.65rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
 
   @keyframes library-hero-in {
@@ -1055,6 +1200,23 @@
       animation: library-results-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
+    .library-reco-kicker-enter {
+      animation: library-reco-kicker-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .library-reco-title-enter {
+      animation: library-reco-title-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.06s both;
+    }
+
+    .library-reco-actions-enter {
+      animation: library-reco-actions-in 0.44s cubic-bezier(0.22, 1, 0.36, 1) 0.12s both;
+    }
+
+    .library-reco-card-enter {
+      animation: library-reco-card-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--library-reco-delay, 0ms);
+    }
+
     .library-row-enter {
       animation: library-row-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
       animation-delay: var(--library-enter-delay, 0ms);
@@ -1097,7 +1259,11 @@
     .library-hero-sub-enter,
     .library-card-enter,
     .library-results-enter,
-    .library-row-enter {
+    .library-row-enter,
+    .library-reco-kicker-enter,
+    .library-reco-title-enter,
+    .library-reco-actions-enter,
+    .library-reco-card-enter {
       animation: none;
     }
 

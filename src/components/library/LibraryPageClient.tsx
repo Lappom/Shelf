@@ -475,15 +475,15 @@ export function LibraryPageClient({
                 <Link
                   key={b.id}
                   href={`/book/${b.id}`}
-                  className="group library-card-enter"
+                  className="group library-card-enter flex h-full min-h-0 flex-col"
                   style={
                     {
                       "--library-enter-delay": `${Math.min(index, 23) * 45}ms`,
                     } as React.CSSProperties
                   }
                 >
-                  <Card className="shadow-eleven-card overflow-hidden transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 motion-reduce:group-hover:shadow-eleven-card">
-                    <div className="bg-muted relative aspect-2/3 w-full overflow-hidden">
+                  <Card className="shadow-eleven-card flex h-full min-h-0 flex-col gap-0 overflow-hidden p-0 transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 motion-reduce:group-hover:shadow-eleven-card">
+                    <div className="bg-muted relative aspect-2/3 w-full shrink-0 overflow-hidden">
                       {b.coverUrl ? (
                         <Image
                           src={
@@ -511,7 +511,7 @@ export function LibraryPageClient({
                         );
                       })()}
                     </div>
-                    <div className="space-y-1 p-3">
+                    <div className="flex min-h-0 flex-1 flex-col space-y-1 p-3">
                       <div className="line-clamp-2 text-sm font-medium">{b.title}</div>
                       <div className="text-eleven-muted line-clamp-1 text-xs">
                         {authorsToString(b.authors) || "—"}

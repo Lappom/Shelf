@@ -6,7 +6,7 @@ export default function BookDetailLoading() {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr]">
-        <Card className="shadow-eleven-card overflow-hidden">
+        <Card className="shadow-eleven-card gap-0 overflow-hidden p-0">
           <div
             className="book-skeleton-stagger bg-muted aspect-2/3 w-full"
             style={{ "--book-skeleton-delay": "0ms" } as CSSProperties}

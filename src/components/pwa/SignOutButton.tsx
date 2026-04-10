@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { signOut } from "next-auth/react";
 
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -12,7 +13,8 @@ async function signOutNavigate() {
   } catch {
     /* still sign out */
   }
-  window.location.href = "/api/auth/signout";
+  // POST with CSRF (GET shows the default confirmation page)
+  await signOut({ callbackUrl: "/login" });
 }
 
 export function SignOutButton({ className }: { className?: string }) {

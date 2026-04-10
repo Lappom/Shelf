@@ -148,7 +148,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr]">
         <Card
-          className="book-detail-enter shadow-eleven-card overflow-hidden"
+          className="book-detail-enter shadow-eleven-card gap-0 overflow-hidden p-0"
           style={{ "--book-enter-delay": "0ms" } as CSSProperties}
         >
           <div className="bg-muted relative aspect-2/3 w-full">

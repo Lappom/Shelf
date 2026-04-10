@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Cormorant_Garamond, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
 import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 import { getAppNameFromEnv, getDefaultLocaleFromEnv } from "@/lib/env/server";
 
-const geistSans = Geist({
+// DESIGN.md body/UI font. To use licensed Waldenburg files instead, switch to next/font/local under public/fonts.
+const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
+});
+
+// Waldenburg substitute: light display + same family at 700 for uppercase CTA (WaldenburgFH role).
+const cormorantDisplay = Cormorant_Garamond({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["300", "400", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -41,10 +49,16 @@ export default function RootLayout({
   return (
     <html
       lang={lang}
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${cormorantDisplay.variable} ${geistMono.variable} h-full antialiased`}
+      style={
+        {
+          // Same stack as display; CTA uses weight 700 via Tailwind / component styles.
+          "--font-display-bold": "var(--font-display)",
+        } as React.CSSProperties
+      }
       suppressHydrationWarning
     >
-      <body className="flex min-h-full flex-col">
+      <body className="font-sans flex min-h-full flex-col">
         <ServiceWorkerRegister />
         {children}
       </body>
