@@ -1,36 +1,158 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Shelf
 
-## Getting Started
+**A self-hosted reading hub focused on reading history, meaningful signals, and personalized recommendations.**
 
-First, run the development server:
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)](https://react.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748?logo=prisma)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](#license)
+
+Shelf helps you track what you read, why you read it, and what to read next.  
+EPUB reading is included, but the core value is your **reading timeline + recommendation signals**.
+
+---
+
+## Why Shelf?
+
+- **Reading-first model**: progress, statuses, shelves, tags, annotations, and reading time.
+- **Recommendation-ready data**: built to generate relevant suggestions from your real activity.
+- **Self-hosted by design**: your catalog, files, metadata, and API keys stay under your control.
+- **Metadata-rich workflow**: EPUB extraction, Open Library enrichment, and three-way metadata merge.
+- **MCP server built-in**: connect AI clients to your library via `/api/mcp`.
+
+## Key Features
+
+- Multi-user library with roles (`admin`, `reader`)
+- EPUB upload + extraction + secure streaming
+- Physical book support (without file requirement)
+- Dynamic and manual shelves
+- Full-text search using PostgreSQL (`tsvector` + `pg_trgm`)
+- Metadata synchronization with snapshot-based three-way merge
+- Recommendations pipeline and user-facing recommendation feed
+- API key management for MCP integrations
+
+## Tech Stack
+
+- **Frontend**: Next.js App Router, React, Tailwind CSS, shadcn/ui
+- **Backend**: Next.js Route Handlers + Server Actions
+- **Database**: PostgreSQL + Prisma
+- **Auth**: Auth.js (NextAuth v5 beta), optional OIDC
+- **Storage**: Local filesystem or S3-compatible backend (MinIO, S3)
+- **Reader**: `epubjs`
+- **Testing**: Vitest + Playwright
+
+---
+
+## Quick Start (Local Development)
+
+### 1) Install dependencies
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2) Configure environment
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env
+# Windows (PowerShell)
+copy .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Minimum required values:
 
-## Learn More
+- `DATABASE_URL`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET` (use a strong secret in production)
 
-To learn more about Next.js, take a look at the following resources:
+### 3) Run PostgreSQL (and optional Redis)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+docker compose -f docker/docker-compose.yml up -d db redis
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4) Apply migrations
 
-## Deploy on Vercel
+```bash
+pnpm db:migrate
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 5) Start the app
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+---
+
+## Run with Docker Compose
+
+From repository root:
+
+```bash
+docker compose -f docker/docker-compose.yml up --build
+```
+
+The container runs Prisma migrations (`prisma migrate deploy`) before starting the app.
+
+Useful docs:
+
+- [Self-hosted deployment guide](docs/self-hosted.md)
+- [Functional specifications](docs/SPECS.md)
+- [Roadmap](docs/roadmap.md)
+
+## MCP Integration
+
+Shelf exposes an MCP endpoint at:
+
+`{YOUR_ORIGIN}/api/mcp`
+
+Authenticate with:
+
+`Authorization: Bearer sk_shelf_...`
+
+See full client setup in [docs/mcp-client.md](docs/mcp-client.md).
+
+## Security Principles
+
+- Files are **never served directly** from storage.
+- Access goes through authenticated endpoints with authorization checks.
+- Server-side input validation is enforced.
+- Sensitive routes include rate limiting.
+
+For operational details: [docs/self-hosted.md](docs/self-hosted.md).
+
+---
+
+## Available Scripts
+
+- `pnpm dev` — start development server
+- `pnpm build` — production build
+- `pnpm start` — start production server
+- `pnpm lint` — run ESLint
+- `pnpm typecheck` — run TypeScript checks
+- `pnpm test` — run unit/integration tests
+- `pnpm test:component` — run component tests
+- `pnpm test:e2e` — run end-to-end tests
+
+## Project Documentation
+
+- [docs/SPECS.md](docs/SPECS.md) — full product and technical specification
+- [docs/roadmap.md](docs/roadmap.md) — implementation roadmap
+- [docs/STATE.md](docs/STATE.md) — current implementation status
+- [docs/CONVENTIONS.md](docs/CONVENTIONS.md) — coding and architecture conventions
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Open a pull request with a clear description and test notes
+
+If your change touches auth, storage, reader, or MCP, include explicit security and regression checks in the PR.
+
+## License
+
+MIT (or project owner preferred license).

@@ -33,6 +33,7 @@ describe("POST /api/admin/pull-books", () => {
   it("returns pull result and audits", async () => {
     const { executeAdminPullBooks } = await import("@/lib/admin/pullBooks");
     const { logAdminAudit } = await import("@/lib/admin/auditLog");
+    const { rateLimitOrThrow } = await import("@/lib/security/rateLimit");
 
     (executeAdminPullBooks as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       created: 2,
@@ -84,6 +85,13 @@ describe("POST /api/admin/pull-books", () => {
         meta: expect.not.objectContaining({
           query: expect.anything(),
         }),
+      }),
+    );
+    expect(rateLimitOrThrow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: expect.stringMatching(/^admin:pull_books:/),
+        limit: 18,
+        windowMs: 60_000,
       }),
     );
   });

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const searchOpenLibraryCatalog = vi.fn();
+const rateLimitOrThrow = vi.fn(async () => undefined);
 
 vi.mock("@/lib/auth/rbac", () => ({
   requireUser: vi.fn(async () => ({ id: crypto.randomUUID() })),
@@ -16,9 +17,14 @@ vi.mock("@/lib/metadata/openlibrary", () => ({
     `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-L.jpg`,
 }));
 
+vi.mock("@/lib/security/rateLimit", () => ({
+  rateLimitOrThrow,
+}));
+
 describe("GET /api/catalog/search", () => {
   beforeEach(() => {
     searchOpenLibraryCatalog.mockReset();
+    rateLimitOrThrow.mockClear();
   });
 
   it("returns 400 when q and title are both sent", async () => {
@@ -74,5 +80,20 @@ describe("GET /api/catalog/search", () => {
     const req = new Request("http://test.local/api/catalog/search?title=Test");
     const res = await GET(req);
     expect(res.status).toBe(502);
+  });
+
+  it("applies per-user and ip rate limit", async () => {
+    searchOpenLibraryCatalog.mockResolvedValue([]);
+    const { GET } = await import("./route");
+    const req = new Request("http://test.local/api/catalog/search?q=foundation");
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    expect(rateLimitOrThrow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: expect.stringMatching(/^catalog:openlibrary:/),
+        limit: 30,
+        windowMs: 60_000,
+      }),
+    );
   });
 });

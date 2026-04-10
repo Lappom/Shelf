@@ -661,7 +661,7 @@
 - [x] `scan_duplicates()`
 
 #### 22.4.6 Catalogue externe (optionnel, Phase 5.4)
-- [ ] Tool MCP **search_catalog** (ou nom figé dans la spec) : recherche preview uniquement ; création de livre via `add_book` après choix utilisateur.
+- [x] Tool MCP **search_catalog** (ou nom figé dans la spec) : recherche preview uniquement ; création de livre via `add_book` après choix utilisateur.
 
 ### 22.5 Resources MCP (docs/SPECS.md §17.5)
 - [x] `shelf://library/stats`
@@ -745,8 +745,8 @@
 - [x] Upload EPUB admin + extraction + OpenLibrary + search vector.
 - [x] Création livre physique + cover.
 - [x] Création livre physique : scan ISBN (caméra BarcodeDetector / repli ZXing) + douchette USB (champ ISBN).
-- [ ] Recherche **catalogue externe** (preview) + **Ajouter à la bibliothèque** optionnel (Phase 5.4 + §16.2.6).
-- [ ] Admin **Pull books** : import catalogue → création `Book` sans fichiers, par lots, idempotent (Phase 15.5 + §16.2.7).
+- [x] Recherche **catalogue externe** (preview) + **Ajouter à la bibliothèque** optionnel (Phase 5.4 + §16.2.6).
+- [x] Admin **Pull books** : import catalogue → création `Book` sans fichiers, par lots, idempotent (Phase 15.5 + §16.2.7).
 - [x] Library/search/shelves/reader/admin conformes aux specs UI.
 - [x] Annotations + export Markdown.
 - [x] PWA offline : cache EPUB + sync.
@@ -769,3 +769,134 @@
 - [x] Suite de tests (unit/integration/component/e2e) couvrant flux critiques (Phase 23 ; E2E avec skips optionnels pour fixtures lourdes).
 - [x] CI verte (lint/tests/build/docker) (Phase 24).
 
+---
+
+## Phase 27 — Catalogue externe V2
+
+### 27.1 Recherche catalogue externe (production-ready)
+- [ ] Recherche multi-sources avec fallback (OpenLibrary + providers configurés dans la spec).
+- [ ] Scoring de pertinence (titre, auteur, ISBN, langue, date) + tri stable.
+- [ ] Déduplication robuste (ISBN-13 prioritaire, heuristiques fuzzy titre/auteur en repli).
+- [ ] Gestion explicite des indisponibilités provider (timeouts, erreurs, réponses partielles).
+
+### 27.2 Ajouter à la bibliothèque
+- [ ] Action “Ajouter à la bibliothèque” depuis résultat externe.
+- [ ] Création `Book` sans fichier si source catalogue only, avec traçabilité de provenance.
+- [ ] Idempotence stricte (pas de doublons en cas de clic répété / retries).
+- [ ] Feedback UI clair (ajouté, déjà présent, conflit potentiel).
+
+### 27.3 Critères d’acceptation
+- [ ] P95 recherche externe sous objectif défini.
+- [ ] Taux de doublons post-import sous seuil défini.
+- [ ] Tests integration sur déduplication et idempotence.
+
+---
+
+## Phase 28 — Admin import massif (Pull books V2)
+
+### 28.1 Pipeline d’import par lots
+- [ ] Finaliser `Pull books` en mode batch (chunking configurable, reprise sur erreur).
+- [ ] Mode dry-run (prévisualisation sans écriture DB).
+- [ ] Rapports d’exécution (créés, mis à jour, ignorés, en erreur).
+- [ ] Idempotence inter-runs (mêmes entrées => même état final).
+
+### 28.2 Exécution asynchrone & opérabilité
+- [ ] File de jobs pour imports longs (retry/backoff, dead-letter si nécessaire).
+- [ ] Journal d’audit admin (qui a lancé quoi, quand, avec quels paramètres).
+- [ ] Annulation propre d’un job en cours.
+- [ ] UI admin de suivi (progression, erreurs, export du rapport).
+
+### 28.3 Critères d’acceptation
+- [ ] Import de volume cible sans timeout API.
+- [ ] Reprise après crash validée sur environnement de test.
+- [ ] Tests integration/e2e sur dry-run, cancel, retry.
+
+---
+
+## Phase 29 — Métadonnées & three-way merge V2
+
+### 29.1 Qualité et normalisation des métadonnées
+- [ ] Règles de normalisation déterministes (auteurs, langues, séries, dates, identifiants).
+- [ ] Détection de conflits “métier” (valeurs incohérentes multi-sources).
+- [ ] Score de confiance par champ pour aider l’arbitrage.
+- [ ] Historique des corrections importantes.
+
+### 29.2 Expérience admin de résolution de conflits
+- [ ] UI de comparaison source vs DB vs snapshot (par champ).
+- [ ] Actions rapides (accepter source, garder DB, merge manuel).
+- [ ] Prévisualisation avant validation finale.
+- [ ] Traçabilité complète des décisions de merge.
+
+### 29.3 Critères d’acceptation
+- [ ] Réduction mesurable des métadonnées incomplètes/incohérentes.
+- [ ] Temps moyen de résolution de conflit sous objectif.
+- [ ] Couverture de tests sur chemins de merge critiques.
+
+---
+
+## Phase 30 — Recommandations V2 (hybride)
+
+### 30.1 Moteur de scoring hybride
+- [ ] Conserver content-based et ajouter signaux collaboratifs anonymisés.
+- [ ] Stratégie cold start (nouvel utilisateur / nouveau livre).
+- [ ] Diversification des résultats (éviter la sur-concentration).
+- [ ] Re-rank par contraintes produit (langue, disponibilité, signaux utilisateur).
+
+### 30.2 UX des recommandations
+- [ ] Afficher les raisons (“Parce que vous avez lu…”, tags, auteurs proches).
+- [ ] Feedback explicite (`like` / `dislike` / `not interested`) avec effet mesurable.
+- [ ] Contrôles de confidentialité et transparence utilisateur.
+- [ ] Observabilité du funnel (impression, clic, ajout, dismiss).
+
+### 30.3 Critères d’acceptation
+- [ ] Amélioration CTR et taux d’ajout sur baseline V1.
+- [ ] Réduction du taux de dismiss non qualifié.
+- [ ] A/B test ou évaluation offline documentée.
+
+---
+
+## Phase 31 — MCP V2 (gouvernance et capacités)
+
+### 31.1 Nouvelles capacités MCP
+- [ ] Ajouter des tools orientées gestion bibliothèque (bulk update, recherche enrichie, opérations batch sûres).
+- [ ] Ajouter des resources documentaires utiles (catalogue, stats, état jobs) sans fuite de données sensibles.
+- [ ] Étendre prompts MCP côté serveur en respectant la spec.
+
+### 31.2 Sécurité et gouvernance
+- [ ] Scopes granulaires par API key (lecture/écriture/domaines fonctionnels).
+- [ ] Quotas et rate limits par clé + par tool.
+- [ ] Rotation/révocation clé avec effet immédiat.
+- [ ] Audit détaillé des appels MCP (tool, latence, résultat, erreur).
+
+### 31.3 Critères d’acceptation
+- [ ] Aucun endpoint MCP hors spec.
+- [ ] Tests integration sur authz/scopes/rate-limit/audit.
+- [ ] Logs suffisants pour investigation incident.
+
+---
+
+## Phase 32 — Ops, perf et fiabilité V2
+
+### 32.1 Fiabilité des traitements asynchrones
+- [ ] Uniformiser les jobs critiques (imports, enrichissement, recalcul recommandations).
+- [ ] Politique retry/backoff/circuit-breaker sur dépendances externes.
+- [ ] Idempotency keys sur opérations sensibles.
+- [ ] Runbooks d’incident (provider down, backlog jobs, corruption métadonnées).
+
+### 32.2 Performance & capacity planning
+- [ ] Budgets de latence par surface (search, reader, MCP, admin import).
+- [ ] Profiling régulier + optimisations DB (indexes complémentaires, plans, vacuum).
+- [ ] Stratégie de cache applicatif sur requêtes coûteuses.
+- [ ] Tests de charge ciblés avec seuils d’alerte.
+
+### 32.3 Observabilité & release readiness
+- [ ] Dashboards opérationnels (erreurs, latence, débit, backlog jobs).
+- [ ] Alerting actionnable (SLO/SLA internes).
+- [ ] Check-list de release V2 (migration DB, rollback, communication).
+- [ ] Post-release review systématique.
+
+### 32.4 Critères de complétude V2 (check final)
+- [ ] Catalogue externe + ajout bibliothèque + pull books admin finalisés.
+- [ ] Recommandations hybrides actives avec UX “reasons” et feedback.
+- [ ] MCP V2 conforme spec avec gouvernance (scopes/quotas/audit).
+- [ ] SLO principaux respectés sur 2 cycles de release.
