@@ -44,7 +44,7 @@ export type ShelfDetailShelf = {
   name: string;
   description: string | null;
   icon: string | null;
-  type: "manual" | "dynamic" | "favorites" | "reading";
+  type: "manual" | "dynamic" | "favorites" | "reading" | "read";
   createdAt: string;
   rules: unknown | null;
 };
@@ -112,6 +112,7 @@ function shelfDetailTypeLabel(t: ShelfDetailShelf["type"]) {
   switch (t) {
     case "favorites":
     case "reading":
+    case "read":
       return "Système";
     case "manual":
       return "Manuelle";
@@ -532,7 +533,11 @@ export function ShelfDetailClient({
                   </>
                 ) : null}
                 {nextCursor ? " · liste partielle" : ""}
-                {shelf.type === "reading" ? " · en cours de lecture" : ""}
+                {shelf.type === "reading"
+                  ? " · en cours de lecture"
+                  : shelf.type === "read"
+                    ? " · statut « lu »"
+                    : ""}
               </CardDescription>
             </div>
             <div className="relative max-w-full lg:w-[min(100%,20rem)]">

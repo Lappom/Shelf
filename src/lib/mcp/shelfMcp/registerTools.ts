@@ -576,7 +576,7 @@ export function registerShelfMcpTools(mcp: McpServer) {
   mcp.registerTool(
     "add_to_shelf",
     {
-      description: "Add a book to a shelf (not allowed for system 'reading' shelf).",
+      description: "Add a book to a shelf (not allowed for system 'reading' / 'read' shelves).",
       inputSchema: {
         book_id: z.string().uuid(),
         shelf_id: z.string().uuid(),
@@ -590,7 +590,8 @@ export function registerShelfMcpTools(mcp: McpServer) {
           select: { id: true, type: true },
         });
         if (!shelf) return mcpErrorResult("Shelf not found");
-        if (shelf.type === "reading") return mcpErrorResult("Cannot modify reading shelf");
+        if (shelf.type === "reading" || shelf.type === "read")
+          return mcpErrorResult("Cannot modify system shelf");
 
         const book = await prisma.book.findFirst({
           where: { id: args.book_id, deletedAt: null },
@@ -615,7 +616,7 @@ export function registerShelfMcpTools(mcp: McpServer) {
   mcp.registerTool(
     "remove_from_shelf",
     {
-      description: "Remove a book from a shelf (not allowed for system 'reading' shelf).",
+      description: "Remove a book from a shelf (not allowed for system 'reading' / 'read' shelves).",
       inputSchema: {
         book_id: z.string().uuid(),
         shelf_id: z.string().uuid(),
@@ -629,7 +630,8 @@ export function registerShelfMcpTools(mcp: McpServer) {
           select: { id: true, type: true },
         });
         if (!shelf) return mcpErrorResult("Shelf not found");
-        if (shelf.type === "reading") return mcpErrorResult("Cannot modify reading shelf");
+        if (shelf.type === "reading" || shelf.type === "read")
+          return mcpErrorResult("Cannot modify system shelf");
 
         await prisma.bookShelf.deleteMany({
           where: { shelfId: shelf.id, bookId: args.book_id },
@@ -674,8 +676,8 @@ export function registerShelfMcpTools(mcp: McpServer) {
             errors.push({ index: i, message: "Shelf not found" });
             continue;
           }
-          if (shelf.type === "reading") {
-            errors.push({ index: i, message: "Cannot modify reading shelf" });
+          if (shelf.type === "reading" || shelf.type === "read") {
+            errors.push({ index: i, message: "Cannot modify system shelf" });
             continue;
           }
           const book = await prisma.book.findFirst({

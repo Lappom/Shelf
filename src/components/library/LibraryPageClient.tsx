@@ -22,7 +22,7 @@ export type LibraryTagOption = { id: string; name: string; color: string };
 export type LibraryShelfOption = {
   id: string;
   name: string;
-  type: "manual" | "dynamic" | "favorites" | "reading";
+  type: "manual" | "dynamic" | "favorites" | "reading" | "read";
 };
 export type LibraryPrefs = {
   booksPerPage: number;

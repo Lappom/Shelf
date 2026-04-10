@@ -52,6 +52,12 @@ const ReadingCursorSchema = z.object({
   bid: z.string().uuid(),
 });
 
+const FinishedCursorSchema = z.object({
+  k: z.literal("fn"),
+  sa: z.string(),
+  bid: z.string().uuid(),
+});
+
 const DynamicCursorSchema = z.object({
   k: z.literal("dy"),
   c: z.string(),
@@ -62,6 +68,7 @@ function encodeShelfBooksCursor(
   payload:
     | z.infer<typeof ManualCursorSchema>
     | z.infer<typeof ReadingCursorSchema>
+    | z.infer<typeof FinishedCursorSchema>
     | z.infer<typeof DynamicCursorSchema>,
 ): string {
   return base64UrlEncodeJson(payload);
@@ -70,7 +77,7 @@ function encodeShelfBooksCursor(
 export async function loadShelfBooksPage(args: {
   userId: string;
   shelfId: string;
-  shelfType: "manual" | "dynamic" | "favorites" | "reading";
+  shelfType: "manual" | "dynamic" | "favorites" | "reading" | "read";
   rulesJson: unknown | null;
   cursor: string | null;
   limit?: number;
@@ -210,6 +217,75 @@ export async function loadShelfBooksPage(args: {
         nextCursor = encodeShelfBooksCursor({
           k: "rd",
           u: last.updatedAt.toISOString(),
+          bid: last.id,
+        });
+      }
+    }
+    return { books, nextCursor };
+  }
+
+  if (args.shelfType === "read") {
+    let cursorSql: Sql = sql`TRUE`;
+    if (args.cursor) {
+      let decoded: unknown;
+      try {
+        decoded = base64UrlDecodeJson(args.cursor);
+      } catch {
+        return { books: [], nextCursor: null };
+      }
+      const c = FinishedCursorSchema.safeParse(decoded);
+      if (!c.success) return { books: [], nextCursor: null };
+      cursorSql = sql`(
+        COALESCE(ubp.finished_at, ubp.updated_at) < ${c.data.sa}::timestamptz
+        OR (COALESCE(ubp.finished_at, ubp.updated_at) = ${c.data.sa}::timestamptz AND b.id > ${c.data.bid}::uuid)
+      )`;
+    }
+
+    const rows = await prisma.$queryRaw<
+      Array<{
+        sortAt: Date;
+        id: string;
+        title: string;
+        authors: unknown;
+        format: string;
+        createdAt: Date;
+        coverUrl: string | null;
+      }>
+    >`
+      SELECT COALESCE(ubp.finished_at, ubp.updated_at) AS "sortAt",
+             b.id, b.title, b.authors, b.format, b.created_at AS "createdAt",
+             b.cover_url AS "coverUrl"
+      FROM user_book_progress ubp
+      INNER JOIN books b ON b.id = ubp.book_id
+      WHERE ubp.user_id = ${args.userId}::uuid
+        AND ubp.status::text = 'finished'
+        AND b.deleted_at IS NULL
+        AND ${cursorSql}
+      ORDER BY COALESCE(ubp.finished_at, ubp.updated_at) DESC, b.id ASC
+      LIMIT ${limit + 1};
+    `;
+
+    const hasMore = rows.length > limit;
+    const page = hasMore ? rows.slice(0, limit) : rows;
+    const books: ShelfDetailBookRow[] = page.map((r) => ({
+      id: r.id,
+      title: r.title,
+      authors: normalizeAuthors(r.authors),
+      format: r.format as ShelfDetailBookRow["format"],
+      addedAt: r.sortAt.toISOString(),
+      createdAt: r.createdAt.toISOString(),
+      shelfSortOrder: 0,
+      coverUrl: r.coverUrl,
+      coverToken: r.coverUrl ? createCoverAccessToken(r.id) : null,
+    }));
+
+    let nextCursor: string | null = null;
+    if (hasMore) {
+      const last = page[page.length - 1];
+      if (last) {
+        nextCursor = encodeShelfBooksCursor({
+          k: "fn",
+          sa: last.sortAt.toISOString(),
           bid: last.id,
         });
       }

@@ -23,7 +23,8 @@ async function getOwnedShelfOrThrow(userId: string, shelfId: string) {
     select: { id: true, type: true },
   });
   if (!shelf) throw new Error("NOT_FOUND");
-  if (shelf.type === "favorites" || shelf.type === "reading") throw new Error("SYSTEM_SHELF");
+  if (shelf.type === "favorites" || shelf.type === "reading" || shelf.type === "read")
+    throw new Error("SYSTEM_SHELF");
   return shelf;
 }
 

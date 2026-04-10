@@ -14,6 +14,7 @@ function AdminNav() {
     { href: "/admin/pull-books", label: "Pull Open Library" },
     { href: "/admin/metadata-merge-audits", label: "Audit merge métadonnées" },
     { href: "/admin/storage", label: "Stockage" },
+    { href: "/admin/mcp", label: "MCP" },
     { href: "/admin/settings", label: "Paramètres" },
   ] as const;
 

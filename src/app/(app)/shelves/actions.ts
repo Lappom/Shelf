@@ -77,7 +77,7 @@ async function getOwnedShelfOrThrow(userId: string, shelfId: string) {
 }
 
 function assertNotSystemShelf(type: string) {
-  if (type === "favorites" || type === "reading") throw new Error("SYSTEM_SHELF");
+  if (type === "favorites" || type === "reading" || type === "read") throw new Error("SYSTEM_SHELF");
 }
 
 export async function createShelfAction(input: unknown) {
@@ -174,7 +174,8 @@ export async function addBookToShelfAction(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
   const shelf = await getOwnedShelfOrThrow(userId, parsed.data.shelfId);
-  if (shelf.type === "reading") return { ok: false as const, error: "UNSUPPORTED" as const };
+  if (shelf.type === "reading" || shelf.type === "read")
+    return { ok: false as const, error: "UNSUPPORTED" as const };
 
   await prisma.bookShelf.upsert({
     where: { bookId_shelfId: { bookId: parsed.data.bookId, shelfId: shelf.id } },
@@ -196,7 +197,8 @@ export async function removeBookFromShelfAction(input: unknown) {
   if (!parsed.success) return { ok: false as const, error: "INVALID_INPUT" as const };
 
   const shelf = await getOwnedShelfOrThrow(userId, parsed.data.shelfId);
-  if (shelf.type === "reading") return { ok: false as const, error: "UNSUPPORTED" as const };
+  if (shelf.type === "reading" || shelf.type === "read")
+    return { ok: false as const, error: "UNSUPPORTED" as const };
 
   await prisma.bookShelf.deleteMany({
     where: { shelfId: shelf.id, bookId: parsed.data.bookId },
@@ -223,7 +225,9 @@ export async function reorderShelvesAction(input: unknown) {
     return { ok: false as const, error: "NOT_FOUND" as const };
 
   // Keep system shelves pinned by their negative sortOrder. Only reorder non-system shelves.
-  const reorderable = shelves.filter((s) => s.type !== "favorites" && s.type !== "reading");
+  const reorderable = shelves.filter(
+    (s) => s.type !== "favorites" && s.type !== "reading" && s.type !== "read",
+  );
   const reorderableIds = new Set(reorderable.map((s) => s.id));
 
   const finalIds = parsed.data.shelfIds.filter((id) => reorderableIds.has(id));

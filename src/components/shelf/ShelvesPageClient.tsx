@@ -19,7 +19,8 @@ import {
   rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
+import { GripVerticalIcon, PencilIcon, PlusIcon, SmilePlusIcon, Trash2Icon } from "lucide-react";
+import { Popover as PopoverPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,7 @@ export type ShelfListItem = {
   name: string;
   description: string | null;
   icon: string | null;
-  type: "manual" | "dynamic" | "favorites" | "reading";
+  type: "manual" | "dynamic" | "favorites" | "reading" | "read";
   sortOrder: number;
   createdAt: string;
   booksCount: number | null;
@@ -70,8 +71,8 @@ function coverImageSrc(bookId: string, coverUrl: string | null, coverToken: stri
 function shelfTypeLabel(t: ShelfListItem["type"]) {
   switch (t) {
     case "favorites":
-      return "Système";
     case "reading":
+    case "read":
       return "Système";
     case "manual":
       return "Manuelle";
@@ -242,7 +243,7 @@ function SortableShelfCard({
             </Button>
           )}
 
-          {shelf.type !== "favorites" && shelf.type !== "reading" && (
+          {shelf.type !== "favorites" && shelf.type !== "reading" && shelf.type !== "read" && (
             <>
               <Button
                 variant="ghost"
@@ -288,12 +289,163 @@ function sanitizeEmojiOrText(s: string) {
   return v ? v.slice(0, 50) : "";
 }
 
+/** Curated shelf icons — single grapheme picks only */
+const SHELF_ICON_EMOJIS = [
+  "📚",
+  "📖",
+  "📕",
+  "📗",
+  "📘",
+  "📙",
+  "📓",
+  "📔",
+  "📝",
+  "🔖",
+  "⭐",
+  "✨",
+  "🌟",
+  "💫",
+  "📌",
+  "🎯",
+  "🏷️",
+  "❤️",
+  "🧡",
+  "💜",
+  "💚",
+  "💙",
+  "🖤",
+  "📦",
+  "🗂️",
+  "📑",
+  "🔮",
+  "🎓",
+  "☕",
+  "🌙",
+  "🌿",
+  "🏠",
+  "🎨",
+  "🎭",
+  "🎵",
+  "🌊",
+  "🔥",
+  "🍂",
+  "🕯️",
+] as const;
+
+function ShelfNameWithEmojiField({
+  name,
+  icon,
+  onNameChange,
+  onIconChange,
+  disabled,
+}: {
+  name: string;
+  icon: string;
+  onNameChange: (value: string) => void;
+  onIconChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const trimmed = icon.trim();
+  const preview = trimmed ? [...trimmed][0] ?? trimmed.slice(0, 2) : null;
+  const selectedEmoji = preview ?? "";
+
+  return (
+    <div className="space-y-1">
+      <div className="text-muted-foreground text-xs">Nom</div>
+      <div
+        className={cn(
+          "focus-within:border-ring focus-within:ring-ring/50 flex h-9 min-w-0 rounded-xl border border-input bg-transparent transition-colors focus-within:ring-3",
+          disabled && "pointer-events-none opacity-50",
+        )}
+      >
+        <PopoverPrimitive.Root modal={false} open={pickerOpen} onOpenChange={setPickerOpen}>
+          <PopoverPrimitive.Trigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              className="text-muted-foreground hover:bg-muted/50 hover:text-foreground flex w-11 shrink-0 items-center justify-center border-r border-input text-xl leading-none transition-colors outline-none focus-visible:bg-muted/40"
+              aria-label="Choisir un emoji pour l’étagère"
+              aria-expanded={pickerOpen}
+            >
+              {preview ? (
+                <span className="select-none" aria-hidden>
+                  {preview}
+                </span>
+              ) : (
+                <SmilePlusIcon className="size-5 opacity-70" strokeWidth={1.5} aria-hidden />
+              )}
+            </button>
+          </PopoverPrimitive.Trigger>
+          <PopoverPrimitive.Portal>
+            <PopoverPrimitive.Content
+              side="bottom"
+              align="start"
+              sideOffset={6}
+              collisionPadding={12}
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              className={cn(
+                // 8×size-9 + 7×gap-0.5 + paddings ≈ 20.4rem — 18rem caused horizontal overflow
+                "bg-popover text-popover-foreground shadow-eleven-card data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 z-[200] w-[min(20.5rem,calc(100vw-1.5rem))] max-w-[calc(100vw-1.5rem)] origin-(--radix-popover-content-transform-origin) rounded-2xl border border-(--eleven-border-subtle) p-2 duration-100 outline-none",
+              )}
+            >
+              <div
+                className="grid max-h-[14rem] grid-cols-8 gap-0.5 overflow-x-hidden overflow-y-auto p-1"
+                role="listbox"
+                aria-label="Emojis"
+              >
+                {SHELF_ICON_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    role="option"
+                    aria-selected={selectedEmoji === emoji}
+                    className="hover:bg-accent/80 flex size-9 items-center justify-center rounded-lg text-lg transition-transform hover:scale-110 aria-selected:bg-accent/50 active:scale-95"
+                    onClick={() => {
+                      onIconChange(emoji);
+                      setPickerOpen(false);
+                    }}
+                  >
+                    <span className="select-none">{emoji}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="border-t border-(--eleven-border-subtle) pt-2">
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-foreground hover:bg-muted/60 w-full rounded-lg px-2 py-1.5 text-xs transition-colors"
+                  onClick={() => {
+                    onIconChange("");
+                    setPickerOpen(false);
+                  }}
+                >
+                  Aucune icône
+                </button>
+              </div>
+            </PopoverPrimitive.Content>
+          </PopoverPrimitive.Portal>
+        </PopoverPrimitive.Root>
+        <Input
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          disabled={disabled}
+          placeholder="Ma liste de lecture"
+          className="eleven-body-airy h-9 flex-1 rounded-none border-0 bg-transparent px-3 py-2 shadow-none focus-visible:ring-0"
+          aria-label="Nom de l’étagère"
+        />
+      </div>
+    </div>
+  );
+}
+
 export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfListItem[] }) {
   const router = useRouter();
   const [shelves, setShelves] = React.useState<ShelfListItem[]>(initialShelves);
   const [busy, startTransition] = React.useTransition();
 
-  const systemShelves = shelves.filter((s) => s.type === "favorites" || s.type === "reading");
+  const systemShelves = shelves.filter(
+    (s) => s.type === "favorites" || s.type === "reading" || s.type === "read",
+  );
   const reorderableShelves = shelves.filter((s) => s.type === "manual" || s.type === "dynamic");
   const manualShelves = reorderableShelves.filter((s) => s.type === "manual");
   const dynamicShelves = reorderableShelves.filter((s) => s.type === "dynamic");
@@ -552,22 +704,13 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
               </Button>
             </div>
 
-            <div className="space-y-1">
-              <div className="text-muted-foreground text-xs">Nom</div>
-              <Input
-                value={draft.name}
-                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-muted-foreground text-xs">Emoji (optionnel)</div>
-              <Input
-                value={draft.icon}
-                onChange={(e) => setDraft((d) => ({ ...d, icon: e.target.value }))}
-                placeholder="⭐"
-              />
-            </div>
+            <ShelfNameWithEmojiField
+              name={draft.name}
+              icon={draft.icon}
+              disabled={busy}
+              onNameChange={(value) => setDraft((d) => ({ ...d, name: value }))}
+              onIconChange={(value) => setDraft((d) => ({ ...d, icon: value }))}
+            />
 
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Description (optionnel)</div>
@@ -602,21 +745,13 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
           </DialogHeader>
 
           <div className="space-y-3">
-            <div className="space-y-1">
-              <div className="text-muted-foreground text-xs">Nom</div>
-              <Input
-                value={draft.name}
-                onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-muted-foreground text-xs">Emoji (optionnel)</div>
-              <Input
-                value={draft.icon}
-                onChange={(e) => setDraft((d) => ({ ...d, icon: e.target.value }))}
-              />
-            </div>
+            <ShelfNameWithEmojiField
+              name={draft.name}
+              icon={draft.icon}
+              disabled={busy}
+              onNameChange={(value) => setDraft((d) => ({ ...d, name: value }))}
+              onIconChange={(value) => setDraft((d) => ({ ...d, icon: value }))}
+            />
 
             <div className="space-y-1">
               <div className="text-muted-foreground text-xs">Description (optionnel)</div>

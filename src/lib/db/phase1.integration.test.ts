@@ -42,7 +42,7 @@ describe("Phase 1 (DB integration)", () => {
     await prisma.$disconnect();
   });
 
-  test("ensureSystemShelves creates favorites + reading and is idempotent", async () => {
+  test("ensureSystemShelves creates favorites + reading + read and is idempotent", async () => {
     if (!dbAvailable) return;
 
     const user = await prisma.user.create({
@@ -59,7 +59,7 @@ describe("Phase 1 (DB integration)", () => {
       orderBy: { type: "asc" },
     });
 
-    expect(shelves.map((s) => s.type).sort()).toEqual(["favorites", "reading"]);
+    expect(shelves.map((s) => s.type).sort()).toEqual(["favorites", "read", "reading"]);
   });
 
   test("partial unique index prevents duplicate active books by content_hash", async () => {

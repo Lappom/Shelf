@@ -62,7 +62,7 @@ describe("Phase 10 (Shelves integration)", () => {
     expect(count).toBe(2);
   });
 
-  test("ensureSystemShelves creates favorites + reading and is idempotent", async () => {
+  test("ensureSystemShelves creates favorites + reading + read and is idempotent", async () => {
     if (!dbAvailable) return;
 
     const user = await prisma.user.create({
@@ -74,12 +74,12 @@ describe("Phase 10 (Shelves integration)", () => {
     await ensureSystemShelves(user.id);
 
     const types = await prisma.shelf.findMany({
-      where: { ownerId: user.id, type: { in: ["favorites", "reading"] } },
+      where: { ownerId: user.id, type: { in: ["favorites", "reading", "read"] } },
       select: { type: true },
       orderBy: { type: "asc" },
     });
 
-    expect(types.map((s) => s.type).sort()).toEqual(["favorites", "reading"]);
+    expect(types.map((s) => s.type).sort()).toEqual(["favorites", "read", "reading"]);
   });
 
   test("reordering BookShelf.sortOrder persists manual shelf order", async () => {

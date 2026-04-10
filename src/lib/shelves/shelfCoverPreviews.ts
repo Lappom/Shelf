@@ -50,6 +50,21 @@ async function previewReadingShelf(userId: string): Promise<ShelfCoverPreviewBoo
   return toPreviewRows(rows);
 }
 
+async function previewReadShelf(userId: string): Promise<ShelfCoverPreviewBook[]> {
+  const limit = SHELF_LIST_COVER_PREVIEW_LIMIT;
+  const rows = await prisma.$queryRaw<Array<{ id: string; coverUrl: string | null }>>`
+    SELECT b.id, b.cover_url AS "coverUrl"
+    FROM user_book_progress ubp
+    INNER JOIN books b ON b.id = ubp.book_id
+    WHERE ubp.user_id = ${userId}::uuid
+      AND ubp.status::text = 'finished'
+      AND b.deleted_at IS NULL
+    ORDER BY COALESCE(ubp.finished_at, ubp.updated_at) DESC, b.id ASC
+    LIMIT ${limit};
+  `;
+  return toPreviewRows(rows);
+}
+
 async function previewDynamicShelf(rulesJson: unknown | null): Promise<ShelfCoverPreviewBook[]> {
   let rule: ShelfRule;
   try {
@@ -77,7 +92,7 @@ export async function loadShelfCoverPreviewsForList(args: {
   userId: string;
   shelves: Array<{
     id: string;
-    type: "manual" | "dynamic" | "favorites" | "reading";
+    type: "manual" | "dynamic" | "favorites" | "reading" | "read";
     rulesJson: unknown | null;
   }>;
 }): Promise<Record<string, ShelfCoverPreviewBook[]>> {
@@ -91,6 +106,9 @@ export async function loadShelfCoverPreviewsForList(args: {
           break;
         case "reading":
           previews = await previewReadingShelf(args.userId);
+          break;
+        case "read":
+          previews = await previewReadShelf(args.userId);
           break;
         case "dynamic":
           previews = await previewDynamicShelf(s.rulesJson);

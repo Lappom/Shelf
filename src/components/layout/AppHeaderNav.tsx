@@ -20,7 +20,6 @@ const ITEMS: Item[] = [
   },
   { href: "/shelves", label: "Étagères", match: (p) => isSubpath(p, "/shelves") },
   { href: "/search", label: "Catalogue", match: (p) => isSubpath(p, "/search") },
-  { href: "/profile", label: "Profil", match: (p) => isSubpath(p, "/profile") },
 ];
 
 export function AppHeaderNav({ isAdmin }: { isAdmin: boolean }) {

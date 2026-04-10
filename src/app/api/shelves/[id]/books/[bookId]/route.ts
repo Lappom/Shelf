@@ -49,7 +49,7 @@ export async function DELETE(
         select: { id: true, type: true },
       });
       if (!shelf) return NextResponse.json({ error: "Not found" }, { status: 404 });
-      if (shelf.type === "reading")
+      if (shelf.type === "reading" || shelf.type === "read")
         return NextResponse.json({ error: "Unsupported" }, { status: 400 });
 
       await prisma.bookShelf.deleteMany({
