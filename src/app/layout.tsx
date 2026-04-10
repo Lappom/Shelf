@@ -11,16 +11,20 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-// Waldenburg substitute: light display + same family at 700 for uppercase CTA (WaldenburgFH role).
+// Waldenburg substitute: light display (300) + 400 for rare UI (e.g. uppercaseCta). 700 unused in app → omitted to avoid unused preload warnings.
 const cormorantDisplay = Cormorant_Garamond({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["300", "400", "700"],
+  weight: ["300", "400"],
+  // Display loads with CSS when headings render; avoids Chrome "preloaded but not used" on routes that only need body (Inter) above the fold.
+  preload: false,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
+  // Mono is for code/technical UI; preloading on every route triggers unused preload warnings on catalogue, etc.
+  preload: false,
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -52,7 +56,7 @@ export default function RootLayout({
       className={`${inter.variable} ${cormorantDisplay.variable} ${geistMono.variable} h-full antialiased`}
       style={
         {
-          // Same stack as display; CTA uses weight 700 via Tailwind / component styles.
+          // Alias for components that reference a “display bold” token (same family as --font-display).
           "--font-display-bold": "var(--font-display)",
         } as React.CSSProperties
       }

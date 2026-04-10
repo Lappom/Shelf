@@ -4,6 +4,7 @@ import Link from "next/link";
 import { SearchIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { IsbnBarcodeScanner } from "@/components/book/IsbnBarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,8 @@ export function SearchPageClient({
       >
     >
   >({});
+  const [barcodeHint, setBarcodeHint] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const skipNextUrlSync = useRef(true);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -169,42 +172,78 @@ export function SearchPageClient({
 
   return (
     <div className="catalog-results-enter space-y-4">
-      <div className="relative max-w-xl">
-        <SearchIcon
-          className="text-eleven-muted pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-          aria-hidden
-        />
-        <Input
-          ref={inputRef}
-          id="catalog-search-input"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Titre, auteur, ISBN…"
-          aria-label="Recherche catalogue"
-          data-testid="catalog-search-query"
-          className={cn(
-            "eleven-body-airy h-10 rounded-xl border-(--eleven-border-subtle) pr-3 pl-9 shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
-            q.length > 0 && "pr-9",
-          )}
-        />
-        {q.length > 0 ? (
-          <button
-            type="button"
-            className="text-eleven-muted hover:bg-muted/80 hover:text-foreground absolute top-1/2 right-1.5 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors motion-reduce:transition-none"
-            aria-label="Effacer la recherche"
-            onClick={() => {
-              setQ("");
-              inputRef.current?.focus();
+      <div className="flex max-w-xl items-center gap-2">
+        <div className="relative min-w-0 flex-1">
+          <SearchIcon
+            className="text-eleven-muted pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+            aria-hidden
+          />
+          <Input
+            ref={inputRef}
+            id="catalog-search-input"
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setBarcodeHint(null);
+              setScanError(null);
             }}
-          >
-            <XIcon className="h-4 w-4" aria-hidden />
-          </button>
-        ) : null}
+            placeholder="Titre, auteur, ISBN…"
+            aria-label="Recherche catalogue"
+            data-testid="catalog-search-query"
+            className={cn(
+              "eleven-body-airy h-10 rounded-xl border-(--eleven-border-subtle) pr-3 pl-9 shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
+              q.length > 0 && "pr-9",
+            )}
+          />
+          {q.length > 0 ? (
+            <button
+              type="button"
+              className="text-eleven-muted hover:bg-muted/80 hover:text-foreground absolute top-1/2 right-1.5 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full transition-colors motion-reduce:transition-none"
+              aria-label="Effacer la recherche"
+              onClick={() => {
+                setQ("");
+                setBarcodeHint(null);
+                setScanError(null);
+                inputRef.current?.focus();
+              }}
+            >
+              <XIcon className="h-4 w-4" aria-hidden />
+            </button>
+          ) : null}
+        </div>
+        <IsbnBarcodeScanner
+          presentation="modal"
+          onIsbnDecoded={(normalized) => {
+            setBarcodeHint(null);
+            setScanError(null);
+            setQ(normalized);
+            requestAnimationFrame(() => inputRef.current?.focus());
+          }}
+          onRawNotIsbn={() =>
+            setBarcodeHint(
+              "Code détecté mais pas un ISBN valide (ISSN, code interne, etc.). Saisis l’ISBN à la main ou réessaie.",
+            )
+          }
+          onScanError={(message) => {
+            setBarcodeHint(null);
+            setScanError(message);
+          }}
+        />
       </div>
 
       {error ? (
         <p className="text-destructive text-sm" role="alert">
           {error}
+        </p>
+      ) : null}
+      {scanError ? (
+        <p className="text-destructive text-sm" role="alert">
+          {scanError}
+        </p>
+      ) : null}
+      {barcodeHint ? (
+        <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-200/90" role="status">
+          {barcodeHint}
         </p>
       ) : null}
 

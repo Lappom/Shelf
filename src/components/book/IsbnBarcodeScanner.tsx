@@ -1,10 +1,18 @@
 "use client";
 
 import type { IScannerControls } from "@zxing/browser";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ScanLine } from "lucide-react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 import { normalizeIsbn } from "@/lib/books/isbn";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const NATIVE_FORMATS = ["ean_13", "ean_8", "code_128", "upc_a", "upc_e"] as const;
 
@@ -41,16 +49,45 @@ function waitForVideoPaint() {
   });
 }
 
+/** Dialog portals can mount <video> after the first layout pass; never bail permanently on a null ref. */
+async function waitForConnectedVideo(
+  getVideo: () => HTMLVideoElement | null,
+  cancelled: () => boolean,
+  maxFrames = 90,
+): Promise<HTMLVideoElement | null> {
+  for (let i = 0; i < maxFrames; i++) {
+    if (cancelled()) return null;
+    const el = getVideo();
+    if (el?.isConnected) return el;
+    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+  }
+  return null;
+}
+
+async function getFrontOrDefaultVideoStream(): Promise<MediaStream> {
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } },
+      audio: false,
+    });
+  } catch {
+    // Desktop / some browsers reject "environment"; accept any camera.
+    return await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+  }
+}
+
 export function IsbnBarcodeScanner({
   onIsbnDecoded,
   onRawNotIsbn,
   onScanError,
   disabled,
+  presentation = "inline",
 }: {
   onIsbnDecoded: (isbn: string) => void;
   onRawNotIsbn?: (raw: string) => void;
   onScanError?: (message: string) => void;
   disabled?: boolean;
+  presentation?: "inline" | "modal";
 }) {
   const [panelOpen, setPanelOpen] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -109,7 +146,7 @@ export function IsbnBarcodeScanner({
     setStatus(null);
   }, [stopNative, stopZxing]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!panelOpen) {
       stoppedRef.current = true;
       clearAnimation();
@@ -133,10 +170,10 @@ export function IsbnBarcodeScanner({
 
     stoppedRef.current = false;
     invalidReportedRef.current = new Set();
-    const video = videoRef.current;
-    if (!video) return;
 
     let cancelled = false;
+    /** Stable target for cleanup (avoids stale videoRef in modal portal teardown). */
+    let mountTarget: HTMLVideoElement | null = null;
 
     const fail = (msg: string) => {
       if (cancelled) return;
@@ -155,30 +192,25 @@ export function IsbnBarcodeScanner({
         /* ignore */
       }
       zxingControlsRef.current = null;
-      video.srcObject = null;
+      const v = videoRef.current;
+      if (v) v.srcObject = null;
       setPanelOpen(false);
     };
 
-    const runNative = async () => {
+    const runNative = async (video: HTMLVideoElement): Promise<"started" | "failed" | "try-zxing"> => {
       const Ctor = window.BarcodeDetector;
-      if (!Ctor) {
-        fail("Détection native indisponible.");
-        return;
-      }
+      if (!Ctor) return "try-zxing";
 
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false,
-        });
+        stream = await getFrontOrDefaultVideoStream();
       } catch (e) {
         fail(mediaErrorMessage(e));
-        return;
+        return "failed";
       }
       if (cancelled || stoppedRef.current) {
         stream.getTracks().forEach((t) => t.stop());
-        return;
+        return "failed";
       }
 
       streamRef.current = stream;
@@ -188,8 +220,9 @@ export function IsbnBarcodeScanner({
       } catch {
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
+        video.srcObject = null;
         fail("Impossible de lancer la prévisualisation vidéo.");
-        return;
+        return "failed";
       }
 
       let detector: {
@@ -200,8 +233,8 @@ export function IsbnBarcodeScanner({
       } catch {
         stream.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
-        fail("Ce navigateur ne prend pas en charge ces formats de code-barres.");
-        return;
+        video.srcObject = null;
+        return "try-zxing";
       }
 
       setStatus("Place le code-barres dans le cadre…");
@@ -247,9 +280,10 @@ export function IsbnBarcodeScanner({
         rafRef.current = requestAnimationFrame(tick);
       };
       rafRef.current = requestAnimationFrame(tick);
+      return "started";
     };
 
-    const runZxing = async () => {
+    const runZxing = async (video: HTMLVideoElement) => {
       setStatus("Chargement du lecteur…");
       let mod: typeof import("@zxing/browser");
       try {
@@ -302,18 +336,30 @@ export function IsbnBarcodeScanner({
     void (async () => {
       await waitForVideoPaint();
       if (cancelled || stoppedRef.current) return;
-      if (!video.isConnected) {
-        fail("Élément vidéo manquant.");
+
+      const video = await waitForConnectedVideo(
+        () => videoRef.current,
+        () => cancelled || stoppedRef.current,
+      );
+      mountTarget = video;
+      if (cancelled || stoppedRef.current) return;
+      if (!video) {
+        fail("Élément vidéo indisponible. Ferme puis rouvre le scan.");
         return;
       }
+
       if (!navigator.mediaDevices?.getUserMedia) {
         fail("Ce contexte ne permet pas d’accéder à la caméra (HTTPS requis en général).");
         return;
       }
+
       if (canUseNativeBarcodeDetector()) {
-        await runNative();
+        const nativeOutcome = await runNative(video);
+        if (nativeOutcome === "try-zxing" && !cancelled && !stoppedRef.current) {
+          await runZxing(video);
+        }
       } else {
-        await runZxing();
+        await runZxing(video);
       }
     })();
 
@@ -331,7 +377,8 @@ export function IsbnBarcodeScanner({
         /* ignore */
       }
       zxingControlsRef.current = null;
-      video.srcObject = null;
+      const v = mountTarget ?? videoRef.current;
+      if (v) v.srcObject = null;
     };
   }, [panelOpen, clearAnimation]);
 
@@ -340,37 +387,75 @@ export function IsbnBarcodeScanner({
     setPanelOpen(false);
   };
 
-  return (
+  const handleOpenScan = () => {
+    setStatus(null);
+    setPanelOpen(true);
+  };
+
+  const scanPanelInner = (
     <div className="space-y-2">
-      {!panelOpen ? (
+      <div className="bg-muted/40 overflow-hidden rounded-2xl border border-(--eleven-border-subtle)">
+        <video
+          ref={videoRef}
+          className="aspect-video w-full object-cover"
+          muted
+          playsInline
+          autoPlay
+        />
+      </div>
+      {status ? <div className="text-muted-foreground text-xs">{status}</div> : null}
+      <Button type="button" variant="outline" size="sm" onClick={handleStopClick}>
+        Arrêter la caméra
+      </Button>
+    </div>
+  );
+
+  if (presentation === "modal") {
+    return (
+      <div className="shrink-0">
         <Button
           type="button"
           variant="outline"
-          size="sm"
+          size="icon"
+          className="h-10 w-10 shrink-0 rounded-xl"
           disabled={disabled}
-          onClick={() => {
-            setStatus(null);
-            setPanelOpen(true);
+          aria-label="Scanner le code-barres (ISBN)"
+          onClick={handleOpenScan}
+        >
+          <ScanLine className="h-4 w-4" aria-hidden />
+        </Button>
+        <Dialog
+          open={panelOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              stopAll();
+              setPanelOpen(false);
+            }
           }}
         >
+          <DialogContent className="gap-3 motion-reduce:data-closed:animate-none motion-reduce:animate-none sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Scanner un ISBN</DialogTitle>
+              <DialogDescription>
+                Cadre le code-barres du livre. HTTPS est recommandé ; certains codes ne sont pas des
+                ISBN (ISSN, etc.).
+              </DialogDescription>
+            </DialogHeader>
+            {scanPanelInner}
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {!panelOpen ? (
+        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={handleOpenScan}>
           Scanner la caméra
         </Button>
       ) : (
-        <div className="space-y-2">
-          <div className="bg-muted/40 overflow-hidden rounded-2xl border border-(--eleven-border-subtle)">
-            <video
-              ref={videoRef}
-              className="aspect-video w-full object-cover"
-              muted
-              playsInline
-              autoPlay
-            />
-          </div>
-          {status && <div className="text-muted-foreground text-xs">{status}</div>}
-          <Button type="button" variant="outline" size="sm" onClick={handleStopClick}>
-            Arrêter la caméra
-          </Button>
-        </div>
+        scanPanelInner
       )}
     </div>
   );
