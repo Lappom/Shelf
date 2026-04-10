@@ -1157,6 +1157,9 @@ blend =
 
 Valeurs de référence implémentation : `w_content=0.55`, `w_collab=0.20`, `w_cooc=0.10`, `w_pop=0.10`, `w_rec=0.05` (ajustables dans le code).
 
+- `popularity_score` : nombre de lecteurs ayant terminé le livre / total d'utilisateurs.
+- `recency_bonus` : livres récemment ajoutés au catalogue (dans le blend ci-dessus).
+
 **Ajustements** (après le blend, avant clamp `[0,1]` et sélection top-K) :
 
 - **Cold start livre** : bonus léger lié à la récence si le livre a très peu de lecteurs « terminé » (exploration).
@@ -1164,11 +1167,7 @@ Valeurs de référence implémentation : `w_content=0.55`, `w_collab=0.20`, `w_c
 - **Disponibilité fichier** : petit bonus si le livre a au moins un `BookFile` (sans exclure les fiches sans fichier).
 - **Ancres négatives** : similarité de contenu maximale vers les livres en *dislike* ou *dismiss* → pénalité ; **ancres positives** : *like* explicite → léger bonus.
 
-**Post-traitement** :
-
-- `popularity_score` : nombre de lecteurs ayant terminé le livre / total d'utilisateurs.
-- `recency_bonus` : livres récemment ajoutés au catalogue.
-- **Diversité** : pénalité gloutonne sur répétition d’auteur ; pénalité additionnelle sur redondance de sujets (TF-IDF) dans le top stocké.
+**Diversité (sélection top stocké)** : pénalité gloutonne sur répétition d’auteur ; pénalité additionnelle sur redondance de sujets (TF-IDF) dans le top conservé en base.
 
 ### 16.5 Calcul et stockage
 

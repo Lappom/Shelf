@@ -48,3 +48,7 @@ FROM imp, clk;
 ## Baseline V1 vs V2
 
 La V1 correspond au blend sans co-occurrence ni ajustements langue/fichier/ancres ; la V2 est le code actuel dans `src/lib/recommendations/`. Documenter dans les notes de release la date de bascule pour les comparaisons temporelles.
+
+## Limites actuelles
+
+- Aucun événement dédié « ajout à la bibliothèque depuis une reco » n’est encore émis automatiquement (il faudrait propager le contexte depuis l’ajout à une étagère ou un marqueur de session).

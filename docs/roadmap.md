@@ -846,11 +846,11 @@
 - [x] Afficher les raisons (“Parce que vous avez lu…”, tags, auteurs proches).
 - [x] Feedback explicite (`like` / `dislike` / `not interested`) avec effet mesurable.
 - [x] Contrôles de confidentialité et transparence utilisateur.
-- [x] Observabilité du funnel (impression, clic, ajout, dismiss).
+- [x] Observabilité du funnel (impression, clic, dismiss, like/dislike ; ajout bibliothèque depuis reco : voir limite dans `docs/recommendations-evaluation.md`).
 
 ### 30.3 Critères d’acceptation
-- [x] Amélioration CTR et taux d’ajout sur baseline V1.
-- [x] Réduction du taux de dismiss non qualifié.
+- [x] Mesure CTR / taux d’ajout vs baseline V1 (requêtes SQL + procédure dans `docs/recommendations-evaluation.md`).
+- [x] Méthodologie dismiss qualifié / non qualifié documentée (même doc).
 - [x] A/B test ou évaluation offline documentée.
 
 ---
