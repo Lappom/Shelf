@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { getCachedJson, setCachedJson } from "@/lib/metadata/openlibrary-cache";
 import { logShelfEvent } from "@/lib/observability/structuredLog";
+import { withCircuitBreaker } from "@/lib/resilience/circuitBreaker";
 
 export type GoogleBooksSearchCandidate = {
   providerId: string;
@@ -68,7 +69,7 @@ async function sleep(ms: number) {
   await new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchGoogleBooksJson(url: string): Promise<GoogleBooksVolumeResponse> {
+async function fetchGoogleBooksJsonInner(url: string): Promise<GoogleBooksVolumeResponse> {
   const timeoutMs = getGoogleBooksTimeoutMs();
   const retries = getGoogleBooksRetries();
   const t0 = Date.now();
@@ -122,6 +123,10 @@ async function fetchGoogleBooksJson(url: string): Promise<GoogleBooksVolumeRespo
   }
 
   throw new Error("GoogleBooks error");
+}
+
+async function fetchGoogleBooksJson(url: string): Promise<GoogleBooksVolumeResponse> {
+  return withCircuitBreaker("googlebooks", () => fetchGoogleBooksJsonInner(url));
 }
 
 function mapToCandidates(

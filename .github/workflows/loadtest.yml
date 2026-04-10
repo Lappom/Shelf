@@ -1,0 +1,25 @@
+name: Load test (k6)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  k6-catalog-search:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: grafana/setup-k6-action@v1
+
+      - name: Run k6 catalog search
+        env:
+          BASE_URL: ${{ secrets.K6_LOADTEST_BASE_URL }}
+          K6_SESSION_COOKIE: ${{ secrets.K6_LOADTEST_SESSION_COOKIE }}
+        run: |
+          if [ -z "$BASE_URL" ] || [ -z "$K6_SESSION_COOKIE" ]; then
+            echo "Skipping: set repository secrets K6_LOADTEST_BASE_URL and K6_LOADTEST_SESSION_COOKIE to run this job."
+            exit 0
+          fi
+          k6 run scripts/loadtest/k6-catalog-search.js

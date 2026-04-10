@@ -1,8 +1,14 @@
-import { AdminImportJobStatus, AdminImportJobType, type Prisma } from "@prisma/client";
+import {
+  AdminImportJobStatus,
+  AdminImportJobType,
+  type Prisma,
+} from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";
 import { executeAdminPullBooks } from "@/lib/admin/pullBooks";
+import { markAdminImportChunkFailure } from "@/lib/jobs/adminImportChunkFailure";
+import { triggerAdminImportWorker } from "@/lib/jobs/adminImportWorker";
 
 const PullBooksJobParamsSchema = z.object({
   source: z.enum(["openlibrary"]).default("openlibrary"),
@@ -14,29 +20,22 @@ const PullBooksJobParamsSchema = z.object({
 
 type PullBooksJobParams = z.infer<typeof PullBooksJobParamsSchema>;
 
-let workerRunning = false;
-
-function lockOwnerId() {
-  return `pull-books-worker-${process.pid}`;
-}
-
 function asParams(input: Prisma.JsonValue): PullBooksJobParams {
   return PullBooksJobParamsSchema.parse(input);
 }
 
-function computeBackoffMs(attempts: number): number {
-  return Math.min(60_000, 1_000 * 2 ** Math.max(0, attempts - 1));
-}
-
-export async function enqueuePullBooksJob(args: {
-  createdById: string;
-  query: string;
-  chunkSize: number;
-  dryRun: boolean;
-  maxAttempts: number;
-}) {
+export async function enqueuePullBooksJobTx(
+  tx: Prisma.TransactionClient,
+  args: {
+    createdById: string;
+    query: string;
+    chunkSize: number;
+    dryRun: boolean;
+    maxAttempts: number;
+  },
+) {
   const params = PullBooksJobParamsSchema.parse(args);
-  const job = await prisma.adminImportJob.create({
+  return tx.adminImportJob.create({
     data: {
       type: AdminImportJobType.pull_books,
       status: AdminImportJobStatus.queued,
@@ -53,42 +52,18 @@ export async function enqueuePullBooksJob(args: {
     },
     select: { id: true, status: true },
   });
-  void triggerPullBooksWorker();
-  return job;
 }
 
-async function claimNextPullBooksJob() {
-  const now = new Date();
-  const candidate = await prisma.adminImportJob.findFirst({
-    where: {
-      type: AdminImportJobType.pull_books,
-      status: { in: [AdminImportJobStatus.queued, AdminImportJobStatus.running] },
-      OR: [{ nextRunAt: null }, { nextRunAt: { lte: now } }],
-      finishedAt: null,
-    },
-    orderBy: [{ createdAt: "asc" }],
-    select: { id: true },
-  });
-  if (!candidate) return null;
-
-  const updated = await prisma.adminImportJob.updateMany({
-    where: {
-      id: candidate.id,
-      OR: [{ status: AdminImportJobStatus.queued }, { status: AdminImportJobStatus.running }],
-      finishedAt: null,
-    },
-    data: {
-      status: AdminImportJobStatus.running,
-      lockedAt: now,
-      lockOwner: lockOwnerId(),
-      startedAt: now,
-    },
-  });
-  if (updated.count === 0) return null;
-
-  return prisma.adminImportJob.findUnique({
-    where: { id: candidate.id },
-  });
+export async function enqueuePullBooksJob(args: {
+  createdById: string;
+  query: string;
+  chunkSize: number;
+  dryRun: boolean;
+  maxAttempts: number;
+}) {
+  const job = await enqueuePullBooksJobTx(prisma, args);
+  void triggerAdminImportWorker();
+  return job;
 }
 
 async function persistPullBooksItems(
@@ -109,31 +84,9 @@ async function persistPullBooksItems(
   });
 }
 
-async function markJobChunkFailure(
-  jobId: string,
-  attempts: number,
-  maxAttempts: number,
-  errorMessage: string,
-) {
-  const terminal = attempts >= maxAttempts;
-  const nextRunAt = terminal ? null : new Date(Date.now() + computeBackoffMs(attempts));
-  await prisma.adminImportJob.update({
-    where: { id: jobId },
-    data: {
-      attempts,
-      status: terminal ? AdminImportJobStatus.dead_letter : AdminImportJobStatus.failed,
-      nextRunAt,
-      lockOwner: null,
-      lockedAt: null,
-      lastError: errorMessage.slice(0, 500),
-      finishedAt: terminal ? new Date() : null,
-    },
-  });
-}
-
-async function runPullBooksJob(jobId: string) {
+export async function runPullBooksJob(jobId: string) {
   const current = await prisma.adminImportJob.findUnique({ where: { id: jobId } });
-  if (!current) return;
+  if (!current || current.type !== AdminImportJobType.pull_books) return;
   const params = asParams(current.params);
 
   if (current.cancelRequestedAt) {
@@ -146,6 +99,17 @@ async function runPullBooksJob(jobId: string) {
         lockedAt: null,
       },
     });
+    return;
+  }
+
+  if (!current.createdById) {
+    const attempts = current.attempts + 1;
+    await markAdminImportChunkFailure(
+      current.id,
+      attempts,
+      current.maxAttempts,
+      "pull_books job requires createdById",
+    );
     return;
   }
 
@@ -184,23 +148,12 @@ async function runPullBooksJob(jobId: string) {
   } catch (error) {
     const attempts = current.attempts + 1;
     const msg = error instanceof Error ? error.message : "Unknown pull books job error";
-    await markJobChunkFailure(current.id, attempts, current.maxAttempts, msg);
+    await markAdminImportChunkFailure(current.id, attempts, current.maxAttempts, msg);
   }
 }
 
 export async function triggerPullBooksWorker() {
-  if (workerRunning) return;
-  workerRunning = true;
-  try {
-    // Keep draining to make retry/cancel observable quickly.
-    for (;;) {
-      const job = await claimNextPullBooksJob();
-      if (!job) break;
-      await runPullBooksJob(job.id);
-    }
-  } finally {
-    workerRunning = false;
-  }
+  return triggerAdminImportWorker();
 }
 
 export async function listPullBooksJobs(limit = 25) {
@@ -278,7 +231,7 @@ export async function retryPullBooksJob(jobId: string) {
     },
   });
   if (updated.count > 0) {
-    void triggerPullBooksWorker();
+    void triggerAdminImportWorker();
   }
   return updated.count > 0;
 }

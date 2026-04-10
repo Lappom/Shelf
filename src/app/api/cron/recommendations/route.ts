@@ -3,9 +3,9 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { prisma } from "@/lib/db/prisma";
+import { ensureRecommendationsRecomputeJob } from "@/lib/admin/recommendationsRecomputeJobs";
 import { getShelfCronSecretFromEnv } from "@/lib/env/server";
-import { recomputeRecommendationsForUser } from "@/lib/recommendations/recomputeForUser";
+import { triggerAdminImportWorker } from "@/lib/jobs/adminImportWorker";
 
 function authorizeCron(req: Request): boolean {
   const secret = getShelfCronSecretFromEnv();
@@ -30,32 +30,41 @@ async function handle(req: Request) {
   }
 
   const url = new URL(req.url);
-  const limit = z.coerce
+  const batchSize = z.coerce
     .number()
     .int()
     .min(1)
-    .max(25)
-    .parse(url.searchParams.get("limit") ?? "5");
-  const afterRaw = url.searchParams.get("after");
-  const after =
-    afterRaw && z.string().uuid().safeParse(afterRaw).success
-      ? z.string().uuid().parse(afterRaw)
-      : undefined;
+    .max(50)
+    .parse(url.searchParams.get("batchSize") ?? url.searchParams.get("limit") ?? "25");
+  const maxAttempts = z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .parse(url.searchParams.get("maxAttempts") ?? "3");
+  const maxChunks = z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(200)
+    .parse(url.searchParams.get("maxChunks") ?? "20");
 
-  const users = await prisma.user.findMany({
-    where: { deletedAt: null },
-    orderBy: { id: "asc" },
-    take: limit,
-    ...(after ? { cursor: { id: after }, skip: 1 } : {}),
-    select: { id: true },
+  const { job, created } = await ensureRecommendationsRecomputeJob({
+    batchSize,
+    maxAttempts,
   });
 
-  for (const u of users) {
-    await recomputeRecommendationsForUser(u.id);
-  }
+  await triggerAdminImportWorker({ maxChunks });
 
-  const nextAfter = users.length === limit ? users[users.length - 1]!.id : null;
-  return NextResponse.json({ processed: users.length, nextAfter }, { status: 200 });
+  return NextResponse.json(
+    {
+      jobId: job.id,
+      jobCreated: created,
+      batchSize,
+      maxChunks,
+    },
+    { status: 200 },
+  );
 }
 
 export async function POST(req: Request) {

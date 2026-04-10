@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
+const hoistedIdem = vi.hoisted(() => ({
+  enqueuePullBooksWithIdempotency: vi.fn(),
+}));
+
 vi.mock("@/lib/auth/rbac", () => ({
   requireAdmin: vi.fn(async () => ({ id: "00000000-0000-4000-8000-000000000001" })),
 }));
@@ -23,11 +27,26 @@ vi.mock("@/lib/admin/auditLog", () => ({
 
 vi.mock("@/lib/admin/pullBooksJobs", () => ({
   enqueuePullBooksJob: vi.fn(),
+  enqueuePullBooksJobTx: vi.fn(),
+}));
+
+vi.mock("@/lib/jobs/adminImportWorker", () => ({
+  triggerAdminImportWorker: vi.fn(),
+}));
+
+vi.mock("@/lib/idempotency/pullBooksPost", () => ({
+  normalizeIdempotencyKeyHeader: (h: string | null) => {
+    const t = h?.trim() ?? "";
+    if (!t || t.length > 128) return null;
+    return t;
+  },
+  enqueuePullBooksWithIdempotency: hoistedIdem.enqueuePullBooksWithIdempotency,
 }));
 
 describe("POST /api/admin/pull-books", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    hoistedIdem.enqueuePullBooksWithIdempotency.mockReset();
   });
 
   it("returns pull result and audits", async () => {
@@ -63,6 +82,7 @@ describe("POST /api/admin/pull-books", () => {
           dryRun: false,
           chunkSize: 10,
           queryLen: 1,
+          idempotencyKey: false,
         }),
       }),
     );
@@ -92,6 +112,39 @@ describe("POST /api/admin/pull-books", () => {
       }),
     );
     expect(res.status).toBe(400);
+  });
+
+  it("replays idempotent POST without duplicate audit", async () => {
+    const { logAdminAudit } = await import("@/lib/admin/auditLog");
+    const { triggerAdminImportWorker } = await import("@/lib/jobs/adminImportWorker");
+
+    hoistedIdem.enqueuePullBooksWithIdempotency.mockResolvedValue({
+      job: { id: "22222222-2222-4222-8222-222222222222", status: "queued" },
+      replayed: true,
+    });
+
+    const { POST } = await import("./route");
+    const res = await POST(
+      new Request("http://test.local/api/admin/pull-books", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Origin: "http://test.local",
+          "Idempotency-Key": "abc",
+        },
+        body: JSON.stringify({ query: "q", chunkSize: 10, dryRun: false }),
+      }),
+    );
+
+    expect(res.status).toBe(202);
+    const json = (await res.json()) as {
+      jobId: string;
+      idempotentReplay?: boolean;
+    };
+    expect(json.jobId).toBe("22222222-2222-4222-8222-222222222222");
+    expect(json.idempotentReplay).toBe(true);
+    expect(logAdminAudit).not.toHaveBeenCalled();
+    expect(triggerAdminImportWorker).not.toHaveBeenCalled();
   });
 
   it("returns 400 for invalid chunkSize", async () => {

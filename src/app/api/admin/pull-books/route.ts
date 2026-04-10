@@ -6,7 +6,12 @@ import { runApiRoute } from "@/lib/api/route";
 import { corsPreflight, getClientIp, parseJsonBody } from "@/lib/api/http";
 import { asUuidOrThrow } from "@/lib/api/errors";
 import { logAdminAudit } from "@/lib/admin/auditLog";
-import { enqueuePullBooksJob } from "@/lib/admin/pullBooksJobs";
+import { enqueuePullBooksJob, enqueuePullBooksJobTx } from "@/lib/admin/pullBooksJobs";
+import {
+  enqueuePullBooksWithIdempotency,
+  normalizeIdempotencyKeyHeader,
+} from "@/lib/idempotency/pullBooksPost";
+import { triggerAdminImportWorker } from "@/lib/jobs/adminImportWorker";
 import { hashPullBooksQuery } from "@/lib/admin/pullBooksCursor";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
@@ -49,39 +54,66 @@ export async function POST(req: Request) {
       const { source, query, chunkSize, dryRun, maxAttempts } = parsed.data;
       const t0 = Date.now();
 
-      const result = await enqueuePullBooksJob({
-        createdById: adminId,
-        query,
-        chunkSize,
-        dryRun,
-        maxAttempts,
-      });
+      const idemKey = normalizeIdempotencyKeyHeader(req.headers.get("Idempotency-Key"));
+
+      let result: { id: string; status: string };
+      let replayed = false;
+
+      if (idemKey) {
+        const out = await enqueuePullBooksWithIdempotency({
+          userId: adminId,
+          idempotencyKey: idemKey,
+          enqueueTx: (tx) =>
+            enqueuePullBooksJobTx(tx, {
+              createdById: adminId,
+              query,
+              chunkSize,
+              dryRun,
+              maxAttempts,
+            }),
+        });
+        result = out.job;
+        replayed = out.replayed;
+        if (!replayed) void triggerAdminImportWorker();
+      } else {
+        result = await enqueuePullBooksJob({
+          createdById: adminId,
+          query,
+          chunkSize,
+          dryRun,
+          maxAttempts,
+        });
+      }
 
       const durationMs = Date.now() - t0;
       const qForAudit = query.trim() || null;
       const queryLen = qForAudit ? qForAudit.length : 0;
       const queryHash = qForAudit ? hashPullBooksQuery(qForAudit) : null;
 
-      await logAdminAudit({
-        action: "pull_books_job_create",
-        actorId: adminId,
-        meta: {
-          source: "openlibrary",
-          requestedSource: source,
-          jobId: result.id,
-          durationMs,
-          dryRun,
-          chunkSize,
-          maxAttempts,
-          queryLen,
-          queryHash,
-        },
-      });
+      if (!replayed) {
+        await logAdminAudit({
+          action: "pull_books_job_create",
+          actorId: adminId,
+          meta: {
+            source: "openlibrary",
+            requestedSource: source,
+            jobId: result.id,
+            durationMs,
+            dryRun,
+            chunkSize,
+            maxAttempts,
+            queryLen,
+            queryHash,
+            idempotencyKey: Boolean(idemKey),
+          },
+        });
+      }
 
       return NextResponse.json(
         {
           jobId: result.id,
           status: result.status,
+          ...(idemKey ? { idempotentReplay: replayed } : {}),
         },
         { status: 202 },
       );

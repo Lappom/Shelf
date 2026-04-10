@@ -1,5 +1,6 @@
 import { getCachedJson, setCachedJson } from "@/lib/metadata/openlibrary-cache";
 import { logShelfEvent } from "@/lib/observability/structuredLog";
+import { withCircuitBreaker } from "@/lib/resilience/circuitBreaker";
 import { createHash } from "node:crypto";
 
 type OpenLibraryEdition = {
@@ -82,7 +83,7 @@ function coerceText(v: unknown): string | null {
   return null;
 }
 
-async function fetchJson<T>(url: string, operation: "enrich" | "search"): Promise<T> {
+async function fetchJsonInner<T>(url: string, operation: "enrich" | "search"): Promise<T> {
   const timeoutMs = getOpenLibraryTimeoutMs();
   const maxRetries = getOpenLibraryRetries();
   const t0 = Date.now();
@@ -156,6 +157,10 @@ async function fetchJson<T>(url: string, operation: "enrich" | "search"): Promis
     error: fallback.message,
   });
   throw fallback;
+}
+
+async function fetchJson<T>(url: string, operation: "enrich" | "search"): Promise<T> {
+  return withCircuitBreaker("openlibrary", () => fetchJsonInner<T>(url, operation));
 }
 
 function isbnKey(isbn: string) {

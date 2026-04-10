@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/rbac";
 import { runApiRoute } from "@/lib/api/route";
 import { corsPreflight, getClientIp } from "@/lib/api/http";
 import { asUuidOrThrow } from "@/lib/api/errors";
-import { searchCatalogPreview } from "@/lib/catalog/searchCatalogPreview";
+import { searchCatalogPreviewCached } from "@/lib/catalog/searchCatalogPreview";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const QuerySchema = z
@@ -68,7 +68,7 @@ export async function GET(req: Request) {
       }
 
       try {
-        const result = await searchCatalogPreview(parsed.data);
+        const result = await searchCatalogPreviewCached(parsed.data);
         return NextResponse.json(result, { status: 200 });
       } catch {
         return NextResponse.json({ error: "Catalog provider unavailable" }, { status: 502 });

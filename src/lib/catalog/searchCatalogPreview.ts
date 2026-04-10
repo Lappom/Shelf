@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { z } from "zod";
 
 import { normalizeIsbn } from "@/lib/books/isbn";
@@ -224,4 +225,24 @@ export async function searchCatalogPreview(
     providers,
     candidates: deduped.slice(0, input.limit),
   };
+}
+
+/**
+ * Next.js data cache for identical catalog queries (short TTL). Provider-side caches still apply.
+ */
+export async function searchCatalogPreviewCached(
+  input: CatalogSearchInput,
+): Promise<CatalogSearchResult> {
+  const parsed = CatalogSearchInputSchema.parse(input);
+  return unstable_cache(
+    async () => searchCatalogPreview(parsed),
+    [
+      "catalog-search-preview",
+      parsed.q ?? "",
+      parsed.title ?? "",
+      parsed.author ?? "",
+      String(parsed.limit),
+    ],
+    { revalidate: 120, tags: ["catalog-external-search"] },
+  )();
 }

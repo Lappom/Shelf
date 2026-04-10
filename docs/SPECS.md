@@ -396,6 +396,8 @@ Pour chaque champ (titre, auteurs, description, etc.) :
 
 **Normalisation V2 (déterministe)** : avant comparaison, les trois sources passent par les mêmes règles (espaces, ISBN via `normalizeIsbn`, listes auteurs/sujets dédupliquées et triées, langue raccourcie, etc.) pour limiter les faux conflits.
 
+**Admin — ops** : UI `/admin/ops` (tableau des compteurs de jobs + liens) ; données détaillées via `GET /api/admin/ops-summary`.
+
 **Admin — résolution manuelle** : UI `/admin/books/:id/metadata-merge` + API `GET/POST` sous `/api/admin/books/:id/metadata-merge` (analyse, preview, commit). Chaque commit crée une ligne `MetadataMergeResolutionAudit` et des entrées `AdminAuditLog` (`metadata_merge_preview`, `metadata_merge_commit`). Liste paginée : `GET /api/admin/metadata-merge-audits`.
 
 ### 5.4 Soft delete et restauration
@@ -772,6 +774,7 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | POST | `/api/admin/pull-books` | Pull catalogue externe → créer des `Book` **sans fichiers** (idempotent, cursor) |
 | GET | `/api/admin/users` | Liste des utilisateurs |
 | GET | `/api/admin/audit-logs` | Journal d’audit admin (pagination `limit`, `before`, `beforeId`) |
+| GET | `/api/admin/ops-summary` | Synthèse jobs import + circuit breakers (voir §12.3.4) |
 | GET | `/api/admin/books/:id/metadata-merge` | Analyse three-way (EPUB/DB/snapshot normalisés), scores de confiance, conflits métier |
 | POST | `/api/admin/books/:id/metadata-merge/preview` | Preview fusion selon décisions par champ (JSON `{ decisions }`, même origine requise) |
 | POST | `/api/admin/books/:id/metadata-merge/commit` | Applique la fusion + audit ; body JSON `{ decisions, expectedSnapshotSyncedAtIso? }` |
@@ -906,6 +909,21 @@ Contraintes sécurité/opérabilité V2 :
 - Pas d'accès storage ; aucune création `BookFile`.
 - Logs structurés sans secrets ni requête utilisateur en clair.
 
+- **Idempotency-Key** (optionnel) : en-tête HTTP `Idempotency-Key` (chaîne 1–128 caractères) sur `POST /api/admin/pull-books`. Même clé et même admin dans une fenêtre de 24 h → réponse `202` avec le **même** `jobId` (champ `idempotentReplay: true` si rejeu). Stockage : table `idempotency_keys` + verrou transactionnel PostgreSQL.
+
+### 12.3.3 Jobs recalcul recommandations (`recommendations_recompute`)
+
+- Type `AdminImportJobType.recommendations_recompute` : traitement chunké des utilisateurs (`batchSize` défaut 25), curseur `lastCursor` = dernier `user_id` traité, mêmes statuts / retry / `dead_letter` / annulation que pull-books.
+- `created_by_id` peut être **null** pour les jobs créés par le cron (pas d’admin initiateur).
+- **`POST/GET /api/cron/recommendations`** : s’il existe déjà un job `queued|running` de ce type, ne pas en créer un second ; sinon en créer un ; puis exécuter le worker avec `maxChunks` borné (query `maxChunks`, défaut 20) pour limiter le temps de réponse HTTP. Query `batchSize` (défaut 25, max 50), `maxAttempts` (défaut 3). Réponse JSON : `jobId`, `jobCreated`, `batchSize`, `maxChunks`.
+- Recalcul **inline** (hooks utilisateur) : `scheduleRecommendationsRecompute` reste hors file ; événement log `recommendations_recompute_inline` (sans identifiant utilisateur en clair dans les champs).
+
+### 12.3.4 Synthèse ops (admin)
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET | `/api/admin/ops-summary` | Comptages `admin_import_jobs` par `type` × `statut`, derniers `finishedAt` par type, instantané **process-local** des circuit breakers externes (`openlibrary`, `googlebooks`) avec note de limitation multi-instance. Admin + rate limit. |
+
 ### 12.3.1 Ajouter à la bibliothèque depuis résultat externe (`POST /api/books`, intent `create_from_catalog`)
 
 Endpoint : `POST /api/books` (admin uniquement, `intent = "create_from_catalog"`).
@@ -942,7 +960,7 @@ Obligatoires en **production** (`NODE_ENV=production`) : `DATABASE_URL`, `NEXTAU
 
 - **`COVER_TOKEN_SECRET`** (optionnel) : secret dédié aux jetons HMAC pour `GET /api/books/:id/cover?t=…` (optimisation d’images Next.js sans cookie sur le fetch interne). Si absent, la signature réutilise `NEXTAUTH_SECRET`. TTL des jetons : 5 minutes ; le jeton est lié à l’`id` du livre. Sans session ni jeton valide : accès refusé.
 
-- **`SHELF_CRON_SECRET`** (optionnel mais requis pour utiliser le cron) : secret partagé pour `/api/cron/recommendations` (en-tête Bearer ou `x-shelf-cron-secret`). Planifier un appel toutes les 6 h (ou chaîner les lots via `nextAfter` jusqu’à épuisement).
+- **`SHELF_CRON_SECRET`** (optionnel mais requis pour utiliser le cron) : secret partagé pour `/api/cron/recommendations` (en-tête Bearer ou `x-shelf-cron-secret`). Planifier un appel toutes les 6 h ; chaque appel fait avancer le job `recommendations_recompute` par **au plus** `maxChunks` chunks (ajuster `maxChunks` / fréquence si la base utilisateurs est très grande).
 
 Si `STORAGE_TYPE=s3`, toutes les variables `S3_*` listées ci-dessous sont obligatoires.
 
@@ -996,6 +1014,10 @@ EPUB_ZIP_MAX_ENTRY_UNCOMPRESSED_BYTES=
 OPENLIBRARY_COVER_MAX_BYTES=
 OPENLIBRARY_TIMEOUT_MS=
 OPENLIBRARY_RETRIES=
+
+# External HTTP circuit breaker (process-local; see §15)
+EXTERNAL_CB_FAILURE_THRESHOLD=5
+EXTERNAL_CB_COOLDOWN_MS=60000
 
 # Cron recommandations (optional)
 # SHELF_CRON_SECRET=<random-secret>
@@ -1054,7 +1076,7 @@ volumes:
 
 - **Logs structurés** : événements métier écrits sur stdout en **une ligne JSON** par événement (`ts`, `level`, `event`, champs contextuels). Implémentation : `src/lib/observability/structuredLog.ts` (`logShelfEvent`).
 - **Ne jamais journaliser** : secrets (tokens de clés API, mots de passe), ni le texte brut des requêtes de recherche utilisateur (éviter la fuite de titres / requêtes sensibles).
-- **Événements nominaux** (non exhaustif) : `epub_ingest`, `metadata_resync`, `duplicate_merge`, `mcp_request`, `mcp_tool`, `api_key_create`, `api_key_revoke`, `openlibrary_request`, `library_search` (latence / résultat agrégé sans requête textuelle).
+- **Événements nominaux** (non exhaustif) : `epub_ingest`, `metadata_resync`, `duplicate_merge`, `mcp_request`, `mcp_tool`, `api_key_create`, `api_key_revoke`, `openlibrary_request`, `library_search` (latence / résultat agrégé sans requête textuelle), `external_circuit_open`, `external_circuit_half_open`, `external_circuit_closed`, `recommendations_recompute_inline`.
 
 ---
 
@@ -1081,6 +1103,19 @@ volumes:
 - **Streaming** : les fichiers EPUB sont streamés, pas chargés intégralement en mémoire.
 - **Bundle splitting** : le reader est chargé en lazy import (code splitting).
 - **Catalogue externe V2** : objectif P95 `GET /api/catalog/search` <= 1200 ms (cache warm) et <= 2200 ms (cache cold) sous charge nominale.
+- **Cache route catalogue** : `searchCatalogPreviewCached` — `unstable_cache` / tag `catalog-external-search`, **revalidate 120 s** (en plus des caches provider Open Library / Google Books). Invalider via `revalidateTag('catalog-external-search')` si besoin produit.
+
+### 15.1 Budgets latence V2 (cibles indicatives)
+
+| Surface | Métrique | Cible P95 (indicative) | Notes |
+|--------|----------|-------------------------|--------|
+| Recherche bibliothèque (FTS interne) | Première page | <= 400 ms | À valider par mesure ; dépend taille bibliothèque |
+| Reader | Premier chargement chapitre | <= 800 ms | Hors téléchargement initial EPUB |
+| MCP | Session + 1 tool lecture | <= 2500 ms | Réseau client inclus côté intégration |
+| Admin pull-books | `202` création job | <= 500 ms | Sans attendre fin du job |
+| Admin import Calibre | Réponse action | TBD | Dépend taille archive |
+
+Les valeurs **TBD** doivent être mesurées (profiling, logs `durationMs`) avant engagement SLA externe.
 
 ---
 

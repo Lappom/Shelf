@@ -878,22 +878,22 @@
 ## Phase 32 — Ops, perf et fiabilité V2
 
 ### 32.1 Fiabilité des traitements asynchrones
-- [ ] Uniformiser les jobs critiques (imports, enrichissement, recalcul recommandations).
-- [ ] Politique retry/backoff/circuit-breaker sur dépendances externes.
-- [ ] Idempotency keys sur opérations sensibles.
-- [ ] Runbooks d’incident (provider down, backlog jobs, corruption métadonnées).
+- [x] Uniformiser les jobs critiques (imports, enrichissement, recalcul recommandations).
+- [x] Politique retry/backoff/circuit-breaker sur dépendances externes.
+- [x] Idempotency keys sur opérations sensibles.
+- [x] Runbooks d’incident (provider down, backlog jobs, corruption métadonnées).
 
 ### 32.2 Performance & capacity planning
-- [ ] Budgets de latence par surface (search, reader, MCP, admin import).
-- [ ] Profiling régulier + optimisations DB (indexes complémentaires, plans, vacuum).
-- [ ] Stratégie de cache applicatif sur requêtes coûteuses.
-- [ ] Tests de charge ciblés avec seuils d’alerte.
+- [x] Budgets de latence par surface (search, reader, MCP, admin import).
+- [x] Profiling régulier + optimisations DB (indexes complémentaires, plans, vacuum).
+- [x] Stratégie de cache applicatif sur requêtes coûteuses.
+- [x] Tests de charge ciblés avec seuils d’alerte.
 
 ### 32.3 Observabilité & release readiness
-- [ ] Dashboards opérationnels (erreurs, latence, débit, backlog jobs).
-- [ ] Alerting actionnable (SLO/SLA internes).
-- [ ] Check-list de release V2 (migration DB, rollback, communication).
-- [ ] Post-release review systématique.
+- [x] Dashboards opérationnels (erreurs, latence, débit, backlog jobs).
+- [x] Alerting actionnable (SLO/SLA internes).
+- [x] Check-list de release V2 (migration DB, rollback, communication).
+- [x] Post-release review systématique.
 
 ### 32.4 Critères de complétude V2 (check final)
 - [ ] Catalogue externe + ajout bibliothèque + pull books admin finalisés.

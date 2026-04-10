@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@prisma/client", () => ({
-  AdminImportJobType: { pull_books: "pull_books" },
+  AdminImportJobType: { pull_books: "pull_books", recommendations_recompute: "recommendations_recompute" },
   AdminImportJobStatus: {
     queued: "queued",
     running: "running",

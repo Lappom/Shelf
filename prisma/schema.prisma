@@ -107,6 +107,7 @@ enum AdminAuditAction {
 
 enum AdminImportJobType {
   pull_books
+  recommendations_recompute
 }
 
 enum AdminImportJobStatus {
@@ -163,6 +164,7 @@ model User {
   metadataMergeResolutionAudits MetadataMergeResolutionAudit[]
   recommendationFeedback          UserRecommendationFeedback[]
   recommendationAnalyticsEvents   RecommendationAnalyticsEvent[]
+  idempotencyKeys                 IdempotencyKey[]
 
   @@map("users")
 }
@@ -557,11 +559,11 @@ model AdminImportJob {
   startedAt         DateTime?            @map("started_at") @db.Timestamptz(6)
   finishedAt        DateTime?            @map("finished_at") @db.Timestamptz(6)
   lastError         String?              @map("last_error")
-  createdById       String               @map("created_by_id") @db.Uuid
+  createdById       String?              @map("created_by_id") @db.Uuid
   createdAt         DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  createdBy User                 @relation(fields: [createdById], references: [id])
+  createdBy User?                @relation(fields: [createdById], references: [id])
   items     AdminImportJobItem[]
 
   @@index([type, status, nextRunAt])
@@ -586,4 +588,20 @@ model AdminImportJobItem {
 
   @@index([jobId, createdAt])
   @@map("admin_import_job_items")
+}
+
+model IdempotencyKey {
+  id         String   @id @default(uuid()) @db.Uuid
+  keyHash    String   @map("key_hash") @db.VarChar(64)
+  route      String   @db.VarChar(200)
+  userId     String   @map("user_id") @db.Uuid
+  resourceId String   @map("resource_id") @db.Uuid
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([keyHash, route, userId])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
 }

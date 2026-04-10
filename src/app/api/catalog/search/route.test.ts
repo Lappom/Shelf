@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const searchCatalogPreview = vi.fn();
+const searchCatalogPreviewCached = vi.fn();
 const rateLimitOrThrow = vi.fn(async () => undefined);
 
 vi.mock("@/lib/auth/rbac", () => ({
@@ -12,7 +12,7 @@ vi.mock("@/lib/security/cors", () => ({
 }));
 
 vi.mock("@/lib/catalog/searchCatalogPreview", () => ({
-  searchCatalogPreview,
+  searchCatalogPreviewCached,
 }));
 
 vi.mock("@/lib/security/rateLimit", () => ({
@@ -21,7 +21,7 @@ vi.mock("@/lib/security/rateLimit", () => ({
 
 describe("GET /api/catalog/search", () => {
   beforeEach(() => {
-    searchCatalogPreview.mockReset();
+    searchCatalogPreviewCached.mockReset();
     rateLimitOrThrow.mockClear();
   });
 
@@ -40,7 +40,7 @@ describe("GET /api/catalog/search", () => {
   });
 
   it("returns candidates with coverPreviewUrl", async () => {
-    searchCatalogPreview.mockResolvedValue({
+    searchCatalogPreviewCached.mockResolvedValue({
       partial: false,
       providers: { openlibrary: { ok: true }, googlebooks: { ok: true } },
       candidates: [
@@ -70,11 +70,13 @@ describe("GET /api/catalog/search", () => {
     expect(json.partial).toBe(false);
     expect(json.candidates.length).toBe(1);
     expect(json.candidates[0].coverPreviewUrl).toMatch(/covers\.openlibrary\.org/);
-    expect(searchCatalogPreview).toHaveBeenCalledWith(expect.objectContaining({ q: "foundation" }));
+    expect(searchCatalogPreviewCached).toHaveBeenCalledWith(
+      expect.objectContaining({ q: "foundation" }),
+    );
   });
 
   it("returns 502 when all providers fail", async () => {
-    searchCatalogPreview.mockRejectedValue(new Error("CATALOG_UNAVAILABLE"));
+    searchCatalogPreviewCached.mockRejectedValue(new Error("CATALOG_UNAVAILABLE"));
     const { GET } = await import("./route");
     const req = new Request("http://test.local/api/catalog/search?title=Test");
     const res = await GET(req);
@@ -82,7 +84,7 @@ describe("GET /api/catalog/search", () => {
   });
 
   it("applies per-user and ip rate limit", async () => {
-    searchCatalogPreview.mockResolvedValue({
+    searchCatalogPreviewCached.mockResolvedValue({
       partial: false,
       providers: { openlibrary: { ok: true }, googlebooks: { ok: true } },
       candidates: [],
