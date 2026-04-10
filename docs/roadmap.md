@@ -3,14 +3,17 @@
 > Objectif : couvrir **100%** de `docs/SPECS.md` via des phases et sous-phases actionnables.  
 > Format : checklist `- [ ]` (à cocher au fil de l’implémentation).
 
+**Focus produit** — Le **but principal** de Shelf est l’**historique de lecture** et les **signaux** servant aux **recommandations** (§1 et §16 de `docs/SPECS.md`). Catalogue, métadonnées et étagères sont au service de ce suivi. Le **reader EPUB** et le stockage de fichiers sont **secondaires** (complément pour les utilisateurs qui ont un fichier).
+
 ---
 
 ## Phase 0 — Cadrage, repo, DX (fondations)
 
 ### 0.1 Vision & périmètre produit (docs/SPECS.md §1)
-- [x] Formaliser le périmètre V1 (gestion bibliothèque + reader + multi-users + recommandations + MCP).
+- [x] Formaliser le périmètre V1 (gestion bibliothèque + reader + multi-users + recommandations + MCP), avec **priorité** explicite : suivi de lecture + signaux → reco en premier ; reader / fichiers en complément.
+- [x] Documenter la hiérarchie **but principal** (historique + recommandations) vs **secondaire** (lecture EPUB in-app) dans `docs/SPECS.md` §1.
 - [x] Énoncer explicitement les principes : self-hosted first, offline-capable, metadata-rich, beautiful by default.
-- [x] Définir “done” V1 (critères de complétude par domaine : upload, recherche, reader, admin, etc.).
+- [x] Définir “done” V1 : **cœur** = suivi lecture fiable, signaux exploitables, recommandations (calcul + UX) ; **complément** = upload, recherche catalogue, reader, admin, MCP, etc.
 
 ### 0.2 Stack & conventions techniques (docs/SPECS.md §2)
 - [x] Initialiser Next.js 16+ App Router (structure `src/app`, `src/components`, `src/lib`).
@@ -161,6 +164,19 @@
 ### 5.3 Photo couverture (docs/SPECS.md §5.2)
 - [x] Upload image + stockage via adapter + lien `cover_url`.
 - [x] Optimisation côté UI via Next `<Image>` (docs/SPECS.md §15).
+
+### 5.4 Recherche catalogue externe — preview + ajout optionnel *(dev en cours / à faire)*
+
+> Sert le **but principal** (enregistrer des livres lus / à lire sans fichier) : découvrir une édition dans un catalogue public **sans** créer de `Book` tant que l’utilisateur ne confirme pas. Distinct de la recherche **dans ma bibliothèque** (Phase 12 FTS).
+
+- [ ] **Spec** : documenter dans `docs/SPECS.md` l’endpoint (méthode, query, auth, rate limit, schéma réponse) ; préciser qu’aucune ligne `Book` n’est écrite sur la seule recherche.
+- [ ] **API** : route dédiée authentifiée (ex. `GET /api/...` alignée sur la spec) qui retourne des candidats normalisés (titre, auteurs, ISBNs, clés Open Library si applicable, cover preview URL) — **lecture seule** côté DB.
+- [ ] **Open Library** : étendre le client existant si besoin (ex. recherche **titre seul** ou `q` générique en plus du couple titre+auteur déjà utilisé à l’ajout physique) ; conserver rate limit + cache (Phase 15).
+- [ ] **UI** : onglet, section ou page « Catalogue » / « Découvrir » clairement séparée de « Ma bibliothèque » sur `/search` (ou route dédiée) ; liste résultats preview ; états chargement / vide / erreur.
+- [ ] **CTA** : bouton **« Ajouter à la bibliothèque »** sur un candidat → réutilise le flux création livre physique (ou équivalent spec) avec métadonnées préremplies ; respect RBAC (admin vs reader selon règles actuelles d’ajout).
+- [ ] **Sécurité** : pas d’exposition de secrets ; validation serveur (zod) ; throttling par user/IP cohérent avec `openlibrary_search` existant.
+- [ ] **Tests** : au moins tests d’intégration route catalogue + test client OL sur fixtures/mocks.
+- [ ] *(Optionnel)* **MCP** : voir **Phase 22.4.6**.
 
 ---
 
@@ -316,6 +332,9 @@
 - [x] Préférence taille page (12/24/48) en `UserPreference`.
 - [x] Option infinite scroll en préférence user.
 
+### 12.6 Recherche hors bibliothèque (catalogue externe)
+- [ ] Complément aux §12.1–12.5 (FTS interne) : **Phase 5.4** — preview catalogue public, puis ajout optionnel.
+
 ---
 
 ## Phase 13 — Reader intégré (EPUB)
@@ -394,6 +413,15 @@
 - [x] Appliquer règles champ par champ (priorité EPUB vs OpenLibrary).
 - [x] Gestion cover hi-res (préférence hi-res si disponible).
 
+### 15.5 Pull books (admin) — import catalogue sans fichiers (docs/SPECS.md §9.4 + §12.3)
+- [ ] Route admin `POST /api/admin/pull-books` : input `query/limit/cursor/dryRun`, output `created/skipped/nextCursor`.
+- [ ] Dédup idempotent : match `open_library_id` puis `isbn_13` (fallback heuristique seulement si nécessaire).
+- [ ] Implémenter pagination/cursor sur la source (Open Library) et persister le curseur opaque côté client (pas en DB).
+- [ ] Rate limit (admin + IP) + cache Open Library (réutiliser Phase 15.3).
+- [ ] Audit : événement admin “pull_books” (counts, durée, source) + pas de logs sensibles (règles §14).
+- [ ] UI `/admin` : bouton + champ query + bouton “Pull next page” (ou “Continuer”) + affichage des résultats (créés/ignorés) et erreurs.
+- [ ] Tests : intégration API + unit tests sur dédup/normalisation.
+
 ---
 
 ## Phase 16 — UI (design system, pages, responsive)
@@ -446,11 +474,13 @@
 - [x] Recherche instantanée (debounced).
 - [x] Filtres avancés.
 - [x] Highlight des termes trouvés.
+- [ ] Bloc ou onglet **catalogue externe** (preview + « Ajouter à la bibliothèque ») — **Phase 5.4**.
 
 #### 16.2.7 Admin `/admin`
 - [x] Users : liste + création + changement rôle + suppression.
 - [x] Duplicates : scanner + paires + merge/ignore.
 - [x] Import Calibre : upload metadata.db + chemin fichiers.
+- [ ] **Pull books** : bouton “Pull books” (admin) → importer des `Book` **sans fichiers** depuis catalogue externe, idempotent, par lots (cursor), avec feedback created/skipped + logs/audit.
 - [x] Storage : stats (espace, fichiers).
 - [x] Settings : config instance (nom, OIDC, storage).
 
@@ -542,6 +572,8 @@
 
 ## Phase 21 — Recommandations personnalisées
 
+> Cette phase matérialise le **but principal** du produit (historique de lecture → signaux → suggestions). Les phases reader / EPUB restent des compléments.
+
 ### 21.1 Signaux & collecte (docs/SPECS.md §16.2)
 - [x] Capturer “finished” (très fort).
 - [x] Estimer “temps de lecture” via updates progression (fort).
@@ -628,6 +660,9 @@
 - [x] `delete_book(book_id)` (soft delete)
 - [x] `scan_duplicates()`
 
+#### 22.4.6 Catalogue externe (optionnel, Phase 5.4)
+- [ ] Tool MCP **search_catalog** (ou nom figé dans la spec) : recherche preview uniquement ; création de livre via `add_book` après choix utilisateur.
+
 ### 22.5 Resources MCP (docs/SPECS.md §17.5)
 - [x] `shelf://library/stats`
 - [x] `shelf://user/reading-list`
@@ -710,6 +745,8 @@
 - [x] Upload EPUB admin + extraction + OpenLibrary + search vector.
 - [x] Création livre physique + cover.
 - [x] Création livre physique : scan ISBN (caméra BarcodeDetector / repli ZXing) + douchette USB (champ ISBN).
+- [ ] Recherche **catalogue externe** (preview) + **Ajouter à la bibliothèque** optionnel (Phase 5.4 + §16.2.6).
+- [ ] Admin **Pull books** : import catalogue → création `Book` sans fichiers, par lots, idempotent (Phase 15.5 + §16.2.7).
 - [x] Library/search/shelves/reader/admin conformes aux specs UI.
 - [x] Annotations + export Markdown.
 - [x] PWA offline : cache EPUB + sync.

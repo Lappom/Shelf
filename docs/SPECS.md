@@ -2,7 +2,16 @@
 
 ## 1. Vision
 
-**Shelf** est une application web self-hosted de gestion de bibliothèque personnelle. Elle permet de cataloguer, organiser et lire des livres numériques (EPUB) ainsi que de référencer des livres physiques. L'application offre un reader intégré, l'enrichissement automatique des métadonnées via Open Library, et une gestion multi-utilisateurs avec étagères, favoris et suivi de lecture.
+**Shelf** est une application web self-hosted dont le **cœur** est l’**historique de lecture** de chaque utilisateur et les **signaux** qui alimentent des **recommandations personnalisées** (statuts, progression, temps de lecture, étagères, tags, annotations, etc.). Le catalogue — livres numériques (EPUB), fiches livres physiques, métadonnées enrichies (Open Library) — sert avant tout à **enregistrer** ce qui est lu, en cours ou listé, et à nourrir le moteur de suggestions. La **lecture in-app des EPUB** via le reader intégré est une **fonctionnalité secondaire** : précieuse lorsqu’un fichier est disponible, mais non requise pour la valeur principale (suivi + découvertes). L’application gère le multi-utilisateurs, les étagères et le suivi de lecture de bout en bout.
+
+### Hiérarchie produit (V1)
+
+| Priorité | Périmètre |
+|----------|-----------|
+| **But principal** | Historique de lecture exploitable (progression, statuts, favoris, collections) et **signaux** agrégés pour recommandations (content-based, optionnellement collaboratif local, cold start) — voir §16. |
+| **Secondaire** | Stockage de fichiers EPUB, reader intégré, sync annotations liées au fichier, PWA hors-ligne **dans la mesure** où l’utilisateur s’appuie sur des contenus téléchargés. |
+
+Les évolutions UX et API doivent préserver la **qualité du suivi** et des **données de signal** ; le reader et l’ingestion fichier ne doivent pas éclipser ces objectifs.
 
 ### Principes directeurs
 
@@ -544,6 +553,24 @@ Options : titre (A-Z / Z-A), date d'ajout, date de publication, auteur, progress
 4. Rate limiting : max 1 requête/seconde vers Open Library (respect des conditions d'utilisation).
 5. Cache des réponses Open Library en base (ou Redis si disponible) pendant 30 jours.
 
+### 9.4 Pull catalogue (admin) — ajout en base sans fichiers
+
+Objectif : permettre à un admin d'**ajouter en base** (dans la bibliothèque locale) des livres issus d'un catalogue externe (par défaut Open Library), **sans importer de fichier** (EPUB/PDF). Ce flux sert le but principal : **enregistrer l'historique de lecture** et produire des signaux pour les recommandations, même quand aucun fichier n'est disponible.
+
+Contraintes :
+
+- **Aucun fichier** n'est téléchargé ni créé (`BookFile` absent).
+- Le pull est **idempotent** et peut être exécuté **en plusieurs fois** : on ne recrée pas un livre déjà présent.
+- Le dédoublonnage s'appuie en priorité sur `Book.open_library_id` (si disponible), sinon sur `isbn_13` (si normalisé), sinon sur une heuristique titre+auteur (avec seuil) uniquement en dernier recours.
+
+Comportement recommandé (V1) :
+
+- L'admin lance un **pull** par requête (ex. "bible") et reçoit des résultats par **lots** (pagination par cursor).
+- Pour chaque candidat :
+  - si un livre existant est trouvé (même `open_library_id` ou `isbn_13`) → **skip** (ne rien modifier) ;
+  - sinon → créer un `Book` avec `format = 'physical'`, `metadata_source = 'openlibrary'`, et les champs disponibles (titre, auteurs, description, sujets, pages, langue, ISBNs, cover URL si applicable).
+- Journaliser l'opération dans l'audit admin (nombre créés / ignorés, latence, source, paramètres *sans* loguer la requête en clair si elle provient d'un user non-admin).
+
 ---
 
 ## 10. Stockage des Fichiers
@@ -639,6 +666,7 @@ L'interface suit le design system décrit dans `DESIGN.md`, inspiré d'ElevenLab
 - **Users** : liste, création, modification de rôle, suppression.
 - **Duplicates** : scanner, résultats par paires, actions merge/ignore.
 - **Import Calibre** : upload `metadata.db` + chemin vers les fichiers.
+- **Pull books** : déclenche un import **métadonnées seules** depuis un catalogue externe (Open Library), en plusieurs lots, sans re-pull des livres déjà présents.
 - **Storage** : statistiques (espace utilisé, nombre de fichiers).
 - **Settings** : configuration générale (nom de l'instance, OIDC, storage).
 
@@ -704,11 +732,40 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 | GET | `/api/search?q=...` | Recherche full-text |
 | POST | `/api/admin/scan-duplicates` | Scanner les doublons |
 | POST | `/api/admin/import-calibre` | Import Calibre |
+| POST | `/api/admin/pull-books` | Pull catalogue externe → créer des `Book` **sans fichiers** (idempotent, cursor) |
 | GET | `/api/admin/users` | Liste des utilisateurs |
 | GET | `/api/admin/audit-logs` | Journal d’audit admin (pagination `limit`, `before`, `beforeId`) |
 | POST / GET | `/api/cron/recommendations` | Recalcul batch des recommandations (secret `SHELF_CRON_SECRET`, voir §12.1) |
 
 ---
+
+### 12.3 Admin pull-books (catalogue externe) — contrat (V1)
+
+Endpoint : `POST /api/admin/pull-books` (admin uniquement).
+
+But : importer des livres **métadonnées seules** depuis un catalogue externe (Open Library) dans la DB locale, en lots, de manière **idempotente**.
+
+Entrée (JSON) :
+
+- `source`: `"openlibrary"` (extensible).
+- `query`: `string` (ex. `"bible"`).
+- `limit`: `number` (1–50, défaut 20).
+- `cursor`: `string | null` (opaque, renvoyé par l'appel précédent) — optionnel.
+- `dryRun`: `boolean` (optionnel, défaut `false`) : si `true`, ne crée rien, renvoie uniquement ce qui *serait* créé/ignoré.
+
+Sortie (JSON) :
+
+- `created`: `number`
+- `skipped`: `number`
+- `nextCursor`: `string | null`
+- `items`: tableau (optionnel) avec le statut par candidat (`created|skipped`) et des métadonnées minimales (titre, auteurs, `open_library_id`, `isbn_13`).
+
+Règles :
+
+- **Idempotence** : un candidat déjà présent (même `open_library_id` ou `isbn_13`) est **skipped**.
+- **Pas de fichiers** : aucune création `BookFile`, aucun accès storage.
+- **Rate limit** : appliquer une limite stricte (par admin + IP) ; respecter §9.3 pour Open Library.
+- **Audit** : journaliser l'action (source, counts, durée) sans fuite de secrets ni de données sensibles (§14).
 
 ## 13. Configuration
 
@@ -860,6 +917,8 @@ volumes:
 ---
 
 ## 16. Recommandations Personnalisées
+
+Cette section décrit le **but principal** du produit tel que posé en §1 : transformer l’historique de lecture et les interactions en suggestions pertinentes.
 
 ### 16.1 Principe
 
