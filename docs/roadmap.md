@@ -480,7 +480,7 @@
 - [x] Users : liste + création + changement rôle + suppression.
 - [x] Duplicates : scanner + paires + merge/ignore.
 - [x] Import Calibre : upload metadata.db + chemin fichiers.
-- [ ] **Pull books** : bouton “Pull books” (admin) → importer des `Book` **sans fichiers** depuis catalogue externe, idempotent, par lots (cursor), avec feedback created/skipped + logs/audit.
+- [x] **Pull books** : bouton “Pull books” (admin) → importer des `Book` **sans fichiers** depuis catalogue externe, idempotent, par lots (cursor), avec feedback created/skipped + logs/audit.
 - [x] Storage : stats (espace, fichiers).
 - [x] Settings : config instance (nom, OIDC, storage).
 

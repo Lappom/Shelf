@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,20 +28,25 @@ export function AdminPullBooksClient() {
   const [last, setLast] = useState<PullResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const hasQuery = query.trim().length > 0;
+  const effectiveLimit = useMemo(() => Math.max(1, Math.min(50, Math.trunc(limit || 20))), [limit]);
 
   const runPull = useCallback(
     async (mode: "first" | "continue") => {
       setError(null);
-      if (mode === "first") setNextCursor(null);
+      if (mode === "first") {
+        setNextCursor(null);
+        setLast(null);
+      }
       setBusy(true);
       try {
         const body =
           mode === "continue" && nextCursor
-            ? { source: "openlibrary" as const, cursor: nextCursor, limit, dryRun }
+            ? { source: "openlibrary" as const, cursor: nextCursor, limit: effectiveLimit, dryRun }
             : {
                 source: "openlibrary" as const,
                 query: query.trim(),
-                limit,
+                limit: effectiveLimit,
                 dryRun,
               };
 
@@ -79,7 +84,7 @@ export function AdminPullBooksClient() {
         setBusy(false);
       }
     },
-    [query, limit, dryRun, nextCursor],
+    [query, effectiveLimit, dryRun, nextCursor],
   );
 
   return (
@@ -92,7 +97,10 @@ export function AdminPullBooksClient() {
           <Input
             id="pull-query"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setNextCursor(null);
+              }}
             placeholder="Ex. bible, science fiction…"
             disabled={busy}
             className="rounded-xl"
@@ -109,7 +117,10 @@ export function AdminPullBooksClient() {
               min={1}
               max={50}
               value={limit}
-              onChange={(e) => setLimit(Number(e.target.value) || 20)}
+              onChange={(e) => {
+                setLimit(Number(e.target.value) || 20);
+                setNextCursor(null);
+              }}
               disabled={busy}
               className="w-24 rounded-xl"
             />
@@ -118,7 +129,10 @@ export function AdminPullBooksClient() {
             <input
               type="checkbox"
               checked={dryRun}
-              onChange={(e) => setDryRun(e.target.checked)}
+              onChange={(e) => {
+                setDryRun(e.target.checked);
+                setNextCursor(null);
+              }}
               disabled={busy}
               className="size-4 rounded border"
             />
@@ -128,7 +142,7 @@ export function AdminPullBooksClient() {
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            disabled={busy || !query.trim()}
+            disabled={busy || !hasQuery}
             className="rounded-eleven-pill"
             onClick={() => void runPull("first")}
           >
@@ -175,7 +189,17 @@ export function AdminPullBooksClient() {
               <tbody>
                 {last.items.map((it, i) => (
                   <tr key={`${it.open_library_id ?? it.title}-${i}`} className="border-t border-black/5">
-                    <td className="px-3 py-2">{it.status}</td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={
+                          it.status === "created"
+                            ? "inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800"
+                            : "inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800"
+                        }
+                      >
+                        {it.status}
+                      </span>
+                    </td>
                     <td className="px-3 py-2">{it.title}</td>
                     <td className="px-3 py-2">{it.authors.join(", ")}</td>
                     <td className="text-muted-foreground px-3 py-2 font-mono text-xs">

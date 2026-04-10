@@ -20,10 +20,18 @@ const BodySchema = z
   })
   .superRefine((data, ctx) => {
     const hasCursor = data.cursor != null && data.cursor.length > 0;
+    const hasQuery = Boolean(data.query && data.query.length > 0);
     if (!hasCursor && (!data.query || data.query.length < 1)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "query is required when cursor is absent",
+        path: ["query"],
+      });
+    }
+    if (hasCursor && hasQuery) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "query must be omitted when cursor is provided",
         path: ["query"],
       });
     }
@@ -57,7 +65,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Invalid input" }, { status: 400 });
       }
 
-      const { query, limit, cursor, dryRun } = parsed.data;
+      const { source, query, limit, cursor, dryRun } = parsed.data;
       const t0 = Date.now();
 
       let result;
@@ -78,7 +86,8 @@ export async function POST(req: Request) {
         }
         return NextResponse.json(
           {
-            error: e instanceof Error ? e.message : "Open Library error",
+            // Do not expose upstream/internal error details.
+            error: "Open Library unavailable",
           },
           { status: 502 },
         );
@@ -95,6 +104,7 @@ export async function POST(req: Request) {
         actorId: adminId,
         meta: {
           source: "openlibrary",
+          requestedSource: source,
           created: result.created,
           skipped: result.skipped,
           durationMs,
