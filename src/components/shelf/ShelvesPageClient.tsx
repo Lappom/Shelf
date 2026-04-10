@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -15,14 +16,14 @@ import {
   SortableContext,
   useSortable,
   arrayMove,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVerticalIcon, PencilIcon, PlusIcon, Trash2Icon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,12 @@ import {
   updateShelfAction,
 } from "@/app/(app)/shelves/actions";
 
+export type ShelfCoverPreview = {
+  id: string;
+  coverUrl: string | null;
+  coverToken: string | null;
+};
+
 export type ShelfListItem = {
   id: string;
   name: string;
@@ -49,7 +56,16 @@ export type ShelfListItem = {
   sortOrder: number;
   createdAt: string;
   booksCount: number | null;
+  previewCovers: ShelfCoverPreview[];
 };
+
+const SHELF_CARD_VISIBLE_COVERS = 7;
+
+function coverImageSrc(bookId: string, coverUrl: string | null, coverToken: string | null) {
+  if (!coverUrl) return null;
+  if (coverToken) return `/api/books/${bookId}/cover?t=${encodeURIComponent(coverToken)}`;
+  return `/api/books/${bookId}/cover`;
+}
 
 function shelfTypeLabel(t: ShelfListItem["type"]) {
   switch (t) {
@@ -64,7 +80,97 @@ function shelfTypeLabel(t: ShelfListItem["type"]) {
   }
 }
 
-function SortableShelfRow({
+function ShelfSectionEmpty({
+  message,
+  actionLabel,
+  onAction,
+}: {
+  message: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="col-span-full rounded-2xl border border-dashed border-(--eleven-border-subtle) bg-muted/15 px-4 py-8 text-center">
+      <p className="text-eleven-secondary eleven-body-airy text-sm">{message}</p>
+      {actionLabel && onAction ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="mt-3 rounded-eleven-pill"
+          onClick={onAction}
+        >
+          {actionLabel}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function ShelfPlankBooks({ books }: { books: ShelfCoverPreview[] }) {
+  const slice = books.slice(0, SHELF_CARD_VISIBLE_COVERS);
+  const showPlaceholders = slice.length === 0;
+  const placeholderCount = 6;
+
+  return (
+    <div className="from-secondary/40 relative overflow-hidden rounded-t-2xl border-b border-(--eleven-border-subtle) bg-gradient-to-b to-[color-mix(in_oklab,var(--secondary)_65%,var(--muted)))] px-1 pt-3 pb-0 dark:to-secondary/35">
+      <div className="flex min-h-[6.75rem] items-end justify-center sm:min-h-[7.5rem]">
+        <div className="flex max-w-full items-end justify-center px-1">
+          {slice.map((b, i) => {
+            const src = coverImageSrc(b.id, b.coverUrl, b.coverToken);
+            const rot = i % 2 === 0 ? -3 : 3;
+            return (
+              <div
+                key={b.id}
+                className="relative z-[2] -ml-2.5 shrink-0 first:ml-0 sm:-ml-3"
+                style={{ transform: `rotate(${rot}deg)` }}
+              >
+                <div className="shadow-eleven-button-white relative aspect-[2/3] w-10 overflow-hidden rounded-sm bg-card ring-1 ring-black/10 sm:w-11 dark:ring-white/10">
+                  {src ? (
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      className="object-cover"
+                      sizes="48px"
+                      unoptimized={!b.coverToken}
+                    />
+                  ) : (
+                    <div className="bg-muted absolute inset-0" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {showPlaceholders
+            ? Array.from({ length: placeholderCount }).map((_, i) => {
+                const rot = i % 2 === 0 ? 2.5 : -2.5;
+                const h = 3.25 + (i % 3) * 0.35;
+                return (
+                  <div
+                    key={`ph-${i}`}
+                    className="relative z-[1] -ml-2.5 shrink-0 first:ml-0 sm:-ml-3"
+                    style={{ transform: `rotate(${rot}deg)` }}
+                  >
+                    <div
+                      className="bg-muted/70 w-9 rounded-sm ring-1 ring-black/5 sm:w-10 dark:ring-white/10"
+                      style={{ height: `${h}rem` }}
+                    />
+                  </div>
+                );
+              })
+            : null}
+        </div>
+      </div>
+      {/* Shelf lip / front edge */}
+      <div
+        className="from-foreground/15 to-foreground/30 dark:from-white/12 dark:to-white/6 mx-1 mb-2 h-2 rounded-t-sm bg-gradient-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
+        aria-hidden
+      />
+    </div>
+  );
+}
+
+function SortableShelfCard({
   shelf,
   disabled,
   onEdit,
@@ -89,27 +195,33 @@ function SortableShelfRow({
     <Card
       ref={setNodeRef}
       style={style}
-      className={cn("transition-shadow", isDragging && "shadow-eleven-warm")}
+      className={cn(
+        "h-full overflow-hidden transition-shadow duration-200 hover:shadow-eleven-button-white",
+        isDragging && "shadow-eleven-warm",
+      )}
     >
-      <CardHeader className="flex flex-row items-start justify-between gap-3 border-b">
-        <div className="min-w-0 space-y-1">
-          <CardTitle className="flex items-center gap-2">
-            <span className="text-lg">
-              {shelf.icon ?? (shelf.type === "dynamic" ? "🧩" : "📚")}
-            </span>
-            <span className="truncate">
-              <Link className="underline-offset-4 hover:underline" href={`/shelves/${shelf.id}`}>
-                {shelf.name}
-              </Link>
-            </span>
-          </CardTitle>
-          <CardDescription className="line-clamp-2">
-            {shelf.description ||
-              `${shelfTypeLabel(shelf.type)} • ${shelf.booksCount ?? "—"} livres`}
-          </CardDescription>
-        </div>
+      <div className="relative">
+        <Link
+          href={`/shelves/${shelf.id}`}
+          className="focus-visible:ring-ring/50 block rounded-t-2xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+          aria-label={`Ouvrir l’étagère ${shelf.name}`}
+        >
+          <ShelfPlankBooks books={shelf.previewCovers} />
+          <div className="border-t border-(--eleven-border-subtle) px-4 pt-3 pb-2">
+            <div className="font-heading eleven-body-airy flex items-start gap-2 pr-14 text-lg leading-tight font-light sm:text-xl">
+              <span className="shrink-0 text-xl leading-none" aria-hidden>
+                {shelf.icon ?? (shelf.type === "dynamic" ? "🧩" : "📚")}
+              </span>
+              <span className="text-foreground line-clamp-2">{shelf.name}</span>
+            </div>
+            <p className="text-eleven-secondary eleven-body-airy mt-1 line-clamp-2 text-sm">
+              {shelf.description ||
+                `${shelfTypeLabel(shelf.type)} • ${shelf.booksCount ?? "—"} livres`}
+            </p>
+          </div>
+        </Link>
 
-        <div className="flex items-center gap-1.5">
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-full bg-background/90 p-0.5 shadow-eleven-button-white backdrop-blur-sm dark:bg-background/80">
           {!disabled && (
             <Button
               variant="ghost"
@@ -144,9 +256,10 @@ function SortableShelfRow({
             </>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="py-3">
-        <div className="text-muted-foreground flex items-center gap-2 text-xs">
+      </div>
+
+      <CardContent className="pb-4 pt-2">
+        <div className="text-eleven-muted eleven-body-airy flex items-center gap-2 text-xs">
           <span>{shelfTypeLabel(shelf.type)}</span>
           <span aria-hidden="true">•</span>
           <span>{shelf.booksCount ?? "—"} livres</span>
@@ -270,10 +383,15 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
     });
   }
 
+  function openCreateShelf(type: "manual" | "dynamic" = "manual") {
+    setDraft({ type, name: "", description: "", icon: "" });
+    setCreateOpen(true);
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-muted-foreground text-sm">
+        <div className="text-eleven-muted eleven-body-airy text-sm">
           {systemShelves.length ? `${systemShelves.length} système` : "—"} •{" "}
           {reorderableShelves.length} perso
         </div>
@@ -281,10 +399,7 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
         <Button
           variant="warmStone"
           size="warm"
-          onClick={() => {
-            setDraft({ type: "manual", name: "", description: "", icon: "" });
-            setCreateOpen(true);
-          }}
+          onClick={() => openCreateShelf("manual")}
           disabled={busy}
         >
           <PlusIcon />
@@ -298,16 +413,20 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
             <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">
               Système
             </div>
-            <div className="grid grid-cols-1 gap-3">
-              {systemShelves.map((s) => (
-                <SortableShelfRow
-                  key={s.id}
-                  shelf={s}
-                  disabled
-                  onEdit={() => {}}
-                  onDelete={() => {}}
-                />
-              ))}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {systemShelves.length === 0 ? (
+                <ShelfSectionEmpty message="Aucune étagère système pour l’instant." />
+              ) : (
+                systemShelves.map((s) => (
+                  <SortableShelfCard
+                    key={s.id}
+                    shelf={s}
+                    disabled
+                    onEdit={() => {}}
+                    onDelete={() => {}}
+                  />
+                ))
+              )}
             </div>
           </div>
 
@@ -317,29 +436,37 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
             </div>
             <SortableContext
               items={manualShelves.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
+              strategy={rectSortingStrategy}
             >
-              <div className="grid grid-cols-1 gap-3">
-                {manualShelves.map((s) => (
-                  <SortableShelfRow
-                    key={s.id}
-                    shelf={s}
-                    onEdit={(sh) => {
-                      setSelected(sh);
-                      setDraft({
-                        type: sh.type === "dynamic" ? "dynamic" : "manual",
-                        name: sh.name,
-                        description: sh.description ?? "",
-                        icon: sh.icon ?? "",
-                      });
-                      setEditOpen(true);
-                    }}
-                    onDelete={(sh) => {
-                      setSelected(sh);
-                      setDeleteOpen(true);
-                    }}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {manualShelves.length === 0 ? (
+                  <ShelfSectionEmpty
+                    message="Aucune étagère manuelle. Ajoute-en une pour organiser tes livres à la main."
+                    actionLabel="Nouvelle étagère manuelle"
+                    onAction={() => openCreateShelf("manual")}
                   />
-                ))}
+                ) : (
+                  manualShelves.map((s) => (
+                    <SortableShelfCard
+                      key={s.id}
+                      shelf={s}
+                      onEdit={(sh) => {
+                        setSelected(sh);
+                        setDraft({
+                          type: sh.type === "dynamic" ? "dynamic" : "manual",
+                          name: sh.name,
+                          description: sh.description ?? "",
+                          icon: sh.icon ?? "",
+                        });
+                        setEditOpen(true);
+                      }}
+                      onDelete={(sh) => {
+                        setSelected(sh);
+                        setDeleteOpen(true);
+                      }}
+                    />
+                  ))
+                )}
               </div>
             </SortableContext>
           </div>
@@ -350,29 +477,37 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
             </div>
             <SortableContext
               items={dynamicShelves.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
+              strategy={rectSortingStrategy}
             >
-              <div className="grid grid-cols-1 gap-3">
-                {dynamicShelves.map((s) => (
-                  <SortableShelfRow
-                    key={s.id}
-                    shelf={s}
-                    onEdit={(sh) => {
-                      setSelected(sh);
-                      setDraft({
-                        type: sh.type === "dynamic" ? "dynamic" : "manual",
-                        name: sh.name,
-                        description: sh.description ?? "",
-                        icon: sh.icon ?? "",
-                      });
-                      setEditOpen(true);
-                    }}
-                    onDelete={(sh) => {
-                      setSelected(sh);
-                      setDeleteOpen(true);
-                    }}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {dynamicShelves.length === 0 ? (
+                  <ShelfSectionEmpty
+                    message="Aucune étagère dynamique. Les règles remplissent l’étagère automatiquement."
+                    actionLabel="Nouvelle étagère dynamique"
+                    onAction={() => openCreateShelf("dynamic")}
                   />
-                ))}
+                ) : (
+                  dynamicShelves.map((s) => (
+                    <SortableShelfCard
+                      key={s.id}
+                      shelf={s}
+                      onEdit={(sh) => {
+                        setSelected(sh);
+                        setDraft({
+                          type: sh.type === "dynamic" ? "dynamic" : "manual",
+                          name: sh.name,
+                          description: sh.description ?? "",
+                          icon: sh.icon ?? "",
+                        });
+                        setEditOpen(true);
+                      }}
+                      onDelete={(sh) => {
+                        setSelected(sh);
+                        setDeleteOpen(true);
+                      }}
+                    />
+                  ))
+                )}
               </div>
             </SortableContext>
           </div>

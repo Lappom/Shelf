@@ -1,11 +1,32 @@
+import Link from "next/link";
 import { z } from "zod";
 
 import { requireUserPage } from "@/lib/auth/rbac";
 import { prisma } from "@/lib/db/prisma";
 import { loadShelfBooksPage } from "@/lib/shelves/shelfBooksPage";
 import { ShelfDetailClient, type ShelfDetailShelf } from "@/components/shelf/ShelfDetailClient";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
+
+function ShelfErrorState({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mx-auto w-full max-w-7xl px-6 py-10">
+      <Card className="mx-auto max-w-md">
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button asChild variant="whitePill">
+            <Link href="/shelves">Retour aux étagères</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 export default async function ShelfDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUserPage();
@@ -14,7 +35,14 @@ export default async function ShelfDetailPage({ params }: { params: Promise<{ id
     .uuid()
     .parse((user as { id?: unknown }).id);
   const parsed = ParamsSchema.safeParse(await params);
-  if (!parsed.success) return <div className="p-6">Étagère invalide.</div>;
+  if (!parsed.success) {
+    return (
+      <ShelfErrorState
+        title="Étagère invalide"
+        description="L’identifiant dans l’URL n’est pas un UUID valide."
+      />
+    );
+  }
 
   const shelf = await prisma.shelf.findFirst({
     where: { id: parsed.data.id, ownerId: userId },
@@ -30,7 +58,14 @@ export default async function ShelfDetailPage({ params }: { params: Promise<{ id
     },
   });
 
-  if (!shelf) return <div className="p-6">Introuvable.</div>;
+  if (!shelf) {
+    return (
+      <ShelfErrorState
+        title="Étagère introuvable"
+        description="Elle n’existe pas ou n’appartient pas à ton compte."
+      />
+    );
+  }
 
   const shelfDto: ShelfDetailShelf = {
     id: shelf.id,

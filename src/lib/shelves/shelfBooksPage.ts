@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { createCoverAccessToken } from "@/lib/cover/coverToken";
 import { prisma } from "@/lib/db/prisma";
 import { sql, type Sql } from "@/lib/db/sql";
 import { buildShelfRuleWhereSql, parseShelfRuleJson, type ShelfRule } from "@/lib/shelves/rules";
@@ -14,6 +15,8 @@ export type ShelfDetailBookRow = {
   addedAt: string;
   createdAt: string;
   shelfSortOrder: number;
+  coverUrl: string | null;
+  coverToken: string | null;
 };
 
 function normalizeAuthors(authors: unknown): string[] {
@@ -101,10 +104,12 @@ export async function loadShelfBooksPage(args: {
         authors: unknown;
         format: string;
         createdAt: Date;
+        coverUrl: string | null;
       }>
     >`
       SELECT bs.sort_order AS "sortOrder", bs.added_at AS "addedAt",
-             b.id, b.title, b.authors, b.format, b.created_at AS "createdAt"
+             b.id, b.title, b.authors, b.format, b.created_at AS "createdAt",
+             b.cover_url AS "coverUrl"
       FROM book_shelves bs
       INNER JOIN books b ON b.id = bs.book_id
       WHERE bs.shelf_id = ${args.shelfId}::uuid
@@ -124,6 +129,8 @@ export async function loadShelfBooksPage(args: {
       addedAt: r.addedAt.toISOString(),
       createdAt: r.createdAt.toISOString(),
       shelfSortOrder: r.sortOrder,
+      coverUrl: r.coverUrl,
+      coverToken: r.coverUrl ? createCoverAccessToken(r.id) : null,
     }));
 
     let nextCursor: string | null = null;
@@ -166,10 +173,12 @@ export async function loadShelfBooksPage(args: {
         authors: unknown;
         format: string;
         createdAt: Date;
+        coverUrl: string | null;
       }>
     >`
       SELECT ubp.updated_at AS "updatedAt",
-             b.id, b.title, b.authors, b.format, b.created_at AS "createdAt"
+             b.id, b.title, b.authors, b.format, b.created_at AS "createdAt",
+             b.cover_url AS "coverUrl"
       FROM user_book_progress ubp
       INNER JOIN books b ON b.id = ubp.book_id
       WHERE ubp.user_id = ${args.userId}::uuid
@@ -190,6 +199,8 @@ export async function loadShelfBooksPage(args: {
       addedAt: r.updatedAt.toISOString(),
       createdAt: r.createdAt.toISOString(),
       shelfSortOrder: 0,
+      coverUrl: r.coverUrl,
+      coverToken: r.coverUrl ? createCoverAccessToken(r.id) : null,
     }));
 
     let nextCursor: string | null = null;
@@ -232,9 +243,16 @@ export async function loadShelfBooksPage(args: {
   }
 
   const rows = await prisma.$queryRaw<
-    Array<{ id: string; title: string; authors: unknown; format: string; created_at: Date }>
+    Array<{
+      id: string;
+      title: string;
+      authors: unknown;
+      format: string;
+      created_at: Date;
+      coverUrl: string | null;
+    }>
   >`
-    SELECT b.id, b.title, b.authors, b.format, b.created_at
+    SELECT b.id, b.title, b.authors, b.format, b.created_at, b.cover_url AS "coverUrl"
     FROM books b
     WHERE b.deleted_at IS NULL
       AND ${whereSql}
@@ -253,6 +271,8 @@ export async function loadShelfBooksPage(args: {
     addedAt: r.created_at.toISOString(),
     createdAt: r.created_at.toISOString(),
     shelfSortOrder: 0,
+    coverUrl: r.coverUrl,
+    coverToken: r.coverUrl ? createCoverAccessToken(r.id) : null,
   }));
 
   let nextCursor: string | null = null;
