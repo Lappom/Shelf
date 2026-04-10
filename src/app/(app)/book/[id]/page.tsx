@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { z } from "zod";
@@ -140,10 +141,16 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
       : `/api/books/${book.id}/cover`
     : null;
 
+  const annotationEnterDelayMs = (index: number) =>
+    index < 8 ? 320 + index * 45 : 320 + 7 * 45;
+
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr]">
-        <Card className="shadow-eleven-card overflow-hidden">
+        <Card
+          className="book-detail-enter shadow-eleven-card overflow-hidden"
+          style={{ "--book-enter-delay": "0ms" } as CSSProperties}
+        >
           <div className="bg-muted relative aspect-2/3 w-full">
             {coverSrc ? (
               <Image
@@ -183,7 +190,10 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
 
         <div className="min-w-0 space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 space-y-2">
+            <div
+              className="book-detail-enter min-w-0 space-y-2"
+              style={{ "--book-enter-delay": "70ms" } as CSSProperties}
+            >
               <h1 className="eleven-display-section text-3xl">{book.title}</h1>
               <div className="text-eleven-secondary flex flex-wrap gap-x-2 gap-y-1 text-sm">
                 {authorList.length ? (
@@ -202,7 +212,10 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div
+              className="book-detail-actions book-detail-enter flex flex-wrap items-center gap-2"
+              style={{ "--book-enter-delay": "140ms" } as CSSProperties}
+            >
               {book.format === "epub" ? (
                 <Button asChild className="rounded-eleven-pill">
                   <Link href={`/reader/${book.id}`}>Lire</Link>
@@ -229,7 +242,10 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             </div>
           </div>
 
-          <Card className="shadow-eleven-card">
+          <Card
+            className="book-detail-enter shadow-eleven-card"
+            style={{ "--book-enter-delay": "210ms" } as CSSProperties}
+          >
             <CardHeader className="border-b border-(--eleven-border-subtle)">
               <CardTitle>Métadonnées</CardTitle>
               <CardDescription>Données en base (DB).</CardDescription>
@@ -283,7 +299,10 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             </CardContent>
           </Card>
 
-          <Card className="shadow-eleven-card">
+          <Card
+            className="book-detail-enter shadow-eleven-card"
+            style={{ "--book-enter-delay": "280ms" } as CSSProperties}
+          >
             <CardHeader className="border-b border-(--eleven-border-subtle)">
               <CardTitle>Annotations</CardTitle>
               <CardDescription>Vos highlights, notes et marque-pages sur ce livre.</CardDescription>
@@ -291,8 +310,16 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
             <CardContent className="space-y-3">
               {annotations.length ? (
                 <div className="space-y-3">
-                  {annotations.map((a) => (
-                    <div key={a.id} className="rounded-2xl border px-4 py-3">
+                  {annotations.map((a, index) => (
+                    <div
+                      key={a.id}
+                      className="book-detail-note-enter rounded-2xl border px-4 py-3"
+                      style={
+                        {
+                          "--book-enter-delay": `${annotationEnterDelayMs(index)}ms`,
+                        } as CSSProperties
+                      }
+                    >
                       <div className="mb-1 flex items-center justify-between gap-3">
                         <div className="text-eleven-muted text-xs">{a.type}</div>
                         <div className="text-eleven-muted text-xs">
@@ -316,12 +343,24 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
 
       {isAdmin && (
         <>
-          <OpenLibraryEnrichmentPanel
-            bookId={book.id}
-            hasCover={Boolean(book.coverUrl)}
-            currentIsbn={(book.isbn13 ?? book.isbn10 ?? null) as string | null}
-          />
-          <ResyncMetadataPanel bookId={book.id} />
+          <div
+            className="book-detail-enter"
+            style={{ "--book-enter-delay": "350ms" } as CSSProperties}
+          >
+            <OpenLibraryEnrichmentPanel
+              bookId={book.id}
+              hasCover={Boolean(book.coverUrl)}
+              currentIsbn={(book.isbn13 ?? book.isbn10 ?? null) as string | null}
+            />
+          </div>
+          {book.format === "epub" ? (
+            <div
+              className="book-detail-enter"
+              style={{ "--book-enter-delay": "420ms" } as CSSProperties}
+            >
+              <ResyncMetadataPanel bookId={book.id} />
+            </div>
+          ) : null}
         </>
       )}
     </div>
