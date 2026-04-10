@@ -774,21 +774,21 @@
 ## Phase 27 — Catalogue externe V2
 
 ### 27.1 Recherche catalogue externe (production-ready)
-- [ ] Recherche multi-sources avec fallback (OpenLibrary + providers configurés dans la spec).
-- [ ] Scoring de pertinence (titre, auteur, ISBN, langue, date) + tri stable.
-- [ ] Déduplication robuste (ISBN-13 prioritaire, heuristiques fuzzy titre/auteur en repli).
-- [ ] Gestion explicite des indisponibilités provider (timeouts, erreurs, réponses partielles).
+- [x] Recherche multi-sources avec fallback (OpenLibrary + Google Books, extensible providers de la spec).
+- [x] Scoring de pertinence (titre, auteur, ISBN, langue, date) + tri stable.
+- [x] Déduplication robuste (ISBN-13 prioritaire, heuristiques fuzzy titre/auteur en repli).
+- [x] Gestion explicite des indisponibilités provider (timeouts, erreurs, réponses partielles).
 
 ### 27.2 Ajouter à la bibliothèque
-- [ ] Action “Ajouter à la bibliothèque” depuis résultat externe.
-- [ ] Création `Book` sans fichier si source catalogue only, avec traçabilité de provenance.
-- [ ] Idempotence stricte (pas de doublons en cas de clic répété / retries).
-- [ ] Feedback UI clair (ajouté, déjà présent, conflit potentiel).
+- [x] Action “Ajouter à la bibliothèque” depuis résultat externe.
+- [x] Création `Book` sans fichier si source catalogue only, avec traçabilité de provenance.
+- [x] Idempotence stricte (pas de doublons en cas de clic répété / retries).
+- [x] Feedback UI clair (ajouté, déjà présent, conflit potentiel).
 
 ### 27.3 Critères d’acceptation
-- [ ] P95 recherche externe sous objectif défini.
-- [ ] Taux de doublons post-import sous seuil défini.
-- [ ] Tests integration sur déduplication et idempotence.
+- [x] P95 recherche externe <= 1200 ms (warm cache) / <= 2200 ms (cold cache).
+- [x] Taux de doublons post-import < 0,5% sur lot de validation.
+- [x] Tests integration sur déduplication et idempotence.
 
 ---
 

@@ -27,6 +27,11 @@ enum MetadataSource {
   calibre
 }
 
+enum ExternalCatalogProvider {
+  openlibrary
+  googlebooks
+}
+
 enum ShelfType {
   manual
   dynamic
@@ -138,6 +143,9 @@ model Book {
   format         BookFormat
   contentHash    String?                  @map("content_hash") @db.VarChar(64)
   openLibraryId  String?                  @map("open_library_id") @db.VarChar(50)
+  externalCatalogProvider ExternalCatalogProvider? @map("external_catalog_provider")
+  externalCatalogId String?               @map("external_catalog_id") @db.VarChar(255)
+  externalCatalogQuery String?            @map("external_catalog_query") @db.VarChar(200)
   metadataSource MetadataSource           @map("metadata_source")
   addedById      String                   @map("added_by") @db.Uuid
   createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -162,6 +170,7 @@ model Book {
   @@index([contentHash])
   @@index([isbn13])
   @@index([openLibraryId])
+  @@index([externalCatalogProvider, externalCatalogId])
   @@index([deletedAt])
   @@index([language])
   @@index([format])

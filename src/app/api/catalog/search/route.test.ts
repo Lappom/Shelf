@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-const searchOpenLibraryCatalog = vi.fn();
+const searchCatalogPreview = vi.fn();
 const rateLimitOrThrow = vi.fn(async () => undefined);
 
 vi.mock("@/lib/auth/rbac", () => ({
@@ -11,10 +11,8 @@ vi.mock("@/lib/security/cors", () => ({
   addCorsHeaders: vi.fn((res: unknown) => res),
 }));
 
-vi.mock("@/lib/metadata/openlibrary", () => ({
-  searchOpenLibraryCatalog,
-  buildOpenLibraryCoverUrl: (isbn: string) =>
-    `https://covers.openlibrary.org/b/isbn/${encodeURIComponent(isbn)}-L.jpg`,
+vi.mock("@/lib/catalog/searchCatalogPreview", () => ({
+  searchCatalogPreview,
 }));
 
 vi.mock("@/lib/security/rateLimit", () => ({
@@ -23,7 +21,7 @@ vi.mock("@/lib/security/rateLimit", () => ({
 
 describe("GET /api/catalog/search", () => {
   beforeEach(() => {
-    searchOpenLibraryCatalog.mockReset();
+    searchCatalogPreview.mockReset();
     rateLimitOrThrow.mockClear();
   });
 
@@ -42,40 +40,43 @@ describe("GET /api/catalog/search", () => {
   });
 
   it("returns candidates with coverPreviewUrl", async () => {
-    searchOpenLibraryCatalog.mockResolvedValue([
-      {
-        key: "/works/OL1W",
-        title: "T",
-        authors: ["A"],
-        firstPublishYear: 2000,
-        isbns: ["9781234567890"],
-      },
-      {
-        key: "/works/OL2W",
-        title: "No isbn",
-        authors: ["B"],
-        firstPublishYear: null,
-        isbns: ["not-a-valid-isbn"],
-      },
-    ]);
+    searchCatalogPreview.mockResolvedValue({
+      partial: false,
+      providers: { openlibrary: { ok: true }, googlebooks: { ok: true } },
+      candidates: [
+        {
+          provider: "openlibrary",
+          providerId: "/works/OL1W",
+          key: "/works/OL1W",
+          title: "T",
+          authors: ["A"],
+          firstPublishYear: 2000,
+          isbns: ["9781234567890"],
+          language: null,
+          relevanceScore: 0.9,
+          coverPreviewUrl: "https://covers.openlibrary.org/b/isbn/9781234567890-L.jpg",
+        },
+      ],
+    });
 
     const { GET } = await import("./route");
     const req = new Request("http://test.local/api/catalog/search?q=foundation");
     const res = await GET(req);
     expect(res.status).toBe(200);
     const json = (await res.json()) as {
+      partial: boolean;
       candidates: Array<{ coverPreviewUrl: string | null; isbns: string[] }>;
     };
-    expect(json.candidates.length).toBe(2);
+    expect(json.partial).toBe(false);
+    expect(json.candidates.length).toBe(1);
     expect(json.candidates[0].coverPreviewUrl).toMatch(/covers\.openlibrary\.org/);
-    expect(json.candidates[1].coverPreviewUrl).toBeNull();
-    expect(searchOpenLibraryCatalog).toHaveBeenCalledWith(
+    expect(searchCatalogPreview).toHaveBeenCalledWith(
       expect.objectContaining({ q: "foundation" }),
     );
   });
 
-  it("returns 502 when Open Library fails", async () => {
-    searchOpenLibraryCatalog.mockRejectedValue(new Error("OpenLibrary error (500)"));
+  it("returns 502 when all providers fail", async () => {
+    searchCatalogPreview.mockRejectedValue(new Error("CATALOG_UNAVAILABLE"));
     const { GET } = await import("./route");
     const req = new Request("http://test.local/api/catalog/search?title=Test");
     const res = await GET(req);
@@ -83,14 +84,18 @@ describe("GET /api/catalog/search", () => {
   });
 
   it("applies per-user and ip rate limit", async () => {
-    searchOpenLibraryCatalog.mockResolvedValue([]);
+    searchCatalogPreview.mockResolvedValue({
+      partial: false,
+      providers: { openlibrary: { ok: true }, googlebooks: { ok: true } },
+      candidates: [],
+    });
     const { GET } = await import("./route");
     const req = new Request("http://test.local/api/catalog/search?q=foundation");
     const res = await GET(req);
     expect(res.status).toBe(200);
     expect(rateLimitOrThrow).toHaveBeenCalledWith(
       expect.objectContaining({
-        key: expect.stringMatching(/^catalog:openlibrary:/),
+        key: expect.stringMatching(/^catalog:external:/),
         limit: 30,
         windowMs: 60_000,
       }),

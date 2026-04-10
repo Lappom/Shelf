@@ -555,7 +555,7 @@ export function registerShelfMcpTools(mcp: McpServer) {
     "search_catalog",
     {
       description:
-        "Search external catalog preview (Open Library). Preview only: no database writes.",
+        "Search external catalog preview (Open Library + Google Books). Preview only: no database writes.",
       inputSchema: CatalogSearchInputSchema,
     },
     async (args) =>

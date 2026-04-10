@@ -6,6 +6,7 @@ import { runApiRoute } from "@/lib/api/route";
 import { corsPreflight, getClientIp, parseJsonBody } from "@/lib/api/http";
 import { createPhysicalBook, normalizeIsbn } from "@/lib/books/createPhysicalBook";
 import { ingestEpub } from "@/lib/books/ingest";
+import { addBookFromCatalog } from "@/lib/catalog/addCatalogBook";
 import { prisma } from "@/lib/db/prisma";
 import {
   enrichFromOpenLibraryByIsbn,
@@ -94,6 +95,19 @@ const CreatePhysicalJsonSchema = z.object({
   applyOpenLibrary: z.boolean().optional(),
 });
 
+const CreateFromCatalogJsonSchema = z.object({
+  intent: z.literal("create_from_catalog"),
+  provider: z.enum(["openlibrary", "googlebooks"]),
+  providerId: z.string().trim().min(1).max(255),
+  title: z.string().trim().min(1).max(500),
+  authors: z.array(z.string().trim().min(1)).min(1).max(50),
+  isbns: z.array(z.string().trim().min(1)).max(50).optional(),
+  publishDate: z.string().trim().max(50).optional(),
+  language: z.string().trim().max(10).optional(),
+  coverUrl: z.string().trim().url().max(2000).optional(),
+  query: z.string().trim().max(200).optional(),
+});
+
 export async function OPTIONS(req: Request) {
   return corsPreflight(req);
 }
@@ -161,6 +175,20 @@ export async function POST(req: Request) {
         }
 
         const create = CreatePhysicalJsonSchema.safeParse(body);
+        const createFromCatalog = CreateFromCatalogJsonSchema.safeParse(body);
+        if (createFromCatalog.success) {
+          await rateLimitOrThrow({
+            key: `books:create_from_catalog:${adminId}:${ip}`,
+            limit: 30,
+            windowMs: 60_000,
+          });
+          const result = await addBookFromCatalog({
+            ...createFromCatalog.data,
+            adminUserId: adminId,
+          });
+          return NextResponse.json(result, { status: result.status === "added" ? 201 : 200 });
+        }
+
         if (!create.success) {
           return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
         }

@@ -48,7 +48,7 @@ export async function GET(req: Request) {
         const ip = getClientIp(req);
         const userId = asUuidOrThrow((user as { id?: unknown } | null)?.id);
         await rateLimitOrThrow({
-          key: `catalog:openlibrary:${userId}:${ip}`,
+          key: `catalog:external:${userId}:${ip}`,
           limit: 30,
           windowMs: 60_000,
         });

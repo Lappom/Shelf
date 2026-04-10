@@ -57,6 +57,13 @@ vi.mock("@/lib/metadata/openlibrary", () => ({
   ]),
 }));
 
+vi.mock("@/lib/catalog/addCatalogBook", () => ({
+  addBookFromCatalog: vi.fn(async () => ({
+    status: "added",
+    bookId: "book-from-catalog",
+  })),
+}));
+
 describe("POST /api/books (JSON intents)", () => {
   it("openlibrary_preview_isbn returns enrichment", async () => {
     const { POST } = await import("./route");
@@ -107,5 +114,25 @@ describe("POST /api/books (JSON intents)", () => {
     expect(res.status).toBe(201);
     const json = (await res.json()) as { bookId?: string };
     expect(typeof json.bookId).toBe("string");
+  });
+
+  it("create_from_catalog returns added status", async () => {
+    const { POST } = await import("./route");
+    const req = new Request("http://test.local/api/books", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        intent: "create_from_catalog",
+        provider: "googlebooks",
+        providerId: "g-1",
+        title: "Catalog Book",
+        authors: ["Ada Lovelace"],
+      }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    const json = (await res.json()) as { status?: string; bookId?: string };
+    expect(json.status).toBe("added");
+    expect(json.bookId).toBeTruthy();
   });
 });

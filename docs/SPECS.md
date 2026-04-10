@@ -532,6 +532,13 @@ Options : titre (A-Z / Z-A), date d'ajout, date de publication, auteur, progress
 - **Titre seul** : `https://openlibrary.org/search.json?title=...`
 - **Couvertures** : `https://covers.openlibrary.org/b/isbn/{isbn}-L.jpg`
 
+### 9.1.1 Google Books
+
+- **Endpoint** : `https://www.googleapis.com/books/v1/volumes`
+- **Recherche** : `https://www.googleapis.com/books/v1/volumes?q=...`
+- **Filtre ISBN** : `q=isbn:{isbn}`
+- **Réponse** : `items[].id`, `volumeInfo.title`, `volumeInfo.authors`, `volumeInfo.industryIdentifiers`, `volumeInfo.publishedDate`, `volumeInfo.language`, `volumeInfo.imageLinks`
+
 ### 9.2 Champs enrichis
 
 | Champ | Source EPUB | Source Open Library |
@@ -554,6 +561,8 @@ Options : titre (A-Z / Z-A), date d'ajout, date de publication, auteur, progress
 3. Sinon → recherche fuzzy par titre + auteur sur Open Library, proposition à l'admin de confirmer le match.
 4. Rate limiting : max 1 requête/seconde vers Open Library (respect des conditions d'utilisation).
 5. Cache des réponses Open Library en base (ou Redis si disponible) pendant 30 jours.
+6. Recherche catalogue externe V2 : agrégation Open Library + Google Books, fallback explicite par provider, puis dédup + scoring global.
+7. En cas d'indisponibilité partielle provider, renvoyer des résultats partiels avec statut provider ; `502` seulement si aucun provider ne répond.
 
 ### 9.4 Pull catalogue (admin) — ajout en base sans fichiers
 
@@ -742,7 +751,7 @@ Prévoir dès la V1 une structure permettant d'exposer une API REST si besoin :
 
 ### 12.2.1 Catalogue externe — preview (`GET /api/catalog/search`)
 
-But : permettre à **tout utilisateur authentifié** (`reader` ou `admin`) de **parcourir** le catalogue public Open Library en **lecture seule** : aucune ligne `Book` ni autre écriture base n’est effectuée sur cet endpoint (distinct de `GET /api/search` qui interroge la bibliothèque locale, Phase 12 FTS).
+But : permettre à **tout utilisateur authentifié** (`reader` ou `admin`) de **parcourir** le catalogue externe agrégé (Open Library + Google Books) en **lecture seule** : aucune ligne `Book` ni autre écriture base n’est effectuée sur cet endpoint (distinct de `GET /api/search` qui interroge la bibliothèque locale, Phase 12 FTS).
 
 **Méthode** : `GET`
 
@@ -754,28 +763,37 @@ But : permettre à **tout utilisateur authentifié** (`reader` ou `admin`) de **
 - `author` : optionnel, ignoré si `q` est présent ; utile seulement avec `title`.
 - `limit` : entier 1–10, défaut 10 (nombre max de candidats retournés).
 
-**Rate limit** : par couple utilisateur + IP (ex. 30 requêtes / 60 s), aligné sur la recherche Open Library côté `POST /api/books` ; appels sortants vers Open Library soumis au throttle §9.3 + cache §9.3.
+**Rate limit** : par couple utilisateur + IP (ex. 30 requêtes / 60 s), aligné sur la recherche catalogue côté `POST /api/books` ; appels sortants vers providers soumis au throttle + timeout + retries bornés et cache (§9.3).
 
 **Réponse 200** (JSON) :
 
 ```json
 {
+  "partial": false,
+  "providers": {
+    "openlibrary": { "ok": true },
+    "googlebooks": { "ok": true }
+  },
   "candidates": [
     {
+      "provider": "openlibrary",
+      "providerId": "/works/OL123W",
       "key": "/works/OL123W",
       "title": "…",
       "authors": ["…"],
       "firstPublishYear": 2000,
       "isbns": ["978…"],
+      "language": "fr",
+      "relevanceScore": 0.91,
       "coverPreviewUrl": "https://covers.openlibrary.org/b/isbn/…-L.jpg"
     }
   ]
 }
 ```
 
-`coverPreviewUrl` : `null` si aucun ISBN normalisable parmi `isbns`. Les URLs de couverture pointent vers le CDN Open Library (pas le storage Shelf).
+`coverPreviewUrl` : `null` si aucun lien de couverture exploitable (`imageLinks` Google Books ou ISBN Open Library normalisé). Les URLs de couverture pointent vers les CDN providers (pas le storage Shelf).
 
-**Erreurs** : `400` (paramètres invalides ou `q` et `title` ensemble), `401` / `403` si non authentifié, `502` si Open Library indisponible.
+**Erreurs** : `400` (paramètres invalides ou `q` et `title` ensemble), `401` / `403` si non authentifié, `502` si tous les providers sont indisponibles.
 
 **Sécurité** : pas de fuite de secrets ; ne pas journaliser la requête textuelle en clair dans les événements d’audit (cf. §14).
 
@@ -808,6 +826,34 @@ Règles :
 - **Pas de fichiers** : aucune création `BookFile`, aucun accès storage.
 - **Rate limit** : appliquer une limite stricte (par admin + IP) ; respecter §9.3 pour Open Library.
 - **Audit** : journaliser l'action (source, counts, durée) sans fuite de secrets ni de données sensibles (§14).
+
+### 12.3.1 Ajouter à la bibliothèque depuis résultat externe (`POST /api/books`, intent `create_from_catalog`)
+
+Endpoint : `POST /api/books` (admin uniquement, `intent = "create_from_catalog"`).
+
+Entrée (JSON) :
+
+- `provider`: `"openlibrary" | "googlebooks"`
+- `providerId`: `string` (identifiant stable provider)
+- `title`: `string`
+- `authors`: `string[]` (min 1)
+- `isbns`: `string[]` (optionnel, normalisation serveur)
+- `publishDate`: `string` (optionnel)
+- `language`: `string` (optionnel)
+- `coverUrl`: `string` (optionnel)
+- `query`: `string` (optionnel, pour traçabilité)
+
+Sortie (JSON) :
+
+- `status`: `"added" | "already_exists" | "potential_conflict"`
+- `bookId`: `string`
+
+Règles :
+
+- Création `Book` en `format = "physical"` sans `BookFile`.
+- Idempotence stricte : lookup prioritaire `(external_catalog_provider, external_catalog_id)`, puis `isbn_13`, puis heuristique titre+auteur.
+- Provenance persistée (`external_catalog_provider`, `external_catalog_id`, `external_catalog_query`).
+- `already_exists` si correspondance exacte ; `potential_conflict` si repli heuristique.
 
 ## 13. Configuration
 
@@ -955,6 +1001,7 @@ volumes:
 - **Index DB** : `search_vector` (GIN), `content_hash`, `isbn_13`, `(user_id, book_id)` sur les tables de jointure.
 - **Streaming** : les fichiers EPUB sont streamés, pas chargés intégralement en mémoire.
 - **Bundle splitting** : le reader est chargé en lazy import (code splitting).
+- **Catalogue externe V2** : objectif P95 `GET /api/catalog/search` <= 1200 ms (cache warm) et <= 2200 ms (cache cold) sous charge nominale.
 
 ---
 
@@ -1213,6 +1260,13 @@ L'utilisateur configure son client IA avec :
 | Integration | Vitest + Prisma (test DB) | API routes, Server Actions, MCP tools |
 | E2E | Playwright | Flux critiques : auth, upload, lecture, recherche, recommendations |
 | Component | Vitest + Testing Library | Composants UI isolés |
+
+Tests additionnels catalogue externe V2 :
+
+- Intégration : fallback provider (Open Library KO, Google Books OK) => `200` avec `partial=true`.
+- Intégration : indisponibilité totale providers => `502`.
+- Intégration : idempotence `create_from_catalog` sur double clic / retries concurrents.
+- Intégration : dédup (ISBN prioritaire, heuristique titre+auteur en repli).
 
 ---
 

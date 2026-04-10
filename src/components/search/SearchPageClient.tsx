@@ -3,10 +3,6 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { updateSearchPreferencesAction } from "@/app/(app)/search/actions";
-import {
-  AddPhysicalBookDialog,
-  type PhysicalBookCatalogPrefill,
-} from "@/components/book/AddPhysicalBookDialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -38,11 +34,15 @@ type ApiSearchResult = {
 type ApiSearchResponse = { results: ApiSearchResult[]; nextCursor: string | null };
 
 type CatalogApiCandidate = {
+  provider: "openlibrary" | "googlebooks";
+  providerId: string;
   key: string;
   title: string;
   authors: string[];
   firstPublishYear: number | null;
   isbns: string[];
+  language: string | null;
+  relevanceScore: number;
   coverPreviewUrl: string | null;
 };
 
@@ -156,9 +156,9 @@ export function SearchPageClient({
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [catalogItems, setCatalogItems] = useState<CatalogApiCandidate[]>([]);
-  const [catalogAddOpen, setCatalogAddOpen] = useState(false);
-  const [catalogPrefill, setCatalogPrefill] = useState<PhysicalBookCatalogPrefill | null>(null);
-  const [catalogDialogKey, setCatalogDialogKey] = useState(0);
+  const [catalogAddFeedback, setCatalogAddFeedback] = useState<
+    Record<string, "idle" | "loading" | "added" | "already_exists" | "potential_conflict" | "error">
+  >({});
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -440,6 +440,40 @@ export function SearchPageClient({
     pagesMin.trim() ||
     pagesMax.trim();
 
+  async function addCatalogCandidate(candidate: CatalogApiCandidate) {
+    const key = `${candidate.provider}:${candidate.providerId}`;
+    setCatalogAddFeedback((prev) => ({ ...prev, [key]: "loading" }));
+    try {
+      const res = await fetch("/api/books", {
+        method: "POST",
+        credentials: "include",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          intent: "create_from_catalog",
+          provider: candidate.provider,
+          providerId: candidate.providerId,
+          title: candidate.title,
+          authors: candidate.authors,
+          isbns: candidate.isbns,
+          publishDate: candidate.firstPublishYear ? String(candidate.firstPublishYear) : undefined,
+          language: candidate.language ?? undefined,
+          coverUrl: candidate.coverPreviewUrl ?? undefined,
+          query: catalogQ.trim() || undefined,
+        }),
+      });
+      const json = (await res.json().catch(() => null)) as
+        | { status?: "added" | "already_exists" | "potential_conflict" }
+        | null;
+      if (!res.ok || !json?.status) {
+        setCatalogAddFeedback((prev) => ({ ...prev, [key]: "error" }));
+        return;
+      }
+      setCatalogAddFeedback((prev) => ({ ...prev, [key]: json.status }));
+    } catch {
+      setCatalogAddFeedback((prev) => ({ ...prev, [key]: "error" }));
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
@@ -509,43 +543,51 @@ export function SearchPageClient({
                     <div className="text-muted-foreground text-sm">
                       {(c.authors ?? []).slice(0, 6).join(", ") || "—"}
                       {c.firstPublishYear != null ? ` · ${c.firstPublishYear}` : ""}
+                      {c.language ? ` · ${c.language}` : ""}
+                      {Number.isFinite(c.relevanceScore)
+                        ? ` · score ${(c.relevanceScore * 100).toFixed(0)}`
+                        : ""}
+                    </div>
+                    <div className="text-muted-foreground text-xs uppercase">
+                      {c.provider === "googlebooks" ? "Google Books" : "Open Library"}
                     </div>
                     {isAdmin ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setCatalogPrefill({
-                            title: c.title,
-                            authors: c.authors.length ? c.authors : ["Inconnu"],
-                            isbns: c.isbns,
-                          });
-                          setCatalogDialogKey((k) => k + 1);
-                          setCatalogAddOpen(true);
-                        }}
-                      >
-                        Ajouter à la bibliothèque
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={
+                            catalogAddFeedback[`${c.provider}:${c.providerId}`] === "loading"
+                          }
+                          onClick={() => {
+                            addCatalogCandidate(c).catch(() => undefined);
+                          }}
+                        >
+                          {catalogAddFeedback[`${c.provider}:${c.providerId}`] === "loading"
+                            ? "Ajout..."
+                            : "Ajouter à la bibliothèque"}
+                        </Button>
+                        <span className="text-xs">
+                          {catalogAddFeedback[`${c.provider}:${c.providerId}`] === "added"
+                            ? "Ajouté"
+                            : catalogAddFeedback[`${c.provider}:${c.providerId}`] ===
+                                  "already_exists"
+                              ? "Déjà présent"
+                              : catalogAddFeedback[`${c.provider}:${c.providerId}`] ===
+                                    "potential_conflict"
+                                ? "Conflit potentiel"
+                                : catalogAddFeedback[`${c.provider}:${c.providerId}`] === "error"
+                                  ? "Erreur"
+                                  : ""}
+                        </span>
+                      </div>
                     ) : null}
                   </div>
                 </div>
               </Card>
             ))}
           </div>
-
-          {isAdmin ? (
-            <AddPhysicalBookDialog
-              key={catalogDialogKey}
-              hideTrigger
-              open={catalogAddOpen}
-              onOpenChange={(v) => {
-                setCatalogAddOpen(v);
-                if (!v) setCatalogPrefill(null);
-              }}
-              catalogPrefill={catalogPrefill}
-            />
-          ) : null}
         </>
       ) : (
         <>
