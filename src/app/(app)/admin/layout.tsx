@@ -10,6 +10,7 @@ function AdminNav() {
     { href: "/admin/duplicates", label: "Doublons" },
     { href: "/admin/tags", label: "Tags" },
     { href: "/admin/import-calibre", label: "Import Calibre" },
+    { href: "/admin/pull-books", label: "Pull Open Library" },
     { href: "/admin/storage", label: "Stockage" },
     { href: "/admin/settings", label: "Paramètres" },
   ] as const;

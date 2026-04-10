@@ -414,13 +414,13 @@
 - [x] Gestion cover hi-res (préférence hi-res si disponible).
 
 ### 15.5 Pull books (admin) — import catalogue sans fichiers (docs/SPECS.md §9.4 + §12.3)
-- [ ] Route admin `POST /api/admin/pull-books` : input `query/limit/cursor/dryRun`, output `created/skipped/nextCursor`.
-- [ ] Dédup idempotent : match `open_library_id` puis `isbn_13` (fallback heuristique seulement si nécessaire).
-- [ ] Implémenter pagination/cursor sur la source (Open Library) et persister le curseur opaque côté client (pas en DB).
-- [ ] Rate limit (admin + IP) + cache Open Library (réutiliser Phase 15.3).
-- [ ] Audit : événement admin “pull_books” (counts, durée, source) + pas de logs sensibles (règles §14).
-- [ ] UI `/admin` : bouton + champ query + bouton “Pull next page” (ou “Continuer”) + affichage des résultats (créés/ignorés) et erreurs.
-- [ ] Tests : intégration API + unit tests sur dédup/normalisation.
+- [x] Route admin `POST /api/admin/pull-books` : input `query/limit/cursor/dryRun`, output `created/skipped/nextCursor`.
+- [x] Dédup idempotent : match `open_library_id` puis `isbn_13` (fallback heuristique seulement si nécessaire).
+- [x] Implémenter pagination/cursor sur la source (Open Library) et persister le curseur opaque côté client (pas en DB).
+- [x] Rate limit (admin + IP) + cache Open Library (réutiliser Phase 15.3).
+- [x] Audit : événement admin “pull_books” (counts, durée, source) + pas de logs sensibles (règles §14).
+- [x] UI `/admin` : bouton + champ query + bouton “Pull next page” (ou “Continuer”) + affichage des résultats (créés/ignorés) et erreurs.
+- [x] Tests : intégration API + unit tests sur dédup/normalisation.
 
 ---
 

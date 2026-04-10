@@ -219,6 +219,8 @@ export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLib
 }
 
 type OpenLibrarySearchResponse = {
+  numFound?: number;
+  start?: number;
   docs?: Array<{
     key?: string;
     title?: string;
@@ -226,6 +228,12 @@ type OpenLibrarySearchResponse = {
     first_publish_year?: number;
     isbn?: string[];
   }>;
+};
+
+export type OpenLibraryPagedSearchResult = {
+  candidates: OpenLibrarySearchCandidate[];
+  numFound: number;
+  start: number;
 };
 
 function mapSearchDocsToCandidates(
@@ -298,4 +306,33 @@ export async function searchOpenLibraryByTitleAuthor(args: {
   const author = args.author.trim();
   if (!title || !author) return [];
   return searchOpenLibraryCatalog({ title, author, limit: args.limit });
+}
+
+/**
+ * Paged generic `q` search for admin pull (limit 1–50, offset). Cached per (q, limit, offset).
+ */
+export async function searchOpenLibraryCatalogPaged(args: {
+  q: string;
+  limit: number;
+  offset: number;
+}): Promise<OpenLibraryPagedSearchResult> {
+  const q = args.q.trim();
+  const limit = Math.max(1, Math.min(50, Math.trunc(args.limit)));
+  const offset = Math.max(0, Math.trunc(args.offset));
+  if (!q) {
+    return { candidates: [], numFound: 0, start: offset };
+  }
+
+  const cacheId = stableHash(`catalog:page:q:${q.toLowerCase()}:l:${limit}:o:${offset}`);
+  const cached = await getCachedJson<OpenLibraryPagedSearchResult>(searchKey(cacheId));
+  if (cached) return cached;
+
+  const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`;
+  const json = await fetchJson<OpenLibrarySearchResponse>(url, "search");
+  const numFound = typeof json.numFound === "number" && Number.isFinite(json.numFound) ? json.numFound : 0;
+  const start = typeof json.start === "number" && Number.isFinite(json.start) ? json.start : offset;
+  const candidates = mapSearchDocsToCandidates(json.docs, limit);
+  const result: OpenLibraryPagedSearchResult = { candidates, numFound, start };
+  await setCachedJson(searchKey(cacheId), result);
+  return result;
 }

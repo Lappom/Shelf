@@ -92,6 +92,7 @@ enum AdminAuditAction {
   duplicate_ignore
   duplicate_merge
   mcp_tool_call
+  pull_books
 }
 
 model User {
@@ -160,6 +161,7 @@ model Book {
 
   @@index([contentHash])
   @@index([isbn13])
+  @@index([openLibraryId])
   @@index([deletedAt])
   @@index([language])
   @@index([format])
