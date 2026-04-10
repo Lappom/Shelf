@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { patchUserPreferencesAction } from "@/app/(app)/actions/userPreferences";
+import { SignOutDropdownMenuItem } from "@/components/pwa/SignOutButton";
 import { useTheme, type ThemePreference } from "@/components/theme/ThemeProvider";
 
 type Props = { email: string | null };
@@ -69,15 +70,19 @@ export function UserMenu({ email }: Props) {
         </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
+          <Link href="/profile">Profil</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/recommendations">Pour vous</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/settings/api-keys">Clés API / MCP</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled className="text-eleven-muted text-xs">
-          {busy ? "Mise à jour…" : " "}
-        </DropdownMenuItem>
+        <SignOutDropdownMenuItem />
+        {busy ? (
+          <p className="text-eleven-muted px-2 py-1 text-center text-xs">Mise à jour du thème…</p>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -8,8 +8,10 @@ import {
   BookmarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  HardDriveIcon,
   ListIcon,
   SettingsIcon,
+  SlidersHorizontalIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,6 +44,9 @@ import {
   offlineOrQueueProgress,
 } from "@/lib/offline/queue";
 import { OfflineManagerDialog } from "@/components/pwa/OfflineManagerDialog";
+import { ReaderAnnotationsList } from "@/components/reader/ReaderAnnotationsList";
+import { ReaderSettingsDialog } from "@/components/reader/ReaderSettingsDialog";
+import { ReaderTocList } from "@/components/reader/ReaderTocList";
 import { cn } from "@/lib/utils";
 
 type ReaderPrefs = {
@@ -125,6 +130,7 @@ export function EpubReaderClient({
   const [focusMode, setFocusMode] = React.useState(false);
   const [busy, startTransition] = React.useTransition();
   const [offlineDialogOpen, setOfflineDialogOpen] = React.useState(false);
+  const [readerSettingsOpen, setReaderSettingsOpen] = React.useState(false);
 
   const [prefs, setPrefs] = React.useState(() => ({
     readerFontFamily: initialPrefs?.readerFontFamily ?? "system",
@@ -174,16 +180,31 @@ export function EpubReaderClient({
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (leftOpen) {
+          setLeftOpen(false);
+          return;
+        }
+        if (rightOpen) {
+          setRightOpen(false);
+          return;
+        }
         setFocusMode(false);
       }
       if (e.key.toLowerCase?.() === "f" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setFocusMode((v) => !v);
+        setFocusMode((v) => {
+          const next = !v;
+          if (next) {
+            setLeftOpen(false);
+            setRightOpen(false);
+          }
+          return next;
+        });
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [leftOpen, rightOpen]);
 
   const saveProgress = React.useCallback(
     async (opts?: { bestEffort?: boolean }) => {
@@ -560,257 +581,259 @@ export function EpubReaderClient({
     }
   }, [bookId, pendingSelection, refreshAnnotations]);
 
+  const navigateToc = React.useCallback(
+    (href: string, closeAfter: boolean) => {
+      if (closeAfter) setLeftOpen(false);
+      startTransition(async () => {
+        try {
+          await renditionRef.current?.display(href);
+        } catch {
+          // ignore
+        }
+      });
+    },
+    [startTransition],
+  );
+
+  const goToAnnotation = React.useCallback(
+    (cfiRange: string, closeAfter: boolean) => {
+      if (closeAfter) setRightOpen(false);
+      startTransition(async () => {
+        try {
+          await renditionRef.current?.display(cfiRange);
+        } catch {
+          // ignore
+        }
+      });
+    },
+    [startTransition],
+  );
+
+  const deleteAnnotation = React.useCallback(
+    (a: AnnotationRow) => {
+      startTransition(async () => {
+        if (a.id.startsWith("local:")) {
+          setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
+          return;
+        }
+        const res = await offlineOrQueueAnnotationDelete({
+          bookId,
+          url: `/api/annotations/${a.id}`,
+        });
+        if (!res.queued) await refreshAnnotations();
+        if (res.queued) setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
+      });
+    },
+    [bookId, refreshAnnotations, startTransition],
+  );
+
+  const editAnnotation = React.useCallback((a: AnnotationRow) => {
+    setPendingSelection({
+      cfiRange: a.cfiRange,
+      text: a.content ?? "",
+      color: a.color ?? "#ffee55",
+      note: a.note ?? "",
+    });
+    setSelectionDialogOpen(true);
+  }, []);
+
   return (
-    <div className="bg-background text-foreground relative h-[calc(100vh-56px)] w-full">
-      {focusMode ? (
-        <div className="relative h-full w-full">
-          <div className="absolute inset-0">
-            <div ref={containerRef} className="h-full w-full" />
-          </div>
-          <div className="absolute top-3 right-3 z-50 flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setFocusMode(false)}
-              aria-label="Quitter le mode focus"
-              title="Quitter le mode focus"
-              disabled={busy}
-            >
-              Quitter focus
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      <header
-        className={cn(
-          "bg-background/80 supports-backdrop-filter:bg-background/60 border-b px-3 py-2 backdrop-blur",
-          focusMode ? "hidden" : "",
-        )}
-      >
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={() => router.back()}
-              title="Retour"
-              aria-label="Retour"
-              disabled={busy}
-            >
-              <ChevronLeftIcon className="size-4" />
-            </Button>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium">{bookTitle}</div>
-              {bookAuthors.length ? (
-                <div className="text-muted-foreground truncate text-xs">
-                  {bookAuthors.join(", ")}
+    <div className="reader-shell-enter relative flex min-h-[calc(100vh-3.5rem)] w-full flex-col bg-background text-foreground">
+      {!focusMode ? (
+        <header className="shrink-0 border-b border-(--eleven-border-subtle) bg-background/85 px-3 py-3 backdrop-blur supports-backdrop-filter:bg-background/65">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="rounded-eleven-pill shadow-eleven-button-white"
+                onClick={() => router.back()}
+                title="Retour"
+                aria-label="Retour"
+                disabled={busy}
+              >
+                <ChevronLeftIcon className="size-4" />
+              </Button>
+              <div className="min-w-0">
+                <div className="eleven-display-section text-foreground truncate text-base tracking-tight">
+                  {bookTitle}
                 </div>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="text-muted-foreground hidden text-xs sm:block">
-              Progression:{" "}
-              <span className="text-foreground">{formatPercent(location.progress)}</span>
+                {bookAuthors.length ? (
+                  <div className="text-eleven-muted eleven-body-airy truncate text-xs">
+                    {bookAuthors.join(", ")}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={() => setLeftOpen((v) => !v)}
-              aria-label="Table des matières"
-              title="Table des matières"
-              disabled={busy}
-            >
-              <ListIcon className="size-4" />
-            </Button>
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <div className="text-eleven-muted eleven-body-airy hidden text-xs lg:block">
+                <span className="text-foreground">{formatPercent(location.progress)}</span>
+              </div>
 
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={() => setRightOpen((v) => !v)}
-              aria-label="Annotations"
-              title="Annotations"
-              disabled={busy}
-            >
-              <BookmarkIcon className="size-4" />
-            </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="rounded-eleven-pill shadow-eleven-button-white"
+                onClick={() => setLeftOpen((v) => !v)}
+                aria-label="Table des matières"
+                title="Table des matières"
+                disabled={busy}
+              >
+                <ListIcon className="size-4" />
+              </Button>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="Réglages"
-                  title="Réglages"
-                  disabled={busy}
-                >
-                  <SettingsIcon className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72">
-                <DropdownMenuLabel>Reader</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <div className="px-2 py-1.5 text-xs">
-                  <div className="text-muted-foreground">Taille (px)</div>
-                  <Input
-                    value={String(prefs.readerFontSize)}
-                    inputMode="numeric"
-                    onChange={(e) =>
-                      updatePref({ readerFontSize: clampNumber(Number(e.target.value), 12, 32) })
-                    }
-                  />
-                </div>
-                <div className="px-2 py-1.5 text-xs">
-                  <div className="text-muted-foreground">Interligne</div>
-                  <Input
-                    value={String(prefs.readerLineHeight)}
-                    inputMode="decimal"
-                    onChange={(e) =>
-                      updatePref({
-                        readerLineHeight: clampNumber(Number(e.target.value), 1.0, 2.5),
-                      })
-                    }
-                  />
-                </div>
-                <div className="px-2 py-1.5 text-xs">
-                  <div className="text-muted-foreground">Marges (px)</div>
-                  <Input
-                    value={String(prefs.readerMargin)}
-                    inputMode="numeric"
-                    onChange={(e) =>
-                      updatePref({ readerMargin: clampNumber(Number(e.target.value), 0, 80) })
-                    }
-                  />
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Police</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={prefs.readerFontFamily}
-                  onValueChange={(v) =>
-                    updatePref({ readerFontFamily: v as "system" | "serif" | "sans" | "dyslexic" })
-                  }
-                >
-                  <DropdownMenuRadioItem value="system">System</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="serif">Serif</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="sans">Sans</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="dyslexic">Dyslexic</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Thème</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={prefs.readerTheme}
-                  onValueChange={(v) =>
-                    updatePref({ readerTheme: v as "light" | "dark" | "sepia" })
-                  }
-                >
-                  <DropdownMenuRadioItem value="light">Light</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="dark">Dark</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="sepia">Sepia</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Défilement</DropdownMenuLabel>
-                <DropdownMenuRadioGroup
-                  value={prefs.readerFlow}
-                  onValueChange={(v) => updatePref({ readerFlow: v as "paginated" | "scrolled" })}
-                >
-                  <DropdownMenuRadioItem value="paginated">Paginé</DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="scrolled">Scroll</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setOfflineDialogOpen(true);
-                  }}
-                >
-                  Offline & stockage
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    void createBookmark();
-                  }}
-                >
-                  Ajouter un bookmark
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    exportMarkdown();
-                  }}
-                >
-                  Exporter les annotations (Markdown)
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    setFocusMode((v) => {
-                      const next = !v;
-                      if (next) {
-                        setLeftOpen(false);
-                        setRightOpen(false);
-                      }
-                      return next;
-                    });
-                  }}
-                >
-                  Mode focus (Ctrl/Cmd+F)
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <div className="bg-muted mt-2 h-1 w-full overflow-hidden rounded-full">
-          <div
-            className="bg-foreground/70 h-full"
-            style={{ width: `${Math.round((progressPct ?? 0) * 10000) / 100}%` }}
-          />
-        </div>
-      </header>
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="rounded-eleven-pill shadow-eleven-button-white"
+                onClick={() => setRightOpen((v) => !v)}
+                aria-label="Annotations"
+                title="Annotations"
+                disabled={busy}
+              >
+                <BookmarkIcon className="size-4" />
+              </Button>
 
-      <div className={cn("absolute inset-x-0 top-[49px] bottom-0 flex", focusMode ? "hidden" : "")}>
-        {leftOpen ? (
-          <aside className="bg-background hidden w-72 shrink-0 overflow-auto border-r md:block">
-            <div className="p-3 text-sm font-medium">Chapitres</div>
-            <div className="px-2 pb-3">
-              {toc.length ? (
-                toc.map((it) => (
-                  <button
-                    key={`${it.href}-${it.depth}`}
-                    className="hover:bg-muted w-full rounded-xl px-2 py-1.5 text-left text-sm"
-                    style={{ paddingLeft: 8 + it.depth * 14 }}
-                    onClick={() => {
-                      startTransition(async () => {
-                        try {
-                          await renditionRef.current?.display(it.href);
-                        } catch {
-                          // ignore
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="rounded-eleven-pill shadow-eleven-button-white"
+                onClick={() => setOfflineDialogOpen(true)}
+                aria-label="Stockage et hors-ligne"
+                title="Stockage et hors-ligne"
+                disabled={busy}
+              >
+                <HardDriveIcon className="size-4" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="rounded-eleven-pill shadow-eleven-button-white"
+                onClick={() => setReaderSettingsOpen(true)}
+                aria-label="Réglages de lecture"
+                title="Réglages de lecture"
+                disabled={busy}
+              >
+                <SlidersHorizontalIcon className="size-4" />
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    className="rounded-eleven-pill shadow-eleven-button-white"
+                    aria-label="Menu lecture"
+                    title="Menu lecture"
+                    disabled={busy}
+                  >
+                    <SettingsIcon className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel className="eleven-body-airy">Raccourcis</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="eleven-body-airy"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setReaderSettingsOpen(true);
+                    }}
+                  >
+                    Réglages détaillés…
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="eleven-body-airy">Thème rapide</DropdownMenuLabel>
+                  <DropdownMenuRadioGroup
+                    value={prefs.readerTheme}
+                    onValueChange={(v) =>
+                      updatePref({ readerTheme: v as "light" | "dark" | "sepia" })
+                    }
+                  >
+                    <DropdownMenuRadioItem value="light">Clair</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="dark">Sombre</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="sepia">Sepia</DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="eleven-body-airy"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      void createBookmark();
+                    }}
+                  >
+                    Ajouter un signet
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="eleven-body-airy"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      exportMarkdown();
+                    }}
+                  >
+                    Exporter les annotations (Markdown)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="eleven-body-airy"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      setFocusMode((v) => {
+                        const next = !v;
+                        if (next) {
+                          setLeftOpen(false);
+                          setRightOpen(false);
                         }
+                        return next;
                       });
                     }}
                   >
-                    {it.label || it.href}
-                  </button>
-                ))
-              ) : (
-                <div className="text-muted-foreground px-2 py-1.5 text-sm">TOC indisponible.</div>
-              )}
+                    Mode focus (Ctrl/Cmd+F)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          <div className="bg-muted/80 mt-3 h-1.5 w-full overflow-hidden rounded-eleven-pill">
+            <div
+              className="bg-foreground/65 h-full rounded-eleven-pill transition-[width] duration-300 ease-out"
+              style={{ width: `${Math.round((progressPct ?? 0) * 10000) / 100}%` }}
+            />
+          </div>
+        </header>
+      ) : null}
+
+      <div
+        className={cn(
+          "flex min-h-0 flex-1",
+          focusMode && "min-h-[calc(100vh-3.5rem)]",
+        )}
+      >
+        {!focusMode && leftOpen ? (
+          <aside className="hidden h-full w-72 shrink-0 flex-col overflow-hidden border-r border-(--eleven-border-subtle) bg-background md:flex">
+            <div className="eleven-display-section text-foreground border-b border-(--eleven-border-subtle) px-3 py-3 text-base tracking-tight">
+              Chapitres
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              <ReaderTocList
+                items={toc}
+                emptyLabel="Table des matières indisponible."
+                onNavigate={(href) => navigateToc(href, false)}
+              />
             </div>
           </aside>
         ) : null}
 
-        <main className="relative flex min-w-0 flex-1 flex-col">
-          <div className="bg-background/70 border-b px-3 py-2">
-            <div className="flex items-center justify-between gap-2">
+        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col">
+          {!focusMode ? (
+            <div className="flex items-center justify-between gap-3 border-b border-(--eleven-border-subtle) bg-background/80 px-3 py-2.5 backdrop-blur">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  className="size-10 rounded-eleven-pill shadow-eleven-button-white md:size-9"
                   onClick={() => {
                     startTransition(async () => {
                       try {
@@ -826,9 +849,13 @@ export function EpubReaderClient({
                 >
                   <ChevronLeftIcon className="size-4" />
                 </Button>
+                <span className="text-eleven-muted eleven-body-airy hidden text-xs sm:inline">
+                  Pages
+                </span>
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  className="size-10 rounded-eleven-pill shadow-eleven-button-white md:size-9"
                   onClick={() => {
                     startTransition(async () => {
                       try {
@@ -845,250 +872,139 @@ export function EpubReaderClient({
                   <ChevronRightIcon className="size-4" />
                 </Button>
               </div>
-              <div className="text-muted-foreground text-xs">
-                CFI:{" "}
-                <span className="font-mono">{location.cfi ? location.cfi.slice(0, 28) : "—"}</span>
-              </div>
+              <details className="group max-w-[min(100%,12rem)] text-right sm:max-w-md">
+                <summary className="text-eleven-muted eleven-body-airy cursor-pointer list-none text-xs underline decoration-transparent underline-offset-2 transition-colors marker:hidden hover:decoration-foreground [&::-webkit-details-marker]:hidden">
+                  Avancé (CFI)
+                </summary>
+                <div className="text-eleven-muted mt-1 max-h-24 overflow-auto break-all font-mono text-[10px] leading-snug">
+                  {location.cfi ?? "—"}
+                </div>
+              </details>
             </div>
-          </div>
+          ) : null}
 
           <div className="relative min-h-0 flex-1">
             <div ref={containerRef} className="h-full w-full" />
           </div>
         </main>
 
-        {rightOpen ? (
-          <aside className="bg-background hidden w-80 shrink-0 overflow-auto border-l lg:block">
-            <div className="p-3 text-sm font-medium">Annotations</div>
-            <div className="px-3 pb-4">
-              {annotations.length ? (
-                <div className="space-y-3">
-                  {annotations.map((a) => (
-                    <div key={a.id} className="rounded-2xl border p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs font-medium tracking-wide uppercase">
-                          {a.type}
-                          {a.type === "highlight" && a.color ? (
-                            <span className="ml-2 rounded-full border px-2 py-0.5 text-[10px]">
-                              {a.color}
-                            </span>
-                          ) : null}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          disabled={busy}
-                          aria-label="Supprimer"
-                          title="Supprimer"
-                          onClick={() => {
-                            startTransition(async () => {
-                              if (a.id.startsWith("local:")) {
-                                setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
-                                return;
-                              }
-                              const res = await offlineOrQueueAnnotationDelete({
-                                bookId,
-                                url: `/api/annotations/${a.id}`,
-                              });
-                              if (!res.queued) await refreshAnnotations();
-                              if (res.queued)
-                                setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
-                            });
-                          }}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                      {a.content ? <div className="mt-2 text-sm">{a.content}</div> : null}
-                      {a.note ? (
-                        <div className="text-muted-foreground mt-2 text-sm">{a.note}</div>
-                      ) : null}
-                      <div className="mt-3 flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => {
-                            startTransition(async () => {
-                              try {
-                                await renditionRef.current?.display(a.cfiRange);
-                              } catch {
-                                // ignore
-                              }
-                            });
-                          }}
-                        >
-                          Aller
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => {
-                            setPendingSelection({
-                              cfiRange: a.cfiRange,
-                              text: a.content ?? "",
-                              color: a.color ?? "#ffee55",
-                              note: a.note ?? "",
-                            });
-                            setSelectionDialogOpen(true);
-                          }}
-                        >
-                          Éditer
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground text-sm">Aucune annotation.</div>
-              )}
+        {!focusMode && rightOpen ? (
+          <aside className="hidden h-full w-80 shrink-0 flex-col overflow-hidden border-l border-(--eleven-border-subtle) bg-background lg:flex">
+            <div className="eleven-display-section text-foreground border-b border-(--eleven-border-subtle) px-3 py-3 text-base tracking-tight">
+              Annotations
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto px-3 pb-4 pt-2">
+              <ReaderAnnotationsList
+                annotations={annotations}
+                busy={busy}
+                emptyLabel="Aucune annotation pour ce livre."
+                onGo={(cfi) => goToAnnotation(cfi, false)}
+                onEdit={editAnnotation}
+                onDelete={deleteAnnotation}
+              />
             </div>
           </aside>
         ) : null}
       </div>
 
-      {/* Mobile overlays */}
+      {focusMode ? (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-50 flex justify-end p-3">
+          <div className="pointer-events-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-eleven-pill shadow-eleven-button-white"
+              onClick={() => setFocusMode(false)}
+              aria-label="Quitter le mode focus"
+              title="Quitter le mode focus"
+              disabled={busy}
+            >
+              Quitter le focus
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {leftOpen ? (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Table des matières"
+        >
           <button
-            className="absolute inset-0 bg-black/10"
+            type="button"
+            className="reader-drawer-backdrop-enter absolute inset-0 bg-black/25"
             aria-label="Fermer la table des matières"
             onClick={() => setLeftOpen(false)}
           />
-          <div className="bg-background absolute top-[56px] left-0 h-[calc(100vh-56px)] w-[min(80vw,320px)] overflow-auto border-r">
-            <div className="p-3 text-sm font-medium">Chapitres</div>
-            <div className="px-2 pb-3">
-              {toc.length ? (
-                toc.map((it) => (
-                  <button
-                    key={`m-${it.href}-${it.depth}`}
-                    className="hover:bg-muted w-full rounded-xl px-2 py-1.5 text-left text-sm"
-                    style={{ paddingLeft: 8 + it.depth * 14 }}
-                    onClick={() => {
-                      setLeftOpen(false);
-                      startTransition(async () => {
-                        try {
-                          await renditionRef.current?.display(it.href);
-                        } catch {
-                          // ignore
-                        }
-                      });
-                    }}
-                  >
-                    {it.label || it.href}
-                  </button>
-                ))
-              ) : (
-                <div className="text-muted-foreground px-2 py-1.5 text-sm">TOC indisponible.</div>
-              )}
+          <div className="reader-drawer-panel-left-enter shadow-eleven-card absolute top-14 left-0 flex h-[calc(100vh-3.5rem)] w-[min(80vw,320px)] flex-col overflow-hidden border-r border-(--eleven-border-subtle) bg-background">
+            <div className="eleven-display-section text-foreground border-b border-(--eleven-border-subtle) px-3 py-3 text-base tracking-tight">
+              Chapitres
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto">
+              <ReaderTocList
+                items={toc}
+                emptyLabel="Table des matières indisponible."
+                onNavigate={(href) => navigateToc(href, true)}
+              />
             </div>
           </div>
         </div>
       ) : null}
 
       {rightOpen ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
+        <div
+          className="fixed inset-0 z-40 lg:hidden"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Annotations"
+        >
           <button
-            className="absolute inset-0 bg-black/10"
+            type="button"
+            className="reader-drawer-backdrop-enter absolute inset-0 bg-black/25"
             aria-label="Fermer les annotations"
             onClick={() => setRightOpen(false)}
           />
-          <div className="bg-background absolute top-[56px] right-0 h-[calc(100vh-56px)] w-[min(86vw,420px)] overflow-auto border-l">
-            <div className="p-3 text-sm font-medium">Annotations</div>
-            <div className="px-3 pb-4">
-              {annotations.length ? (
-                <div className="space-y-3">
-                  {annotations.map((a) => (
-                    <div key={`m-${a.id}`} className="rounded-2xl border p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="text-xs font-medium tracking-wide uppercase">
-                          {a.type}
-                          {a.type === "highlight" && a.color ? (
-                            <span className="ml-2 rounded-full border px-2 py-0.5 text-[10px]">
-                              {a.color}
-                            </span>
-                          ) : null}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          disabled={busy}
-                          aria-label="Supprimer"
-                          title="Supprimer"
-                          onClick={() => {
-                            startTransition(async () => {
-                              if (a.id.startsWith("local:")) {
-                                setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
-                                return;
-                              }
-                              const res = await offlineOrQueueAnnotationDelete({
-                                bookId,
-                                url: `/api/annotations/${a.id}`,
-                              });
-                              if (!res.queued) await refreshAnnotations();
-                              if (res.queued)
-                                setAnnotations((prev) => prev.filter((x) => x.id !== a.id));
-                            });
-                          }}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                      {a.content ? <div className="mt-2 text-sm">{a.content}</div> : null}
-                      {a.note ? (
-                        <div className="text-muted-foreground mt-2 text-sm">{a.note}</div>
-                      ) : null}
-                      <div className="mt-3 flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => {
-                            setRightOpen(false);
-                            startTransition(async () => {
-                              try {
-                                await renditionRef.current?.display(a.cfiRange);
-                              } catch {
-                                // ignore
-                              }
-                            });
-                          }}
-                        >
-                          Aller
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={busy}
-                          onClick={() => {
-                            setPendingSelection({
-                              cfiRange: a.cfiRange,
-                              text: a.content ?? "",
-                              color: a.color ?? "#ffee55",
-                              note: a.note ?? "",
-                            });
-                            setSelectionDialogOpen(true);
-                          }}
-                        >
-                          Éditer
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground text-sm">Aucune annotation.</div>
-              )}
+          <div className="reader-drawer-panel-right-enter shadow-eleven-card absolute top-14 right-0 flex h-[calc(100vh-3.5rem)] w-[min(86vw,420px)] flex-col overflow-hidden border-l border-(--eleven-border-subtle) bg-background">
+            <div className="eleven-display-section text-foreground border-b border-(--eleven-border-subtle) px-3 py-3 text-base tracking-tight">
+              Annotations
+            </div>
+            <div className="min-h-0 flex-1 overflow-auto px-3 pb-4 pt-2">
+              <ReaderAnnotationsList
+                annotations={annotations}
+                busy={busy}
+                emptyLabel="Aucune annotation pour ce livre."
+                onGo={(cfi) => goToAnnotation(cfi, true)}
+                onEdit={editAnnotation}
+                onDelete={deleteAnnotation}
+              />
             </div>
           </div>
         </div>
       ) : null}
 
+      <ReaderSettingsDialog
+        open={readerSettingsOpen}
+        onOpenChange={setReaderSettingsOpen}
+        prefs={{
+          readerFontFamily: prefs.readerFontFamily,
+          readerFontSize: prefs.readerFontSize,
+          readerLineHeight: prefs.readerLineHeight,
+          readerMargin: prefs.readerMargin,
+          readerTheme: prefs.readerTheme,
+          readerFlow: prefs.readerFlow,
+        }}
+        onPatch={(patch) => updatePref(patch)}
+        clampNumber={clampNumber}
+      />
+
       <Dialog open={selectionDialogOpen} onOpenChange={setSelectionDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Highlight</DialogTitle>
+            <DialogTitle className="eleven-display-section text-lg font-light tracking-tight">
+              Surlignage
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div>

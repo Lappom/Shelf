@@ -76,13 +76,15 @@ export function OfflineManagerDialog({ open, onOpenChange, current }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Offline</DialogTitle>
+          <DialogTitle className="eleven-display-section text-xl font-light tracking-tight">
+            Hors-ligne & stockage
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          <div className="rounded-2xl border p-4">
-            <div className="text-sm font-medium">Stockage</div>
-            <div className="text-muted-foreground mt-1 text-sm">
+          <div className="shadow-eleven-card rounded-[20px] border border-(--eleven-border-subtle) p-4">
+            <div className="eleven-body-airy text-sm font-medium">Stockage</div>
+            <div className="text-eleven-muted eleven-body-airy mt-1 text-sm">
               Utilisé: <span className="text-foreground">{formatBytes(usage)}</span> · Quota:{" "}
               <span className="text-foreground">{formatBytes(quota)}</span>
             </div>

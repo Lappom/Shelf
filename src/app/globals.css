@@ -244,6 +244,69 @@
     }
   }
 
+  /* Reader: shell, drawers, TOC stagger (prefers-reduced-motion gated below) */
+  @keyframes reader-shell-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes reader-lazy-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes reader-drawer-backdrop-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes reader-drawer-panel-left-in {
+    from {
+      opacity: 0.94;
+      transform: translateX(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes reader-drawer-panel-right-in {
+    from {
+      opacity: 0.94;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes reader-toc-item-in {
+    from {
+      opacity: 0;
+      transform: translateX(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
   @keyframes admin-books-panel-in {
     from {
       opacity: 0;
@@ -710,6 +773,31 @@
       animation: admin-settings-row-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
       animation-delay: var(--admin-settings-row-delay, 0ms);
     }
+
+    .reader-shell-enter {
+      animation: reader-shell-in 0.45s cubic-bezier(0.25, 1, 0.5, 1) both;
+    }
+
+    .reader-lazy-fade-enter {
+      animation: reader-lazy-fade-in 0.38s cubic-bezier(0.25, 1, 0.5, 1) both;
+    }
+
+    .reader-drawer-backdrop-enter {
+      animation: reader-drawer-backdrop-in 0.22s cubic-bezier(0.25, 1, 0.5, 1) both;
+    }
+
+    .reader-drawer-panel-left-enter {
+      animation: reader-drawer-panel-left-in 0.3s cubic-bezier(0.25, 1, 0.5, 1) both;
+    }
+
+    .reader-drawer-panel-right-enter {
+      animation: reader-drawer-panel-right-in 0.3s cubic-bezier(0.25, 1, 0.5, 1) both;
+    }
+
+    .reader-toc-item-enter {
+      animation: reader-toc-item-in 0.32s cubic-bezier(0.25, 1, 0.5, 1) both;
+      animation-delay: var(--reader-toc-delay, 0ms);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -776,6 +864,15 @@
     .admin-settings-notice-enter,
     .admin-settings-panel-enter,
     .admin-settings-row-enter {
+      animation: none;
+    }
+
+    .reader-shell-enter,
+    .reader-lazy-fade-enter,
+    .reader-drawer-backdrop-enter,
+    .reader-drawer-panel-left-enter,
+    .reader-drawer-panel-right-enter,
+    .reader-toc-item-enter {
       animation: none;
     }
   }
@@ -1131,6 +1228,85 @@
 
     .catalog-loading-dots {
       animation: none;
+    }
+  }
+
+  /* Profile page: entrance + card lift (DESIGN.md, transform + opacity only) */
+  @keyframes profile-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.45rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes profile-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.4rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .profile-hero-enter {
+      animation: profile-hero-in 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .profile-panel-enter {
+      animation: profile-panel-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--profile-enter-delay, 0ms);
+    }
+
+    .profile-card-lift {
+      transition:
+        transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .profile-card-lift:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--eleven-shadow-outline), var(--eleven-shadow-soft);
+    }
+
+    .profile-actions > * {
+      transition:
+        transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .profile-actions > *:hover {
+      transform: translateY(-1px);
+      box-shadow: var(--eleven-shadow-outline), var(--eleven-shadow-soft);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .profile-hero-enter,
+    .profile-panel-enter {
+      animation: none;
+    }
+
+    .profile-card-lift {
+      transition: none;
+    }
+
+    .profile-card-lift:hover {
+      transform: none;
+    }
+
+    .profile-actions > * {
+      transition: none;
+    }
+
+    .profile-actions > *:hover {
+      transform: none;
     }
   }
 }

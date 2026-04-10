@@ -5,8 +5,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db/prisma";
 import { LogoMark } from "@/components/LogoMark";
-import { Button } from "@/components/ui/button";
-import { SignOutButton } from "@/components/pwa/SignOutButton";
+import { AppHeaderNav } from "@/components/layout/AppHeaderNav";
 import { ThemeProvider, type ThemePreference } from "@/components/theme/ThemeProvider";
 import { UserMenu } from "@/components/layout/UserMenu";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
@@ -38,27 +37,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
                 <span className="eleven-body-airy">Shelf</span>
               </Link>
 
-              <nav className="hidden items-center gap-1 sm:flex" aria-label="Navigation">
-                <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
-                  <Link href="/library">Bibliothèque</Link>
-                </Button>
-                <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
-                  <Link href="/shelves">Étagères</Link>
-                </Button>
-                <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
-                  <Link href="/search">Catalogue</Link>
-                </Button>
-                {isAdmin ? (
-                  <Button asChild size="sm" variant="ghost" className="rounded-eleven-pill">
-                    <Link href="/admin/books">Admin</Link>
-                  </Button>
-                ) : null}
-              </nav>
+              <AppHeaderNav isAdmin={isAdmin} />
             </div>
 
             <div className="flex items-center gap-1.5">
               <UserMenu email={session.user.email ?? null} />
-              <SignOutButton />
             </div>
           </div>
         </header>
