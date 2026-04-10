@@ -90,7 +90,7 @@ function ShelfSectionEmpty({
   onAction?: () => void;
 }) {
   return (
-    <div className="col-span-full rounded-2xl border border-dashed border-(--eleven-border-subtle) bg-muted/15 px-4 py-8 text-center">
+    <div className="shelf-item-enter col-span-full rounded-2xl border border-dashed border-(--eleven-border-subtle) bg-muted/15 px-4 py-8 text-center">
       <p className="text-eleven-secondary eleven-body-airy text-sm">{message}</p>
       {actionLabel && onAction ? (
         <Button
@@ -124,7 +124,7 @@ function ShelfPlankBooks({ books }: { books: ShelfCoverPreview[] }) {
                 className="relative z-[2] -ml-2.5 shrink-0 first:ml-0 sm:-ml-3"
                 style={{ transform: `rotate(${rot}deg)` }}
               >
-                <div className="shadow-eleven-button-white relative aspect-[2/3] w-10 overflow-hidden rounded-sm bg-card ring-1 ring-black/10 sm:w-11 dark:ring-white/10">
+                <div className="shadow-eleven-button-white relative aspect-[2/3] w-10 overflow-hidden rounded-sm bg-card ring-1 ring-black/10 transition-transform duration-300 ease-out will-change-transform group-hover/plank:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover/plank:translate-y-0 sm:w-11 dark:ring-white/10">
                   {src ? (
                     <Image
                       src={src}
@@ -175,18 +175,25 @@ function SortableShelfCard({
   disabled,
   onEdit,
   onDelete,
+  entranceIndex = 0,
 }: {
   shelf: ShelfListItem;
   disabled?: boolean;
   onEdit: (s: ShelfListItem) => void;
   onDelete: (s: ShelfListItem) => void;
+  /** Staggered entrance order within the current grid (motion-safe). */
+  entranceIndex?: number;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: shelf.id,
     disabled: Boolean(disabled),
   });
 
+  const delayMs = Math.min(entranceIndex, 20) * 48;
   const style: React.CSSProperties = {
+    ...({
+      "--shelf-enter-delay": `${delayMs}ms`,
+    } as React.CSSProperties),
     transform: CSS.Transform.toString(transform),
     transition,
   };
@@ -196,14 +203,14 @@ function SortableShelfCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "h-full overflow-hidden transition-shadow duration-200 hover:shadow-eleven-button-white",
+        "shelf-item-enter h-full overflow-hidden transition-shadow duration-200 ease-out hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-card",
         isDragging && "shadow-eleven-warm",
       )}
     >
       <div className="relative">
         <Link
           href={`/shelves/${shelf.id}`}
-          className="focus-visible:ring-ring/50 block rounded-t-2xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="group/plank focus-visible:ring-ring/50 block rounded-t-2xl focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
           aria-label={`Ouvrir l’étagère ${shelf.name}`}
         >
           <ShelfPlankBooks books={shelf.previewCovers} />
@@ -390,7 +397,10 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div
+        className="shelf-item-enter flex flex-wrap items-center justify-between gap-2"
+        style={{ "--shelf-enter-delay": "72ms" } as React.CSSProperties}
+      >
         <div className="text-eleven-muted eleven-body-airy text-sm">
           {systemShelves.length ? `${systemShelves.length} système` : "—"} •{" "}
           {reorderableShelves.length} perso
@@ -417,11 +427,12 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
               {systemShelves.length === 0 ? (
                 <ShelfSectionEmpty message="Aucune étagère système pour l’instant." />
               ) : (
-                systemShelves.map((s) => (
+                systemShelves.map((s, i) => (
                   <SortableShelfCard
                     key={s.id}
                     shelf={s}
                     disabled
+                    entranceIndex={i}
                     onEdit={() => {}}
                     onDelete={() => {}}
                   />
@@ -446,10 +457,11 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
                     onAction={() => openCreateShelf("manual")}
                   />
                 ) : (
-                  manualShelves.map((s) => (
+                  manualShelves.map((s, i) => (
                     <SortableShelfCard
                       key={s.id}
                       shelf={s}
+                      entranceIndex={i}
                       onEdit={(sh) => {
                         setSelected(sh);
                         setDraft({
@@ -487,10 +499,11 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
                     onAction={() => openCreateShelf("dynamic")}
                   />
                 ) : (
-                  dynamicShelves.map((s) => (
+                  dynamicShelves.map((s, i) => (
                     <SortableShelfCard
                       key={s.id}
                       shelf={s}
+                      entranceIndex={i}
                       onEdit={(sh) => {
                         setSelected(sh);
                         setDraft({

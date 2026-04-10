@@ -159,7 +159,9 @@ function SettingsDetails({
         </span>
         <ChevronDownIcon className="text-eleven-muted size-4 shrink-0 transition-transform duration-200 group-open:rotate-180" />
       </summary>
-      <div className="border-t border-(--eleven-border-subtle) px-4 py-4">{children}</div>
+      <div className="shelf-details-body border-t border-(--eleven-border-subtle) px-4 py-4">
+        {children}
+      </div>
     </details>
   );
 }
@@ -177,15 +179,15 @@ function ShelfBookCard({
   return (
     <div
       className={cn(
-        "bg-background/80 flex min-h-[4.5rem] items-stretch gap-1 rounded-2xl border border-(--eleven-border-subtle) transition-colors hover:bg-muted/25",
+        "bg-background/80 flex min-h-[4.5rem] items-stretch gap-1 rounded-2xl border border-(--eleven-border-subtle) transition-colors duration-200 ease-out hover:bg-muted/25",
         className,
       )}
     >
       <Link
         href={`/book/${book.id}`}
-        className="focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3 py-2 pl-2.5 pr-1 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:gap-3.5 sm:py-2.5 sm:pl-3.5"
+        className="group/shelf-book focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3 py-2 pl-2.5 pr-1 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:gap-3.5 sm:py-2.5 sm:pl-3.5"
       >
-        <div className="shadow-eleven-button-white relative h-[4.25rem] w-[2.85rem] shrink-0 overflow-hidden rounded-md bg-muted ring-1 ring-black/8 dark:ring-white/10 sm:h-[4.5rem] sm:w-[3.05rem]">
+        <div className="shadow-eleven-button-white relative h-[4.25rem] w-[2.85rem] shrink-0 overflow-hidden rounded-md bg-muted ring-1 ring-black/8 transition-transform duration-300 ease-out will-change-transform group-hover/shelf-book:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover/shelf-book:scale-100 dark:ring-white/10 sm:h-[4.5rem] sm:w-[3.05rem]">
           {src ? (
             <Image
               src={src}
@@ -226,12 +228,21 @@ function ShelfBookCard({
   );
 }
 
-function SortableBookRow({ book, disabled }: { book: ShelfDetailBookRow; disabled?: boolean }) {
+function SortableBookRow({
+  book,
+  disabled,
+  entranceIndex = 0,
+}: {
+  book: ShelfDetailBookRow;
+  disabled?: boolean;
+  entranceIndex?: number;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: book.id,
     disabled: Boolean(disabled),
   });
 
+  const delayMs = Math.min(entranceIndex, 24) * 36;
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -239,30 +250,49 @@ function SortableBookRow({ book, disabled }: { book: ShelfDetailBookRow; disable
 
   return (
     <div ref={setNodeRef} style={style} className={cn(isDragging && "relative z-20")}>
-      <ShelfBookCard
-        book={book}
-        className={cn(isDragging && "shadow-eleven-warm ring-2 ring-ring/40")}
-        dragHandle={
-          !disabled ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              className="size-9 shrink-0 cursor-grab touch-manipulation active:cursor-grabbing"
-              aria-label="Réordonner"
-              {...attributes}
-              {...listeners}
-            >
-              <GripVerticalIcon className="size-4" />
-            </Button>
-          ) : undefined
-        }
-      />
+      <div
+        className="shelf-item-enter"
+        style={{ "--shelf-enter-delay": `${delayMs}ms` } as React.CSSProperties}
+      >
+        <ShelfBookCard
+          book={book}
+          className={cn(isDragging && "shadow-eleven-warm ring-2 ring-ring/40")}
+          dragHandle={
+            !disabled ? (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="size-9 shrink-0 cursor-grab touch-manipulation active:cursor-grabbing"
+                aria-label="Réordonner"
+                {...attributes}
+                {...listeners}
+              >
+                <GripVerticalIcon className="size-4" />
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
     </div>
   );
 }
 
-function StaticShelfBookRow({ book }: { book: ShelfDetailBookRow }) {
-  return <ShelfBookCard book={book} />;
+function StaticShelfBookRow({
+  book,
+  entranceIndex = 0,
+}: {
+  book: ShelfDetailBookRow;
+  entranceIndex?: number;
+}) {
+  const delayMs = Math.min(entranceIndex, 24) * 36;
+  return (
+    <div
+      className="shelf-item-enter"
+      style={{ "--shelf-enter-delay": `${delayMs}ms` } as React.CSSProperties}
+    >
+      <ShelfBookCard book={book} />
+    </div>
+  );
 }
 
 function coerceRules(input: unknown): ShelfRuleDraft {
@@ -451,7 +481,7 @@ export function ShelfDetailClient({
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 border-b border-(--eleven-border-subtle) pb-5 sm:flex-row sm:items-start sm:justify-between">
+      <header className="shelf-hero-enter flex flex-col gap-4 border-b border-(--eleven-border-subtle) pb-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:gap-5">
           <span
             className="text-foreground shrink-0 text-4xl leading-none sm:text-[2.75rem]"
@@ -602,16 +632,16 @@ export function ShelfDetailClient({
                 strategy={verticalListSortingStrategy}
               >
                 <div className="flex flex-col gap-2.5">
-                  {books.map((b) => (
-                    <SortableBookRow key={b.id} book={b} disabled={false} />
+                  {books.map((b, i) => (
+                    <SortableBookRow key={b.id} book={b} disabled={false} entranceIndex={i} />
                   ))}
                 </div>
               </SortableContext>
             </DndContext>
           ) : (
             <div className="flex flex-col gap-2.5">
-              {booksToRender.map((b) => (
-                <StaticShelfBookRow key={b.id} book={b} />
+              {booksToRender.map((b, i) => (
+                <StaticShelfBookRow key={b.id} book={b} entranceIndex={i} />
               ))}
             </div>
           )}

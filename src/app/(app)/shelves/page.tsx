@@ -62,7 +62,7 @@ export default async function ShelvesPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 px-6 py-10">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="shelf-hero-enter flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h1 className="eleven-display-section text-foreground text-3xl md:text-4xl">Étagères</h1>
           <p className="text-eleven-secondary eleven-body-airy text-sm">

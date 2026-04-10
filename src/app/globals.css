@@ -209,4 +209,64 @@
   .eleven-body-airy {
     letter-spacing: 0.16px;
   }
+
+  /* Shelf pages: entrance + details (respects prefers-reduced-motion) */
+  @keyframes shelf-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shelf-item-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.45rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes shelf-details-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(-0.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .shelf-hero-enter {
+      animation: shelf-hero-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .shelf-item-enter {
+      animation: shelf-item-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--shelf-enter-delay, 0ms);
+    }
+
+    details[open] > .shelf-details-body {
+      animation: shelf-details-reveal 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shelf-hero-enter,
+    .shelf-item-enter {
+      animation: none;
+    }
+
+    details[open] > .shelf-details-body {
+      animation: none;
+    }
+  }
 }
