@@ -48,4 +48,30 @@ describe("assertSameOriginFromHeaders", () => {
       }),
     ).not.toThrow();
   });
+
+  it("in non-production, accepts loopback host alias mismatch when protocol and port match", () => {
+    process.env.NEXTAUTH_URL = "http://127.0.0.1:3000";
+    expect(() =>
+      assertSameOriginFromHeaders({
+        origin: "http://localhost:3000",
+        host: "localhost:3000",
+      }),
+    ).not.toThrow();
+  });
+
+  it("in production, rejects loopback host alias mismatch", () => {
+    const prevNode = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    process.env.NEXTAUTH_URL = "http://127.0.0.1:3000";
+    try {
+      expect(() =>
+        assertSameOriginFromHeaders({
+          origin: "http://localhost:3000",
+          host: "localhost:3000",
+        }),
+      ).toThrow("BAD_ORIGIN");
+    } finally {
+      process.env.NODE_ENV = prevNode;
+    }
+  });
 });

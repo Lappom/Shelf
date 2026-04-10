@@ -474,7 +474,7 @@
 - [x] Recherche instantanée (debounced).
 - [x] Filtres avancés.
 - [x] Highlight des termes trouvés.
-- [ ] Bloc ou onglet **catalogue externe** (preview + « Ajouter à la bibliothèque ») — **Phase 5.4**.
+- [x] Bloc ou onglet **catalogue externe** (preview + « Ajouter à la bibliothèque ») — **Phase 5.4**.
 
 #### 16.2.7 Admin `/admin`
 - [x] Users : liste + création + changement rôle + suppression.
