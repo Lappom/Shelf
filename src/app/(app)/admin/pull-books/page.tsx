@@ -6,12 +6,15 @@ export default async function AdminPullBooksPage() {
   await requireAdminPage();
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">Pull catalogue (Open Library)</h2>
-        <p className="text-muted-foreground text-sm">
-          Importe des fiches livres <span className="font-medium">sans fichier</span> depuis Open
-          Library, via des jobs asynchrones chunkés, idempotents, annulables et rejouables.
+    <div className="space-y-8">
+      <div className="pull-books-hero-enter space-y-2">
+        <h2 className="eleven-display-section text-foreground text-2xl sm:text-3xl">
+          Pull catalogue (Open Library)
+        </h2>
+        <p className="text-eleven-secondary eleven-body-airy max-w-2xl text-sm leading-relaxed sm:text-base">
+          Importe des fiches livres <span className="text-foreground font-medium">sans fichier</span>{" "}
+          depuis Open Library, via des jobs asynchrones chunkés, idempotents, annulables et
+          rejouables.
         </p>
       </div>
       <AdminPullBooksClient />

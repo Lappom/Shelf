@@ -297,6 +297,180 @@
     }
   }
 
+  @keyframes admin-import-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-import-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-import-result-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-import-stat-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-import-tab-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(3px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pull-books-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pull-books-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Table rows: opacity only (transform on tr is unreliable across browsers) */
+  @keyframes pull-books-row-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes pull-books-detail-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-ops-hero-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-ops-actions-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-ops-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-ops-kpi-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes admin-ops-table-panel-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Table rows: opacity only (transform on tr is unreliable across browsers) */
+  @keyframes admin-ops-row-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes admin-ops-secondary-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .shelf-hero-enter {
       animation: shelf-hero-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -337,6 +511,85 @@
     details[open] > .shelf-details-body {
       animation: shelf-details-reveal 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
+
+    .admin-import-hero-enter {
+      animation: admin-import-hero-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .admin-import-panel-enter {
+      animation: admin-import-panel-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-import-panel-delay, 0ms);
+    }
+
+    .admin-import-result-enter {
+      animation: admin-import-result-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .admin-import-stat-enter {
+      animation: admin-import-stat-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-import-delay, 0ms);
+    }
+
+    .admin-import-tab-panel-enter {
+      animation: admin-import-tab-panel-in 0.26s cubic-bezier(0.25, 1, 0.5, 1) both;
+    }
+
+    .pull-books-hero-enter {
+      animation: pull-books-hero-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .pull-books-panel-enter {
+      animation: pull-books-panel-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--pull-books-panel-delay, 0ms);
+    }
+
+    .pull-books-row-enter {
+      animation: pull-books-row-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--pull-books-row-delay, 0ms);
+    }
+
+    .pull-books-detail-enter {
+      animation: pull-books-detail-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .pull-books-skeleton-stagger {
+      animation: library-skeleton-pulse 1.1s cubic-bezier(0.22, 1, 0.36, 1) infinite alternate;
+      animation-delay: var(--pull-books-skeleton-delay, 0ms);
+    }
+
+    .admin-ops-hero-enter {
+      animation: admin-ops-hero-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .admin-ops-actions-enter {
+      animation: admin-ops-actions-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: 0.07s;
+    }
+
+    .admin-ops-panel-enter {
+      animation: admin-ops-panel-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: 0.12s;
+    }
+
+    .admin-ops-kpi-enter {
+      animation: admin-ops-kpi-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: var(--admin-ops-kpi-delay, 0ms);
+    }
+
+    .admin-ops-table-panel-enter {
+      animation: admin-ops-table-panel-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: 0.18s;
+    }
+
+    .admin-ops-row-enter {
+      animation: admin-ops-row-in 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: calc(0.22s + var(--admin-ops-delay, 0ms));
+    }
+
+    .admin-ops-secondary-enter {
+      animation: admin-ops-secondary-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+      animation-delay: 0.24s;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -356,6 +609,35 @@
     }
 
     details[open] > .shelf-details-body {
+      animation: none;
+    }
+
+    .admin-import-hero-enter,
+    .admin-import-panel-enter,
+    .admin-import-result-enter,
+    .admin-import-stat-enter,
+    .admin-import-tab-panel-enter {
+      animation: none;
+    }
+
+    .pull-books-hero-enter,
+    .pull-books-panel-enter,
+    .pull-books-row-enter,
+    .pull-books-detail-enter {
+      animation: none;
+    }
+
+    .pull-books-skeleton-stagger {
+      animation: none;
+    }
+
+    .admin-ops-hero-enter,
+    .admin-ops-actions-enter,
+    .admin-ops-panel-enter,
+    .admin-ops-kpi-enter,
+    .admin-ops-table-panel-enter,
+    .admin-ops-row-enter,
+    .admin-ops-secondary-enter {
       animation: none;
     }
   }
