@@ -13,12 +13,15 @@ type OpenLibraryEdition = {
   works?: Array<{ key?: string }>;
   publishers?: unknown[];
   languages?: Array<{ key?: string }>;
+  isbn_10?: string[];
+  isbn_13?: string[];
 };
 
 type OpenLibraryWork = {
   key?: string;
   description?: string | { value?: string };
   subjects?: unknown[];
+  languages?: Array<{ key?: string }>;
 };
 
 export type OpenLibraryEnrichment = {
@@ -103,7 +106,17 @@ function normalizeOlSubjects(raw: unknown): string[] {
   for (const x of raw) {
     if (typeof x === "string") {
       const t = x.trim();
-      if (t) out.push(t);
+      if (!t) continue;
+      if (t.startsWith("/subjects/")) {
+        const slug = t.slice("/subjects/".length).replace(/_/g, " ");
+        try {
+          out.push(decodeURIComponent(slug));
+        } catch {
+          out.push(slug);
+        }
+      } else {
+        out.push(t);
+      }
     } else if (x && typeof x === "object" && "name" in x) {
       const n = (x as { name?: unknown }).name;
       if (typeof n === "string" && n.trim()) out.push(n.trim());
@@ -141,8 +154,7 @@ const OL_LANG_TO_BCP47: Record<string, string> = {
   swe: "sv",
 };
 
-function firstLanguageFromEdition(edition: OpenLibraryEdition): string | null {
-  const languages = edition.languages;
+function languageFromOlLanguagesArray(languages: unknown): string | null {
   if (!Array.isArray(languages) || languages.length === 0) return null;
   const lang = languages[0];
   if (!lang || typeof lang !== "object" || !("key" in lang)) return null;
@@ -151,6 +163,28 @@ function firstLanguageFromEdition(edition: OpenLibraryEdition): string | null {
   if (!m?.[1]) return null;
   const ol = m[1].toLowerCase();
   return (OL_LANG_TO_BCP47[ol] ?? ol).slice(0, 10);
+}
+
+function firstLanguageFromEdition(edition: OpenLibraryEdition): string | null {
+  return languageFromOlLanguagesArray(edition.languages);
+}
+
+/** Normalized ISBNs from an edition record (ISBN-13 first). */
+function collectNormalizedIsbnsFromEdition(ed: OpenLibraryEdition): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const list of [ed.isbn_13, ed.isbn_10]) {
+    if (!Array.isArray(list)) continue;
+    for (const x of list) {
+      const n = normalizeIsbn(String(x));
+      if (!n || (n.length !== 10 && n.length !== 13)) continue;
+      if (seen.has(n)) continue;
+      seen.add(n);
+      out.push(n);
+    }
+  }
+  out.sort((a, b) => b.length - a.length);
+  return out;
 }
 
 async function fetchJsonInner<T>(url: string, operation: "enrich" | "search"): Promise<T> {
@@ -301,8 +335,8 @@ export async function enrichFromOpenLibraryByIsbn(isbn: string): Promise<OpenLib
   return enrichment;
 }
 
-function workSeedKey(workKey: string) {
-  return `openlibrary:workseed:v1:${workKey}`;
+function workSeedCacheKey(workKey: string) {
+  return `openlibrary:workseed:v2:${workKey}`;
 }
 
 export type OpenLibrarySearchSeed = {
@@ -312,46 +346,105 @@ export type OpenLibrarySearchSeed = {
   publisher: string | null;
   language: string | null;
   openLibraryId: string | null;
+  isbn10: string | null;
+  isbn13: string | null;
 };
 
 /**
- * Work + first edition when search has no usable ISBN for /isbn/...json.
+ * Work + edition details: `editions.json` stubs omit ISBN/language; we fetch full `/books/...` records
+ * and prefer `enrichFromOpenLibraryByIsbn` when any edition exposes an ISBN.
  */
 export async function enrichFromOpenLibraryWorkOnly(workKey: string): Promise<OpenLibrarySearchSeed> {
-  const cached = await getCachedJson<OpenLibrarySearchSeed>(workSeedKey(workKey));
+  const cacheKey = workSeedCacheKey(workKey);
+  const cached = await getCachedJson<OpenLibrarySearchSeed>(cacheKey);
   if (cached) return cached;
 
   const work = await fetchJson<OpenLibraryWork>(`https://openlibrary.org${workKey}.json`, "enrich");
-
-  type EditionsResponse = { entries?: OpenLibraryEdition[] };
-  let pageCount: number | null = null;
-  let publisher: string | null = null;
-  let language: string | null = null;
-  let editionDescription: string | null = null;
-  let editionSubjects: string[] = [];
-
-  const editionsJson = await fetchJson<EditionsResponse>(
-    `https://openlibrary.org${workKey}/editions.json?limit=1`,
-    "enrich",
-  ).catch(() => null);
-  const firstEd = editionsJson?.entries?.[0];
-  if (firstEd) {
-    if (typeof firstEd.number_of_pages === "number") pageCount = firstEd.number_of_pages;
-    publisher = firstPublisherFromEdition(firstEd);
-    language = firstLanguageFromEdition(firstEd);
-    editionDescription = coerceText(firstEd.description);
-    editionSubjects = normalizeOlSubjects(firstEd.subjects);
-  }
-
-  const workDescription = coerceText(work.description);
-  const description = editionDescription ?? workDescription;
-  const wSubjects = normalizeOlSubjects(work.subjects);
-  const subjects = Array.from(new Set([...wSubjects, ...editionSubjects])).slice(0, 50);
+  const workDesc = coerceText(work.description);
+  const workSubjects = normalizeOlSubjects(work.subjects);
+  const workLang = languageFromOlLanguagesArray(work.languages);
 
   const normalizedWorkKey =
     typeof work.key === "string" && work.key.trim()
       ? normalizeOpenLibraryDocKey(work.key)
       : workKey;
+
+  type EditionsResponse = { entries?: OpenLibraryEdition[] };
+  const editionsJson = await fetchJson<EditionsResponse>(
+    `https://openlibrary.org${workKey}/editions.json?limit=24`,
+    "enrich",
+  ).catch(() => null);
+
+  const stubs = editionsJson?.entries ?? [];
+  const MAX_EDITION_DETAILS = 8;
+  let detailFetches = 0;
+  let bestFull: OpenLibraryEdition | null = null;
+
+  for (const stub of stubs) {
+    if (detailFetches >= MAX_EDITION_DETAILS) break;
+    const editionKey =
+      typeof stub.key === "string" && stub.key.startsWith("/books/") ? stub.key.trim() : null;
+    if (!editionKey) continue;
+    detailFetches += 1;
+
+    let full: OpenLibraryEdition;
+    try {
+      full = await fetchJson<OpenLibraryEdition>(`https://openlibrary.org${editionKey}.json`, "enrich");
+    } catch {
+      continue;
+    }
+    if (!bestFull) bestFull = full;
+
+    for (const isbnTry of collectNormalizedIsbnsFromEdition(full)) {
+      try {
+        const e = await enrichFromOpenLibraryByIsbn(isbnTry);
+        const description = e.description ?? workDesc;
+        const subjects = Array.from(new Set([...e.subjects, ...workSubjects])).slice(0, 50);
+        const language = e.language ?? workLang ?? firstLanguageFromEdition(full);
+        const publisher = e.publisher ?? firstPublisherFromEdition(full);
+        const pageCount =
+          e.pageCount ?? (typeof full.number_of_pages === "number" ? full.number_of_pages : null);
+        const seed: OpenLibrarySearchSeed = {
+          description,
+          subjects,
+          pageCount,
+          publisher,
+          language,
+          openLibraryId:
+            normalizeOpenLibraryDocKey(e.openLibraryId ?? "") ?? normalizedWorkKey ?? workKey,
+          isbn10: isbnTry.length === 10 ? isbnTry : null,
+          isbn13: isbnTry.length === 13 ? isbnTry : null,
+        };
+        await setCachedJson(cacheKey, seed);
+        return seed;
+      } catch {
+        /* try next ISBN or edition */
+      }
+    }
+  }
+
+  let pageCount: number | null = null;
+  let publisher: string | null = null;
+  let language: string | null = null;
+  let editionDescription: string | null = null;
+  let editionSubjects: string[] = [];
+  let isbn10: string | null = null;
+  let isbn13: string | null = null;
+
+  if (bestFull) {
+    if (typeof bestFull.number_of_pages === "number") pageCount = bestFull.number_of_pages;
+    publisher = firstPublisherFromEdition(bestFull);
+    language = firstLanguageFromEdition(bestFull) ?? workLang;
+    editionDescription = coerceText(bestFull.description);
+    editionSubjects = normalizeOlSubjects(bestFull.subjects);
+    for (const n of collectNormalizedIsbnsFromEdition(bestFull)) {
+      if (n.length === 10) isbn10 = n;
+      if (n.length === 13) isbn13 = n;
+    }
+  }
+
+  const description = editionDescription ?? workDesc;
+  const subjects = Array.from(new Set([...workSubjects, ...editionSubjects])).slice(0, 50);
 
   const seed: OpenLibrarySearchSeed = {
     description,
@@ -360,9 +453,11 @@ export async function enrichFromOpenLibraryWorkOnly(workKey: string): Promise<Op
     publisher,
     language,
     openLibraryId: normalizedWorkKey ?? workKey,
+    isbn10,
+    isbn13,
   };
 
-  await setCachedJson(workSeedKey(workKey), seed);
+  await setCachedJson(cacheKey, seed);
   return seed;
 }
 
@@ -386,6 +481,8 @@ export async function enrichFromOpenLibraryForSearchCandidate(
         publisher: e.publisher,
         language: e.language,
         openLibraryId: e.openLibraryId ?? workKey,
+        isbn10: isbn.length === 10 ? isbn : null,
+        isbn13: isbn.length === 13 ? isbn : null,
       };
     } catch {
       continue;
@@ -407,6 +504,8 @@ export async function enrichFromOpenLibraryForSearchCandidate(
     publisher: null,
     language: null,
     openLibraryId: workKey,
+    isbn10: null,
+    isbn13: null,
   };
 }
 

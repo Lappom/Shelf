@@ -186,13 +186,21 @@ export async function executeAdminPullBooks(args: {
       continue;
     }
 
-    const isbn = isbn13 ?? normalizeIsbn(c.isbns[0] ?? "") ?? null;
-    const isbn10 = isbn && isbn.length === 10 ? isbn : null;
-    const isbn13Final = isbn && isbn.length === 13 ? isbn : null;
+    const isbnFromSearch = isbn13 ?? normalizeIsbn(c.isbns[0] ?? "") ?? null;
     const publishDate = typeof c.firstPublishYear === "number" ? String(c.firstPublishYear) : null;
-    const coverSourceUrl = openLibraryCoverSourceUrl(c);
 
-    let seed = await enrichFromOpenLibraryForSearchCandidate(c).catch(() => null);
+    const seed = await enrichFromOpenLibraryForSearchCandidate(c).catch(() => null);
+    const isbn10Final =
+      (isbnFromSearch && isbnFromSearch.length === 10 ? isbnFromSearch : null) ?? seed?.isbn10 ?? null;
+    const isbn13Merged =
+      (isbnFromSearch && isbnFromSearch.length === 13 ? isbnFromSearch : null) ?? seed?.isbn13 ?? null;
+
+    let coverSourceUrl = openLibraryCoverSourceUrl(c);
+    const isbnForCover = isbn13Merged ?? isbn10Final;
+    if (!coverSourceUrl && isbnForCover) {
+      coverSourceUrl = buildOpenLibraryCoverUrl(isbnForCover);
+    }
+
     const openLibraryIdStored =
       (seed?.openLibraryId ? normalizeOpenLibraryId(seed.openLibraryId) : null) ?? olStored;
 
@@ -200,8 +208,8 @@ export async function executeAdminPullBooks(args: {
       data: {
         title: c.title.slice(0, 500),
         authors: c.authors,
-        isbn10,
-        isbn13: isbn13Final,
+        isbn10: isbn10Final,
+        isbn13: isbn13Merged,
         publisher: seed?.publisher ?? null,
         publishDate,
         language: seed?.language ?? null,
@@ -244,7 +252,7 @@ export async function executeAdminPullBooks(args: {
       title: c.title,
       authors: c.authors,
       open_library_id: olStored,
-      isbn_13: isbn13Final,
+      isbn_13: isbn13Merged,
     });
   }
 

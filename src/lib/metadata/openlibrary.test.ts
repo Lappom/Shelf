@@ -154,13 +154,19 @@ describe("enrichFromOpenLibraryForSearchCandidate", () => {
           ok: true,
           status: 200,
           json: async () => ({
-            entries: [
-              {
-                number_of_pages: 400,
-                publishers: ["PubCo"],
-                languages: [{ key: "/languages/fre" }],
-              },
-            ],
+            entries: [{ key: "/books/OLONLYM" }],
+          }),
+        };
+      }
+      if (url.endsWith("/books/OLONLYM.json")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            key: "/books/OLONLYM",
+            number_of_pages: 400,
+            publishers: ["PubCo"],
+            languages: [{ key: "/languages/fre" }],
           }),
         };
       }

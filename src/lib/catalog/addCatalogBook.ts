@@ -124,8 +124,8 @@ export async function addBookFromCatalog(
     data: {
       title: input.title.trim().slice(0, 500),
       authors: input.authors.slice(0, 50),
-      isbn10: null,
-      isbn13: isbn13 ?? null,
+      isbn10: olSeed?.isbn10 ?? null,
+      isbn13: isbn13 ?? olSeed?.isbn13 ?? null,
       publisher: olSeed?.publisher ?? null,
       publishDate: input.publishDate?.trim() || null,
       language: input.language?.trim() || olSeed?.language || null,
@@ -146,7 +146,15 @@ export async function addBookFromCatalog(
   });
 
   const trimmedCover = input.coverUrl?.trim() || null;
-  const fallbackOlCoverUrl = !trimmedCover && isbn13 ? buildOpenLibraryCoverUrl(isbn13) : null;
+  const isbn13ForCover = isbn13 ?? olSeed?.isbn13 ?? null;
+  const isbn10ForCover = olSeed?.isbn10 ?? null;
+  const fallbackOlCoverUrl = !trimmedCover
+    ? isbn13ForCover
+      ? buildOpenLibraryCoverUrl(isbn13ForCover)
+      : isbn10ForCover
+        ? buildOpenLibraryCoverUrl(isbn10ForCover)
+        : null
+    : null;
   const coverSourceUrl = trimmedCover || fallbackOlCoverUrl;
   if (coverSourceUrl) {
     const fetched = await fetchCatalogCoverFromUrl(coverSourceUrl);

@@ -24,6 +24,8 @@ vi.mock("@/lib/metadata/openlibrary", () => ({
     publisher: null,
     language: null,
     openLibraryId: null,
+    isbn10: null,
+    isbn13: null,
   })),
   normalizeOpenLibraryDocKey: vi.fn((raw: string) => {
     const k = raw.trim();
