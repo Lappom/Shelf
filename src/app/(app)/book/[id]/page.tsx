@@ -131,7 +131,8 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
     | "reading"
     | "finished"
     | "abandoned";
-  const recoKind = recoFeedback?.kind === "like" || recoFeedback?.kind === "dislike" ? recoFeedback.kind : null;
+  const recoKind =
+    recoFeedback?.kind === "like" || recoFeedback?.kind === "dislike" ? recoFeedback.kind : null;
 
   const authorList = normalizeAuthors(book.authors);
   const coverToken = book.coverUrl ? createCoverAccessToken(book.id) : null;
@@ -141,8 +142,7 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
       : `/api/books/${book.id}/cover`
     : null;
 
-  const annotationEnterDelayMs = (index: number) =>
-    index < 8 ? 320 + index * 45 : 320 + 7 * 45;
+  const annotationEnterDelayMs = (index: number) => (index < 8 ? 320 + index * 45 : 320 + 7 * 45);
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6 px-6 py-10">
@@ -184,7 +184,11 @@ export default async function BookDetailPage({ params }: { params: Promise<{ id:
               initialStatus={progressStatus}
               className="pt-1"
             />
-            <BookRecoFeedbackPanel bookId={book.id} initialKind={recoKind} className="border-eleven-border-subtle border-t pt-3" />
+            <BookRecoFeedbackPanel
+              bookId={book.id}
+              initialKind={recoKind}
+              className="border-eleven-border-subtle border-t pt-3"
+            />
           </div>
         </Card>
 

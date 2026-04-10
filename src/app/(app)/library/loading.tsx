@@ -24,15 +24,10 @@ export default function LibraryLoading() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
         {Array.from({ length: 12 }).map((_, i) => (
-          <Card
-            key={i}
-            className="flex h-full min-h-0 flex-col gap-0 overflow-hidden p-0"
-          >
+          <Card key={i} className="flex h-full min-h-0 flex-col gap-0 overflow-hidden p-0">
             <div
               className="library-skeleton-stagger bg-muted aspect-2/3 w-full shrink-0"
-              style={
-                { "--library-skeleton-delay": `${Math.min(i, 11) * 45}ms` } as CSSProperties
-              }
+              style={{ "--library-skeleton-delay": `${Math.min(i, 11) * 45}ms` } as CSSProperties}
             />
             <div className="flex min-h-0 flex-1 flex-col space-y-2 p-3">
               <div

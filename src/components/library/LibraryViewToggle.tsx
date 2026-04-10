@@ -23,7 +23,7 @@ export function LibraryViewToggle({
       <span
         aria-hidden
         className={cn(
-          "bg-secondary pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-4px)] rounded-eleven-pill transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
+          "bg-secondary rounded-eleven-pill pointer-events-none absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-4px)] transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
           view === "list" && "translate-x-[calc(100%+8px)]",
         )}
       />
@@ -31,7 +31,7 @@ export function LibraryViewToggle({
         type="button"
         variant="ghost"
         size="sm"
-        className="relative z-[1] min-w-0 flex-1 rounded-eleven-pill px-2"
+        className="rounded-eleven-pill relative z-[1] min-w-0 flex-1 px-2"
         onClick={() => onViewChange("grid")}
         disabled={disabled}
         data-testid="library-view-grid"
@@ -44,7 +44,7 @@ export function LibraryViewToggle({
         type="button"
         variant="ghost"
         size="sm"
-        className="relative z-[1] min-w-0 flex-1 rounded-eleven-pill px-2"
+        className="rounded-eleven-pill relative z-[1] min-w-0 flex-1 px-2"
         onClick={() => onViewChange("list")}
         disabled={disabled}
         data-testid="library-view-list"

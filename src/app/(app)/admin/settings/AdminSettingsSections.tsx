@@ -68,7 +68,11 @@ function ValueRow({
           {value}
         </span>
         {showCopy ? (
-          <AdminSettingsCopyValue value={value === "—" ? "" : value} label={copyLabel} className="md:mt-0.5" />
+          <AdminSettingsCopyValue
+            value={value === "—" ? "" : value}
+            label={copyLabel}
+            className="md:mt-0.5"
+          />
         ) : null}
       </dd>
     </div>
@@ -85,12 +89,16 @@ type SectionCardProps = {
 function SectionCard({ title, description, panelDelayMs, children }: SectionCardProps) {
   return (
     <section
-      className="admin-settings-panel-enter shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) bg-card p-5 sm:p-6"
+      className="admin-settings-panel-enter shadow-eleven-card bg-card rounded-2xl border border-(--eleven-border-subtle) p-5 sm:p-6"
       style={{ "--admin-settings-panel-delay": `${panelDelayMs}ms` } as CSSProperties}
     >
-      <h3 className="eleven-display-section text-foreground mb-1 text-lg font-light tracking-tight">{title}</h3>
+      <h3 className="eleven-display-section text-foreground mb-1 text-lg font-light tracking-tight">
+        {title}
+      </h3>
       {description ? (
-        <p className="text-eleven-muted eleven-body-airy mb-4 text-sm tracking-wide">{description}</p>
+        <p className="text-eleven-muted eleven-body-airy mb-4 text-sm tracking-wide">
+          {description}
+        </p>
       ) : (
         <div className="mb-4" />
       )}
@@ -116,9 +124,9 @@ export function AdminSettingsSections({ data }: { data: AdminSettingsViewModel }
           Paramètres instance
         </h2>
         <p className="text-eleven-secondary eleven-body-airy max-w-2xl text-sm leading-relaxed sm:text-base">
-          Aperçu non sensible de la configuration : les secrets et chaînes complètes de connexion ne sont jamais
-          affichés. Pour modifier une valeur, ajustez les variables d&apos;environnement puis redémarrez
-          l&apos;application.
+          Aperçu non sensible de la configuration : les secrets et chaînes complètes de connexion ne
+          sont jamais affichés. Pour modifier une valeur, ajustez les variables d&apos;environnement
+          puis redémarrez l&apos;application.
         </p>
       </header>
 
@@ -127,8 +135,9 @@ export function AdminSettingsSections({ data }: { data: AdminSettingsViewModel }
         style={{ "--admin-settings-notice-delay": "0.06s" } as CSSProperties}
       >
         <p className="text-eleven-secondary eleven-body-airy text-sm leading-relaxed">
-          <span className="text-foreground font-medium">Rappel.</span> Cette page est en lecture seule. Les clés API,
-          mots de passe et URL de base de données ne figurent pas ici par design.
+          <span className="text-foreground font-medium">Rappel.</span> Cette page est en lecture
+          seule. Les clés API, mots de passe et URL de base de données ne figurent pas ici par
+          design.
         </p>
       </div>
 
@@ -206,10 +215,14 @@ export function AdminSettingsSections({ data }: { data: AdminSettingsViewModel }
               </div>
               {data.oidcConfigured && data.oidcIssuer ? (
                 <div className="flex w-full min-w-0 items-start justify-end gap-1">
-                  <span className="font-mono text-xs break-all text-right" title={data.oidcIssuer}>
+                  <span className="text-right font-mono text-xs break-all" title={data.oidcIssuer}>
                     {data.oidcIssuer}
                   </span>
-                  <AdminSettingsCopyValue value={data.oidcIssuer} label="OIDC issuer" className="shrink-0" />
+                  <AdminSettingsCopyValue
+                    value={data.oidcIssuer}
+                    label="OIDC issuer"
+                    className="shrink-0"
+                  />
                 </div>
               ) : null}
             </dd>
@@ -219,7 +232,9 @@ export function AdminSettingsSections({ data }: { data: AdminSettingsViewModel }
         <SectionCard
           title="Stockage des fichiers"
           description={
-            storageType === "local" ? "Fichiers sur disque local." : "Fichiers sur object storage S3-compatible."
+            storageType === "local"
+              ? "Fichiers sur disque local."
+              : "Fichiers sur object storage S3-compatible."
           }
           panelDelayMs={storagePanel}
         >

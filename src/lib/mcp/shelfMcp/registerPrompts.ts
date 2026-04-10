@@ -24,9 +24,7 @@ async function auditPrompt(name: string, ok: boolean, durationMs: number, errorM
     ok,
     durationMs,
     resultSummary: { resultKind: ok ? "prompt" : "prompt_error", name },
-    ...(errorMessage
-      ? { errorMessage: truncateMcpAuditMessage(errorMessage) }
-      : {}),
+    ...(errorMessage ? { errorMessage: truncateMcpAuditMessage(errorMessage) } : {}),
   });
 }
 

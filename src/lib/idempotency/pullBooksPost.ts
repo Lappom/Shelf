@@ -16,9 +16,7 @@ export function normalizeIdempotencyKeyHeader(raw: string | null): string | null
 }
 
 export function hashPullBooksIdempotency(userId: string, key: string): string {
-  return createHash("sha256")
-    .update(`${userId}\0${PULL_BOOKS_POST_ROUTE}\0${key}`)
-    .digest("hex");
+  return createHash("sha256").update(`${userId}\0${PULL_BOOKS_POST_ROUTE}\0${key}`).digest("hex");
 }
 
 function advisoryIntsFromHash(keyHash: string): [number, number] {

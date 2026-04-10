@@ -59,7 +59,11 @@ export type PaginateResult<T> = {
 /**
  * 1-based page index; returns empty slice when there are no items.
  */
-export function paginateAdminUsers<T>(items: T[], page: number, pageSize: number): PaginateResult<T> {
+export function paginateAdminUsers<T>(
+  items: T[],
+  page: number,
+  pageSize: number,
+): PaginateResult<T> {
   if (items.length === 0) {
     return { pageItems: [], totalPages: 0, safePage: 1 };
   }

@@ -50,8 +50,7 @@ export default async function SearchPage({
   }
 
   const qRaw = raw.get("q");
-  const initialCatalogQ =
-    typeof qRaw === "string" && qRaw.trim() ? qRaw.slice(0, 200) : "";
+  const initialCatalogQ = typeof qRaw === "string" && qRaw.trim() ? qRaw.slice(0, 200) : "";
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-8">

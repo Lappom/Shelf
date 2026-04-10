@@ -46,7 +46,10 @@ function isAllowedCatalogCoverUrl(url: URL): boolean {
 
 export type FetchCatalogCoverResult =
   | { ok: true; bytes: Buffer; ext: "jpg" | "png" | "webp" }
-  | { ok: false; code: "INVALID_URL" | "UNSUPPORTED_TYPE" | "TOO_LARGE" | "HTTP_ERROR" | "NETWORK" };
+  | {
+      ok: false;
+      code: "INVALID_URL" | "UNSUPPORTED_TYPE" | "TOO_LARGE" | "HTTP_ERROR" | "NETWORK";
+    };
 
 /**
  * Downloads image bytes from a catalog cover URL after hostname/path allowlist checks.
@@ -60,10 +63,10 @@ export async function fetchCatalogCoverFromUrl(rawUrl: string): Promise<FetchCat
   }
 
   if (url.username || url.password) return { ok: false, code: "INVALID_URL" };
-  if (url.protocol !== "https:" && url.protocol !== "http:") return { ok: false, code: "INVALID_URL" };
+  if (url.protocol !== "https:" && url.protocol !== "http:")
+    return { ok: false, code: "INVALID_URL" };
   const host = url.hostname.toLowerCase();
-  const isBooksGoogleHttp =
-    host === "books.google.com" || host === "www.books.google.com";
+  const isBooksGoogleHttp = host === "books.google.com" || host === "www.books.google.com";
   if (url.protocol === "http:" && !isBooksGoogleHttp) {
     return { ok: false, code: "INVALID_URL" };
   }

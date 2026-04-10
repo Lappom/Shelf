@@ -191,9 +191,13 @@ export async function executeAdminPullBooks(args: {
 
     const seed = await enrichFromOpenLibraryForSearchCandidate(c).catch(() => null);
     const isbn10Final =
-      (isbnFromSearch && isbnFromSearch.length === 10 ? isbnFromSearch : null) ?? seed?.isbn10 ?? null;
+      (isbnFromSearch && isbnFromSearch.length === 10 ? isbnFromSearch : null) ??
+      seed?.isbn10 ??
+      null;
     const isbn13Merged =
-      (isbnFromSearch && isbnFromSearch.length === 13 ? isbnFromSearch : null) ?? seed?.isbn13 ?? null;
+      (isbnFromSearch && isbnFromSearch.length === 13 ? isbnFromSearch : null) ??
+      seed?.isbn13 ??
+      null;
 
     let coverSourceUrl = openLibraryCoverSourceUrl(c);
     const isbnForCover = isbn13Merged ?? isbn10Final;

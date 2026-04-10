@@ -36,11 +36,11 @@ export function AppHeaderNav({ isAdmin }: { isAdmin: boolean }) {
             size="sm"
             variant="outline"
             className={cn(
-              "rounded-eleven-pill eleven-body-airy border-(--eleven-border-subtle) bg-background/80 shadow-eleven-button-white",
+              "rounded-eleven-pill eleven-body-airy bg-background/80 shadow-eleven-button-white border-(--eleven-border-subtle)",
               "hover:bg-secondary hover:shadow-eleven-card",
-              "focus-visible:ring-2 focus-visible:ring-ring/60",
+              "focus-visible:ring-ring/60 focus-visible:ring-2",
               active &&
-                "border-foreground/15 bg-secondary text-foreground shadow-eleven-card ring-1 ring-foreground/10",
+                "border-foreground/15 bg-secondary text-foreground shadow-eleven-card ring-foreground/10 ring-1",
             )}
           >
             <Link href={it.href} aria-current={active ? "page" : undefined}>
@@ -55,14 +55,17 @@ export function AppHeaderNav({ isAdmin }: { isAdmin: boolean }) {
           size="sm"
           variant="outline"
           className={cn(
-            "rounded-eleven-pill eleven-body-airy border-(--eleven-border-subtle) bg-background/80 shadow-eleven-button-white",
+            "rounded-eleven-pill eleven-body-airy bg-background/80 shadow-eleven-button-white border-(--eleven-border-subtle)",
             "hover:bg-secondary hover:shadow-eleven-card",
-            "focus-visible:ring-2 focus-visible:ring-ring/60",
+            "focus-visible:ring-ring/60 focus-visible:ring-2",
             isSubpath(pathname, "/admin") &&
-              "border-foreground/15 bg-secondary text-foreground shadow-eleven-card ring-1 ring-foreground/10",
+              "border-foreground/15 bg-secondary text-foreground shadow-eleven-card ring-foreground/10 ring-1",
           )}
         >
-          <Link href="/admin/books" aria-current={isSubpath(pathname, "/admin") ? "page" : undefined}>
+          <Link
+            href="/admin/books"
+            aria-current={isSubpath(pathname, "/admin") ? "page" : undefined}
+          >
             Admin
           </Link>
         </Button>

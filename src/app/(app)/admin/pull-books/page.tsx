@@ -12,9 +12,9 @@ export default async function AdminPullBooksPage() {
           Pull catalogue (Open Library)
         </h2>
         <p className="text-eleven-secondary eleven-body-airy max-w-2xl text-sm leading-relaxed sm:text-base">
-          Importe des fiches livres <span className="text-foreground font-medium">sans fichier</span>{" "}
-          depuis Open Library, via des jobs asynchrones chunkés, idempotents, annulables et
-          rejouables.
+          Importe des fiches livres{" "}
+          <span className="text-foreground font-medium">sans fichier</span> depuis Open Library, via
+          des jobs asynchrones chunkés, idempotents, annulables et rejouables.
         </p>
       </div>
       <AdminPullBooksClient />

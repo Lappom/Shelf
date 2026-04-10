@@ -9,7 +9,12 @@ import {
   noveltyRecencyBoost,
 } from "./anchorSignals";
 import { TOP_STORED, W_FINAL_POPULARITY, W_FINAL_RECENCY } from "./constants";
-import { applyAuthorSubjectDiversity, finalScore, popularityScore, recencyBonus } from "./aggregate";
+import {
+  applyAuthorSubjectDiversity,
+  finalScore,
+  popularityScore,
+  recencyBonus,
+} from "./aggregate";
 import { bookSubjectTfidf, buildSubjectIdf, jsonAuthorsToStrings, subjectsToTerms } from "./corpus";
 import { buildCooccurrenceScores } from "./cooccurrence";
 import { collaborativeScoreForBook, findNeighbors } from "./collaborative";
@@ -415,12 +420,7 @@ export async function recomputeRecommendationsForUser(userId: string): Promise<v
     recency: r.recency,
   }));
 
-  const diversified = applyAuthorSubjectDiversity(
-    forDiversity,
-    bookById,
-    tfidfByBook,
-    TOP_STORED,
-  );
+  const diversified = applyAuthorSubjectDiversity(forDiversity, bookById, tfidfByBook, TOP_STORED);
   const top = diversified.slice(0, TOP_STORED);
 
   const scoreById = new Map(scored.map((r) => [r.bookId, r]));

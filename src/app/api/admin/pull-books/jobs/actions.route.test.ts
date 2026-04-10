@@ -28,11 +28,14 @@ describe("POST /api/admin/pull-books/jobs/:id (cancel/retry)", () => {
     const { POST } = await import("./[id]/route");
 
     const res = await POST(
-      new Request("http://test.local/api/admin/pull-books/jobs/11111111-1111-4111-8111-111111111111", {
-        method: "POST",
-        headers: { Origin: "http://test.local", "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "cancel" }),
-      }),
+      new Request(
+        "http://test.local/api/admin/pull-books/jobs/11111111-1111-4111-8111-111111111111",
+        {
+          method: "POST",
+          headers: { Origin: "http://test.local", "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "cancel" }),
+        },
+      ),
       { params: Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" }) },
     );
     expect(res.status).toBe(200);
@@ -45,11 +48,14 @@ describe("POST /api/admin/pull-books/jobs/:id (cancel/retry)", () => {
     const { POST } = await import("./[id]/route");
 
     const res = await POST(
-      new Request("http://test.local/api/admin/pull-books/jobs/11111111-1111-4111-8111-111111111111", {
-        method: "POST",
-        headers: { Origin: "http://test.local", "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "retry" }),
-      }),
+      new Request(
+        "http://test.local/api/admin/pull-books/jobs/11111111-1111-4111-8111-111111111111",
+        {
+          method: "POST",
+          headers: { Origin: "http://test.local", "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "retry" }),
+        },
+      ),
       { params: Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" }) },
     );
     expect(res.status).toBe(200);

@@ -77,8 +77,8 @@ export function MobileBottomNav({ showAdmin }: { showAdmin: boolean }) {
                 "rounded-2xl border px-2 py-2 text-center text-xs transition",
                 "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                 active
-                  ? "border-foreground/15 bg-secondary text-foreground shadow-eleven-card ring-1 ring-foreground/10"
-                  : "border-(--eleven-border-subtle) bg-background/80 text-eleven-muted shadow-eleven-button-white hover:bg-secondary hover:text-foreground hover:shadow-eleven-card",
+                  ? "border-foreground/15 bg-secondary text-foreground shadow-eleven-card ring-foreground/10 ring-1"
+                  : "bg-background/80 text-eleven-muted shadow-eleven-button-white hover:bg-secondary hover:text-foreground hover:shadow-eleven-card border-(--eleven-border-subtle)",
               )}
             >
               <span className="mx-auto flex w-fit items-center gap-2">
@@ -104,8 +104,8 @@ export function MobileBottomNav({ showAdmin }: { showAdmin: boolean }) {
                   "flex items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs transition",
                   "focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none",
                   active
-                    ? "border-foreground/15 bg-secondary text-foreground shadow-eleven-card ring-1 ring-foreground/10"
-                    : "border-(--eleven-border-subtle) bg-background/80 text-eleven-muted shadow-eleven-button-white hover:bg-secondary hover:text-foreground hover:shadow-eleven-card",
+                    ? "border-foreground/15 bg-secondary text-foreground shadow-eleven-card ring-foreground/10 ring-1"
+                    : "bg-background/80 text-eleven-muted shadow-eleven-button-white hover:bg-secondary hover:text-foreground hover:shadow-eleven-card border-(--eleven-border-subtle)",
                 )}
               >
                 <Icon className={cn("h-4 w-4", active ? "text-foreground" : "text-eleven-muted")} />

@@ -157,9 +157,7 @@ export function SearchPageClient({
       if (json.bookId) {
         setItems((prev) =>
           prev.map((it) =>
-            it.key === candidate.key
-              ? { ...it, inLibrary: true, libraryBookId: json.bookId }
-              : it,
+            it.key === candidate.key ? { ...it, inLibrary: true, libraryBookId: json.bookId } : it,
           ),
         );
       }
@@ -191,7 +189,7 @@ export function SearchPageClient({
             aria-label="Recherche catalogue"
             data-testid="catalog-search-query"
             className={cn(
-              "eleven-body-airy h-10 rounded-xl border-(--eleven-border-subtle) pr-3 pl-9 shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40",
+              "eleven-body-airy focus-visible:border-ring focus-visible:ring-ring/40 h-10 rounded-xl border-(--eleven-border-subtle) pr-3 pl-9 shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:ring-2",
               q.length > 0 && "pr-9",
             )}
           />
@@ -279,7 +277,7 @@ export function SearchPageClient({
             <li
               key={c.key}
               className={cn(
-                "catalog-card-enter flex gap-3 rounded-xl border border-(--eleven-border-subtle) p-3 shadow-eleven-card transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-eleven-card",
+                "catalog-card-enter shadow-eleven-card hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-card flex gap-3 rounded-xl border border-(--eleven-border-subtle) p-3 transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0",
               )}
               style={
                 { "--catalog-enter-delay": `${Math.min(index, 19) * 45}ms` } as React.CSSProperties
@@ -293,7 +291,7 @@ export function SearchPageClient({
                   loading="lazy"
                   decoding="async"
                   referrerPolicy="no-referrer"
-                  className="h-[7.25rem] w-20 shrink-0 rounded-lg border border-(--eleven-border-subtle) bg-muted/30 object-cover"
+                  className="bg-muted/30 h-[7.25rem] w-20 shrink-0 rounded-lg border border-(--eleven-border-subtle) object-cover"
                 />
               ) : (
                 <div className="bg-muted/40 text-eleven-muted flex h-[7.25rem] w-20 shrink-0 items-center justify-center rounded-lg border border-(--eleven-border-subtle) text-xs">
@@ -313,7 +311,7 @@ export function SearchPageClient({
                   ) : null}
                 </div>
                 <p className="text-eleven-muted mt-1 text-xs leading-relaxed">{authorLine(c)}</p>
-                <p className="text-eleven-muted mt-0.5 text-[10px] uppercase tracking-wide">
+                <p className="text-eleven-muted mt-0.5 text-[10px] tracking-wide uppercase">
                   {c.provider === "googlebooks" ? "Google Books" : "Open Library"}
                 </p>
                 {isAdmin && !c.inLibrary ? (

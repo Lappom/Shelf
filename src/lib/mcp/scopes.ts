@@ -86,11 +86,7 @@ export const MCP_RESOURCE_SCOPES: Record<string, readonly string[]> = {
 
 export const MCP_PROMPT_SCOPES: Record<string, readonly string[]> = {
   summarize_book: [MCP_SCOPES.LIBRARY_READ, MCP_SCOPES.ANNOTATIONS_READ],
-  reading_insights: [
-    MCP_SCOPES.LIBRARY_READ,
-    MCP_SCOPES.ANNOTATIONS_READ,
-    MCP_SCOPES.SHELVES_READ,
-  ],
+  reading_insights: [MCP_SCOPES.LIBRARY_READ, MCP_SCOPES.ANNOTATIONS_READ, MCP_SCOPES.SHELVES_READ],
   find_similar: [MCP_SCOPES.LIBRARY_READ],
   shelf_curator: [MCP_SCOPES.LIBRARY_READ, MCP_SCOPES.SHELVES_READ],
   quote_finder: [MCP_SCOPES.ANNOTATIONS_READ],

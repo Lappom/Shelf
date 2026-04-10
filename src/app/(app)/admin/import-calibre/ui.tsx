@@ -127,7 +127,7 @@ function resultToCsv(res: CalibreImportResult) {
 function StatCard({ label, value, delayMs }: { label: string; value: number; delayMs: number }) {
   return (
     <div
-      className="admin-import-stat-enter border-(--eleven-border-subtle) bg-card shadow-eleven-card rounded-xl border px-4 py-3"
+      className="admin-import-stat-enter bg-card shadow-eleven-card rounded-xl border border-(--eleven-border-subtle) px-4 py-3"
       style={{ "--admin-import-delay": `${delayMs}ms` } as React.CSSProperties}
     >
       <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">{label}</div>
@@ -167,9 +167,7 @@ export function ImportCalibreClient() {
         return;
       }
       if (raw.size > MAX_METADATA_DB_BYTES) {
-        setError(
-          `Le fichier dépasse ${MAX_METADATA_DB_BYTES / 1024 / 1024} Mo (limite serveur).`,
-        );
+        setError(`Le fichier dépasse ${MAX_METADATA_DB_BYTES / 1024 / 1024} Mo (limite serveur).`);
         return;
       }
       setError(null);
@@ -192,12 +190,7 @@ export function ImportCalibreClient() {
 
   const onTabListKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (
-        e.key !== "ArrowRight" &&
-        e.key !== "ArrowLeft" &&
-        e.key !== "Home" &&
-        e.key !== "End"
-      ) {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft" && e.key !== "Home" && e.key !== "End") {
         return;
       }
       e.preventDefault();
@@ -217,7 +210,7 @@ export function ImportCalibreClient() {
     <div className="space-y-6">
       {error && (
         <div
-          className="admin-import-panel-enter rounded-2xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className="admin-import-panel-enter border-destructive/25 bg-destructive/10 text-destructive rounded-2xl border px-4 py-3 text-sm"
           role="alert"
         >
           {error}
@@ -246,8 +239,8 @@ export function ImportCalibreClient() {
             <li className="flex gap-2">
               <FolderOpen className="text-eleven-muted mt-0.5 size-4 shrink-0" aria-hidden />
               <span>
-                <span className="text-foreground font-medium">Chemin racine</span> — dossier
-                Calibre monté sur le serveur (volume Docker, etc.).
+                <span className="text-foreground font-medium">Chemin racine</span> — dossier Calibre
+                monté sur le serveur (volume Docker, etc.).
               </span>
             </li>
             <li className="flex gap-2">
@@ -274,20 +267,18 @@ export function ImportCalibreClient() {
                   onChange={onDbFileChange}
                   className={cn(
                     "cursor-pointer file:cursor-pointer",
-                    fileOverLimit && "border-destructive ring-1 ring-destructive/30",
+                    fileOverLimit && "border-destructive ring-destructive/30 ring-1",
                   )}
                 />
                 {fileHint && (
                   <p
                     className={cn(
                       "text-xs",
-                      fileOverLimit ? "font-medium text-destructive" : "text-muted-foreground",
+                      fileOverLimit ? "text-destructive font-medium" : "text-muted-foreground",
                     )}
                   >
                     {fileHint.name} — {formatBytes(fileHint.size)}
-                    {fileOverLimit
-                      ? ` (dépasse ${MAX_METADATA_DB_BYTES / 1024 / 1024} Mo)`
-                      : null}
+                    {fileOverLimit ? ` (dépasse ${MAX_METADATA_DB_BYTES / 1024 / 1024} Mo)` : null}
                   </p>
                 )}
                 {!fileHint && (
@@ -326,7 +317,7 @@ export function ImportCalibreClient() {
                 <input
                   name="dryRun"
                   type="checkbox"
-                  className="border-input text-primary mt-1 size-4 shrink-0 rounded focus-visible:ring-2 focus-visible:ring-ring"
+                  className="border-input text-primary focus-visible:ring-ring mt-1 size-4 shrink-0 rounded focus-visible:ring-2"
                   defaultChecked
                 />
                 <span className="text-eleven-secondary leading-snug">
@@ -341,7 +332,7 @@ export function ImportCalibreClient() {
                 <input
                   name="skipCovers"
                   type="checkbox"
-                  className="border-input text-primary size-4 rounded focus-visible:ring-2 focus-visible:ring-ring"
+                  className="border-input text-primary focus-visible:ring-ring size-4 rounded focus-visible:ring-2"
                 />
                 Ignorer les couvertures
               </label>
@@ -430,7 +421,11 @@ export function ImportCalibreClient() {
           <CardContent className="space-y-5 pt-4">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard label="Importés" value={result.stats.imported} delayMs={0} />
-              <StatCard label="Ignorés (doublons)" value={result.stats.ignoredDuplicates} delayMs={70} />
+              <StatCard
+                label="Ignorés (doublons)"
+                value={result.stats.ignoredDuplicates}
+                delayMs={70}
+              />
               <StatCard label="Erreurs" value={result.stats.errors} delayMs={140} />
               <StatCard label="Entrées DB" value={result.stats.totalInDb} delayMs={210} />
             </div>
@@ -440,7 +435,7 @@ export function ImportCalibreClient() {
 
             {result.warnings.length > 0 && (
               <div className="rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/40">
-                <div className="text-amber-900 dark:text-amber-100 mb-2 flex items-center gap-2 text-sm font-medium">
+                <div className="mb-2 flex items-center gap-2 text-sm font-medium text-amber-900 dark:text-amber-100">
                   <AlertTriangle className="size-4 shrink-0" aria-hidden />
                   Avertissements
                 </div>
@@ -499,7 +494,7 @@ export function ImportCalibreClient() {
                   <div className="mt-3 overflow-hidden rounded-xl border border-(--eleven-border-subtle)">
                     <div className="max-h-[min(28rem,55vh)] overflow-auto">
                       <table className="w-full text-left text-sm">
-                        <thead className="bg-muted/80 supports-[backdrop-filter]:backdrop-blur-sm sticky top-0 z-[1]">
+                        <thead className="bg-muted/80 sticky top-0 z-[1] supports-[backdrop-filter]:backdrop-blur-sm">
                           <tr>
                             <th className="px-3 py-2.5 font-medium">Calibre ID</th>
                             <th className="px-3 py-2.5 font-medium">Book ID</th>
@@ -516,16 +511,19 @@ export function ImportCalibreClient() {
                               <td className="text-muted-foreground px-3 py-2 tabular-nums">
                                 {r.calibreBookId}
                               </td>
-                              <td className="font-mono text-xs px-3 py-2">{r.bookId}</td>
+                              <td className="px-3 py-2 font-mono text-xs">{r.bookId}</td>
                               <td className="px-3 py-2">{r.title}</td>
-                              <td className="text-muted-foreground font-mono text-xs px-3 py-2">
+                              <td className="text-muted-foreground px-3 py-2 font-mono text-xs">
                                 {r.contentHash.slice(0, 12)}…
                               </td>
                             </tr>
                           ))}
                           {!result.imported.length && (
                             <tr>
-                              <td className="text-muted-foreground px-3 py-6 text-center" colSpan={4}>
+                              <td
+                                className="text-muted-foreground px-3 py-6 text-center"
+                                colSpan={4}
+                              >
                                 <span className="inline-flex items-center gap-2">
                                   <CheckCircle2 className="size-4 opacity-60" aria-hidden />
                                   Aucun livre importé sur ce run.
@@ -551,7 +549,7 @@ export function ImportCalibreClient() {
                   <div className="mt-3 overflow-hidden rounded-xl border border-(--eleven-border-subtle)">
                     <div className="max-h-[min(28rem,55vh)] overflow-auto">
                       <table className="w-full text-left text-sm">
-                        <thead className="bg-muted/80 supports-[backdrop-filter]:backdrop-blur-sm sticky top-0 z-[1]">
+                        <thead className="bg-muted/80 sticky top-0 z-[1] supports-[backdrop-filter]:backdrop-blur-sm">
                           <tr>
                             <th className="px-3 py-2.5 font-medium">Calibre ID</th>
                             <th className="px-3 py-2.5 font-medium">Titre</th>
@@ -570,12 +568,15 @@ export function ImportCalibreClient() {
                               </td>
                               <td className="px-3 py-2">{r.title}</td>
                               <td className="text-muted-foreground px-3 py-2">{r.reason}</td>
-                              <td className="font-mono text-xs px-3 py-2">{r.existingBookId}</td>
+                              <td className="px-3 py-2 font-mono text-xs">{r.existingBookId}</td>
                             </tr>
                           ))}
                           {!result.ignored.length && (
                             <tr>
-                              <td className="text-muted-foreground px-3 py-6 text-center" colSpan={4}>
+                              <td
+                                className="text-muted-foreground px-3 py-6 text-center"
+                                colSpan={4}
+                              >
                                 Aucun doublon ignoré.
                               </td>
                             </tr>
@@ -598,7 +599,7 @@ export function ImportCalibreClient() {
                   <div className="mt-3 overflow-hidden rounded-xl border border-(--eleven-border-subtle)">
                     <div className="max-h-[min(28rem,55vh)] overflow-auto">
                       <table className="w-full text-left text-sm">
-                        <thead className="bg-muted/80 supports-[backdrop-filter]:backdrop-blur-sm sticky top-0 z-[1]">
+                        <thead className="bg-muted/80 sticky top-0 z-[1] supports-[backdrop-filter]:backdrop-blur-sm">
                           <tr>
                             <th className="px-3 py-2.5 font-medium">Calibre ID</th>
                             <th className="px-3 py-2.5 font-medium">Titre</th>
@@ -622,7 +623,10 @@ export function ImportCalibreClient() {
                           ))}
                           {!result.errors.length && (
                             <tr>
-                              <td className="text-muted-foreground px-3 py-6 text-center" colSpan={4}>
+                              <td
+                                className="text-muted-foreground px-3 py-6 text-center"
+                                colSpan={4}
+                              >
                                 <span className="inline-flex items-center gap-2">
                                   <CheckCircle2 className="size-4 opacity-60" aria-hidden />
                                   Aucune erreur.

@@ -60,11 +60,11 @@ export function AdminUsersClient({
   const { filteredSorted, totalFiltered, pageItems, totalPages, safePage } = React.useMemo(() => {
     const filtered = filterAdminUsers(users, query);
     const sorted = sortAdminUsers(filtered, sortField, sortDir);
-    const { pageItems: slice, totalPages: tp, safePage: sp } = paginateAdminUsers(
-      sorted,
-      page,
-      pageSize,
-    );
+    const {
+      pageItems: slice,
+      totalPages: tp,
+      safePage: sp,
+    } = paginateAdminUsers(sorted, page, pageSize);
     return {
       filteredSorted: sorted,
       totalFiltered: sorted.length,
@@ -208,10 +208,10 @@ export function AdminUsersClient({
       ) : (
         <>
           <div key={`table-${listAnimKey}`} className="hidden lg:block">
-            <div className="shadow-eleven-card overflow-hidden rounded-2xl border border-[var(--eleven-border-subtle)] bg-card">
+            <div className="shadow-eleven-card bg-card overflow-hidden rounded-2xl border border-[var(--eleven-border-subtle)]">
               <div className="max-h-[min(70vh,42rem)] overflow-auto">
                 <table className="w-full min-w-[640px] border-collapse text-left text-sm">
-                  <thead className="bg-card/95 supports-backdrop-filter:backdrop-blur-xs sticky top-0 z-10 border-b border-[var(--eleven-border-subtle)]">
+                  <thead className="bg-card/95 sticky top-0 z-10 border-b border-[var(--eleven-border-subtle)] supports-backdrop-filter:backdrop-blur-xs">
                     <tr className="text-eleven-muted eleven-body-airy">
                       <th scope="col" className="px-4 py-3 font-medium">
                         Utilisateur
@@ -239,7 +239,7 @@ export function AdminUsersClient({
                             ? ({ "--shelf-enter-delay": `${index * 42}ms` } as React.CSSProperties)
                             : undefined
                         }
-                        className={`shelf-item-enter border-eleven-border-subtle border-b transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] last:border-b-0 hover:bg-muted/35 ${
+                        className={`shelf-item-enter border-eleven-border-subtle hover:bg-muted/35 border-b transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] last:border-b-0 ${
                           u.id === currentUserId ? "bg-muted/55" : ""
                         }`}
                         aria-busy={pending === u.id}
@@ -279,7 +279,9 @@ export function AdminUsersClient({
                               className="border-input bg-background rounded-eleven-pill h-9 max-w-[9rem] border px-3 text-sm transition-colors duration-150"
                               value={u.role}
                               disabled={pending === u.id}
-                              onChange={(e) => onRoleChange(u.id, e.target.value as "admin" | "reader")}
+                              onChange={(e) =>
+                                onRoleChange(u.id, e.target.value as "admin" | "reader")
+                              }
                               aria-label={`Rôle pour ${u.username}`}
                             >
                               <option value="reader">reader</option>
@@ -424,7 +426,7 @@ export function AdminUsersClient({
 
 function EmptyState({ title, description }: { title: string; description: string }) {
   return (
-    <div className="shadow-eleven-card shelf-item-enter rounded-2xl border border-dashed border-[var(--eleven-border-subtle)] bg-muted/15 px-6 py-12 text-center">
+    <div className="shadow-eleven-card shelf-item-enter bg-muted/15 rounded-2xl border border-dashed border-[var(--eleven-border-subtle)] px-6 py-12 text-center">
       <p className="eleven-display-section text-foreground text-lg">{title}</p>
       <p className="text-eleven-muted eleven-body-airy mt-2 max-w-md text-sm">{description}</p>
     </div>

@@ -169,7 +169,7 @@ export function AdminMetadataMergeAuditsClient() {
     <div className="space-y-4">
       {error ? (
         <div
-          className="rounded-2xl border border-(--eleven-border-subtle) bg-destructive/5 px-4 py-3 text-sm text-destructive shadow-eleven-card"
+          className="bg-destructive/5 text-destructive shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) px-4 py-3 text-sm"
           role="alert"
         >
           {error}
@@ -177,16 +177,19 @@ export function AdminMetadataMergeAuditsClient() {
       ) : null}
 
       <div
-        className="admin-merge-audits-toolbar-enter flex flex-col gap-3 rounded-2xl border border-(--eleven-border-subtle) bg-card/80 p-4 shadow-eleven-card sm:flex-row sm:flex-wrap sm:items-end"
+        className="admin-merge-audits-toolbar-enter bg-card/80 shadow-eleven-card flex flex-col gap-3 rounded-2xl border border-(--eleven-border-subtle) p-4 sm:flex-row sm:flex-wrap sm:items-end"
         aria-busy={replacing}
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-md">
-          <label className="text-eleven-muted text-xs font-medium tracking-wide uppercase" htmlFor="merge-audit-book-filter">
+          <label
+            className="text-eleven-muted text-xs font-medium tracking-wide uppercase"
+            htmlFor="merge-audit-book-filter"
+          >
             Filtrer par ID livre
           </label>
           <Input
             id="merge-audit-book-filter"
-            className="rounded-xl font-mono text-sm shadow-eleven-button-white transition-[box-shadow,transform] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] focus-visible:ring-[rgb(147_197_253_/_0.5)] motion-reduce:transition-none"
+            className="shadow-eleven-button-white rounded-xl font-mono text-sm transition-[box-shadow,transform] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] focus-visible:ring-[rgb(147_197_253_/_0.5)] motion-reduce:transition-none"
             placeholder="UUID (optionnel)"
             value={bookIdInput}
             onChange={(e) => {
@@ -231,7 +234,7 @@ export function AdminMetadataMergeAuditsClient() {
             type="button"
             size="sm"
             variant="outline"
-            className="inline-flex items-center gap-2 rounded-eleven-pill shadow-eleven-button-white transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.02] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
+            className="rounded-eleven-pill shadow-eleven-button-white inline-flex items-center gap-2 transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.02] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
             disabled={replacing}
             aria-label="Rafraîchir la liste"
             onClick={() => void loadReplace(appliedBookId)}
@@ -251,20 +254,34 @@ export function AdminMetadataMergeAuditsClient() {
 
       <div
         className={cn(
-          "admin-merge-audits-panel-enter overflow-x-auto rounded-2xl border border-(--eleven-border-subtle) shadow-eleven-card transition-opacity duration-200 motion-reduce:transition-none",
+          "admin-merge-audits-panel-enter shadow-eleven-card overflow-x-auto rounded-2xl border border-(--eleven-border-subtle) transition-opacity duration-200 motion-reduce:transition-none",
           replacing && rows.length > 0 && "opacity-70",
         )}
       >
         <table className="text-eleven-secondary eleven-body-airy w-full min-w-[880px] text-left text-sm">
           <thead className="bg-muted/35 border-b border-(--eleven-border-subtle)">
             <tr>
-              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">Date</th>
-              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">Livre</th>
-              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">Acteur</th>
-              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">Snapshot sync</th>
-              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">Writeback</th>
-              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">Hash</th>
-              <th className="text-foreground w-28 px-3 py-2.5 text-xs font-medium tracking-wide uppercase">Copier</th>
+              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">
+                Date
+              </th>
+              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">
+                Livre
+              </th>
+              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">
+                Acteur
+              </th>
+              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">
+                Snapshot sync
+              </th>
+              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">
+                Writeback
+              </th>
+              <th className="text-foreground px-3 py-2.5 text-xs font-medium tracking-wide uppercase">
+                Hash
+              </th>
+              <th className="text-foreground w-28 px-3 py-2.5 text-xs font-medium tracking-wide uppercase">
+                Copier
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -286,10 +303,10 @@ export function AdminMetadataMergeAuditsClient() {
               rows.map((r, index) => (
                 <tr
                   key={r.id}
-                  className="admin-merge-audits-row-enter border-t border-(--eleven-border-subtle) transition-colors duration-150 hover:bg-muted/25 motion-reduce:transition-none"
+                  className="admin-merge-audits-row-enter hover:bg-muted/25 border-t border-(--eleven-border-subtle) transition-colors duration-150 motion-reduce:transition-none"
                   style={rowEnterStyle(index)}
                 >
-                  <td className="text-eleven-muted whitespace-nowrap px-3 py-2.5 tabular-nums">
+                  <td className="text-eleven-muted px-3 py-2.5 whitespace-nowrap tabular-nums">
                     {new Date(r.createdAt).toLocaleString()}
                   </td>
                   <td className="px-3 py-2.5">
@@ -312,7 +329,10 @@ export function AdminMetadataMergeAuditsClient() {
                         }}
                       >
                         {copiedKey === `${r.id}-book` ? (
-                          <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                          <Check
+                            className="size-3.5 text-emerald-600 dark:text-emerald-400"
+                            aria-hidden
+                          />
                         ) : (
                           <Copy className="size-3.5 opacity-70" aria-hidden />
                         )}
@@ -321,7 +341,9 @@ export function AdminMetadataMergeAuditsClient() {
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-eleven-muted font-mono text-xs">{r.actorId.slice(0, 8)}…</span>
+                      <span className="text-eleven-muted font-mono text-xs">
+                        {r.actorId.slice(0, 8)}…
+                      </span>
                       <Button
                         type="button"
                         variant="ghost"
@@ -334,23 +356,26 @@ export function AdminMetadataMergeAuditsClient() {
                         }}
                       >
                         {copiedKey === `${r.id}-actor` ? (
-                          <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                          <Check
+                            className="size-3.5 text-emerald-600 dark:text-emerald-400"
+                            aria-hidden
+                          />
                         ) : (
                           <Copy className="size-3.5 opacity-70" aria-hidden />
                         )}
                       </Button>
                     </div>
                   </td>
-                  <td className="text-eleven-muted whitespace-nowrap px-3 py-2.5 text-xs tabular-nums">
+                  <td className="text-eleven-muted px-3 py-2.5 text-xs whitespace-nowrap tabular-nums">
                     {formatWhen(r.snapshotSyncedAtIso)}
                   </td>
                   <td className="px-3 py-2.5">
                     <span
                       className={cn(
-                        "inline-flex rounded-eleven-pill border px-2.5 py-0.5 text-xs font-medium tracking-wide",
+                        "rounded-eleven-pill inline-flex border px-2.5 py-0.5 text-xs font-medium tracking-wide",
                         r.writeback
                           ? "border-foreground/15 bg-foreground/8 text-foreground"
-                          : "border-(--eleven-border-subtle) bg-muted/50 text-eleven-muted",
+                          : "bg-muted/50 text-eleven-muted border-(--eleven-border-subtle)",
                       )}
                     >
                       {r.writeback ? "Oui" : "Non"}
@@ -366,7 +391,7 @@ export function AdminMetadataMergeAuditsClient() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="rounded-eleven-pill h-8 gap-1 px-2 text-xs shadow-eleven-button-white transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.02] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
+                      className="rounded-eleven-pill shadow-eleven-button-white h-8 gap-1 px-2 text-xs transition-transform duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:scale-[1.02] active:scale-[0.98] motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100"
                       onClick={() => {
                         void navigator.clipboard.writeText(hashLine(r));
                         flashCopied(`${r.id}-hash`);
@@ -374,7 +399,10 @@ export function AdminMetadataMergeAuditsClient() {
                     >
                       {copiedKey === `${r.id}-hash` ? (
                         <>
-                          <Check className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                          <Check
+                            className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                            aria-hidden
+                          />
                           Copié
                         </>
                       ) : (

@@ -638,9 +638,9 @@ export function EpubReaderClient({
   }, []);
 
   return (
-    <div className="reader-shell-enter relative flex min-h-[calc(100vh-3.5rem)] w-full flex-col bg-background text-foreground">
+    <div className="reader-shell-enter bg-background text-foreground relative flex min-h-[calc(100vh-3.5rem)] w-full flex-col">
       {!focusMode ? (
-        <header className="shrink-0 border-b border-(--eleven-border-subtle) bg-background/85 px-3 py-3 backdrop-blur supports-backdrop-filter:bg-background/65">
+        <header className="bg-background/85 supports-backdrop-filter:bg-background/65 shrink-0 border-b border-(--eleven-border-subtle) px-3 py-3 backdrop-blur">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <Button
@@ -796,23 +796,18 @@ export function EpubReaderClient({
               </DropdownMenu>
             </div>
           </div>
-          <div className="bg-muted/80 mt-3 h-1.5 w-full overflow-hidden rounded-eleven-pill">
+          <div className="bg-muted/80 rounded-eleven-pill mt-3 h-1.5 w-full overflow-hidden">
             <div
-              className="bg-foreground/65 h-full rounded-eleven-pill transition-[width] duration-300 ease-out"
+              className="bg-foreground/65 rounded-eleven-pill h-full transition-[width] duration-300 ease-out"
               style={{ width: `${Math.round((progressPct ?? 0) * 10000) / 100}%` }}
             />
           </div>
         </header>
       ) : null}
 
-      <div
-        className={cn(
-          "flex min-h-0 flex-1",
-          focusMode && "min-h-[calc(100vh-3.5rem)]",
-        )}
-      >
+      <div className={cn("flex min-h-0 flex-1", focusMode && "min-h-[calc(100vh-3.5rem)]")}>
         {!focusMode && leftOpen ? (
-          <aside className="hidden h-full w-72 shrink-0 flex-col overflow-hidden border-r border-(--eleven-border-subtle) bg-background md:flex">
+          <aside className="bg-background hidden h-full w-72 shrink-0 flex-col overflow-hidden border-r border-(--eleven-border-subtle) md:flex">
             <div className="eleven-display-section text-foreground border-b border-(--eleven-border-subtle) px-3 py-3 text-base tracking-tight">
               Chapitres
             </div>
@@ -828,12 +823,12 @@ export function EpubReaderClient({
 
         <main className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           {!focusMode ? (
-            <div className="flex items-center justify-between gap-3 border-b border-(--eleven-border-subtle) bg-background/80 px-3 py-2.5 backdrop-blur">
+            <div className="bg-background/80 flex items-center justify-between gap-3 border-b border-(--eleven-border-subtle) px-3 py-2.5 backdrop-blur">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  className="size-10 rounded-eleven-pill shadow-eleven-button-white md:size-9"
+                  className="rounded-eleven-pill shadow-eleven-button-white size-10 md:size-9"
                   onClick={() => {
                     startTransition(async () => {
                       try {
@@ -855,7 +850,7 @@ export function EpubReaderClient({
                 <Button
                   variant="outline"
                   size="icon-sm"
-                  className="size-10 rounded-eleven-pill shadow-eleven-button-white md:size-9"
+                  className="rounded-eleven-pill shadow-eleven-button-white size-10 md:size-9"
                   onClick={() => {
                     startTransition(async () => {
                       try {
@@ -873,10 +868,10 @@ export function EpubReaderClient({
                 </Button>
               </div>
               <details className="group max-w-[min(100%,12rem)] text-right sm:max-w-md">
-                <summary className="text-eleven-muted eleven-body-airy cursor-pointer list-none text-xs underline decoration-transparent underline-offset-2 transition-colors marker:hidden hover:decoration-foreground [&::-webkit-details-marker]:hidden">
+                <summary className="text-eleven-muted eleven-body-airy hover:decoration-foreground cursor-pointer list-none text-xs underline decoration-transparent underline-offset-2 transition-colors marker:hidden [&::-webkit-details-marker]:hidden">
                   Avancé (CFI)
                 </summary>
-                <div className="text-eleven-muted mt-1 max-h-24 overflow-auto break-all font-mono text-[10px] leading-snug">
+                <div className="text-eleven-muted mt-1 max-h-24 overflow-auto font-mono text-[10px] leading-snug break-all">
                   {location.cfi ?? "—"}
                 </div>
               </details>
@@ -889,11 +884,11 @@ export function EpubReaderClient({
         </main>
 
         {!focusMode && rightOpen ? (
-          <aside className="hidden h-full w-80 shrink-0 flex-col overflow-hidden border-l border-(--eleven-border-subtle) bg-background lg:flex">
+          <aside className="bg-background hidden h-full w-80 shrink-0 flex-col overflow-hidden border-l border-(--eleven-border-subtle) lg:flex">
             <div className="eleven-display-section text-foreground border-b border-(--eleven-border-subtle) px-3 py-3 text-base tracking-tight">
               Annotations
             </div>
-            <div className="min-h-0 flex-1 overflow-auto px-3 pb-4 pt-2">
+            <div className="min-h-0 flex-1 overflow-auto px-3 pt-2 pb-4">
               <ReaderAnnotationsList
                 annotations={annotations}
                 busy={busy}
@@ -938,7 +933,7 @@ export function EpubReaderClient({
             aria-label="Fermer la table des matières"
             onClick={() => setLeftOpen(false)}
           />
-          <div className="reader-drawer-panel-left-enter shadow-eleven-card absolute top-14 left-0 flex h-[calc(100vh-3.5rem)] w-[min(80vw,320px)] flex-col overflow-hidden border-r border-(--eleven-border-subtle) bg-background">
+          <div className="reader-drawer-panel-left-enter shadow-eleven-card bg-background absolute top-14 left-0 flex h-[calc(100vh-3.5rem)] w-[min(80vw,320px)] flex-col overflow-hidden border-r border-(--eleven-border-subtle)">
             <div className="eleven-display-section text-foreground border-b border-(--eleven-border-subtle) px-3 py-3 text-base tracking-tight">
               Chapitres
             </div>
@@ -966,11 +961,11 @@ export function EpubReaderClient({
             aria-label="Fermer les annotations"
             onClick={() => setRightOpen(false)}
           />
-          <div className="reader-drawer-panel-right-enter shadow-eleven-card absolute top-14 right-0 flex h-[calc(100vh-3.5rem)] w-[min(86vw,420px)] flex-col overflow-hidden border-l border-(--eleven-border-subtle) bg-background">
+          <div className="reader-drawer-panel-right-enter shadow-eleven-card bg-background absolute top-14 right-0 flex h-[calc(100vh-3.5rem)] w-[min(86vw,420px)] flex-col overflow-hidden border-l border-(--eleven-border-subtle)">
             <div className="eleven-display-section text-foreground border-b border-(--eleven-border-subtle) px-3 py-3 text-base tracking-tight">
               Annotations
             </div>
-            <div className="min-h-0 flex-1 overflow-auto px-3 pb-4 pt-2">
+            <div className="min-h-0 flex-1 overflow-auto px-3 pt-2 pb-4">
               <ReaderAnnotationsList
                 annotations={annotations}
                 busy={busy}

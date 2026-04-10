@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 
 export default async function ShelvesPage() {
   const user = await requireUserPage();
-  const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+  const userId = z
+    .string()
+    .uuid()
+    .parse((user as { id?: unknown }).id);
 
   type ShelfRow = {
     id: string;

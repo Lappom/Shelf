@@ -8,12 +8,12 @@
 
 ## SLO indicatifs (internes)
 
-| Indicateur | Objectif | Signal |
-|------------|----------|--------|
-| Disponibilité API app | 99 % mensuel (hors maintenance) | taux 5xx sur routes critiques |
-| Latence catalogue externe | P95 conforme SPECS §15 | `openlibrary_request.durationMs`, k6 (workflow loadtest si secrets configurés) |
-| Backlog jobs | Pas de croissance continue sur 24 h | `ops-summary`, alertes manuelles |
-| Cron recommendations | Au moins 1 exécution réussie / fenêtre planifiée | logs cron, `jobCreated` / `jobId` |
+| Indicateur                | Objectif                                         | Signal                                                                         |
+| ------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Disponibilité API app     | 99 % mensuel (hors maintenance)                  | taux 5xx sur routes critiques                                                  |
+| Latence catalogue externe | P95 conforme SPECS §15                           | `openlibrary_request.durationMs`, k6 (workflow loadtest si secrets configurés) |
+| Backlog jobs              | Pas de croissance continue sur 24 h              | `ops-summary`, alertes manuelles                                               |
+| Cron recommendations      | Au moins 1 exécution réussie / fenêtre planifiée | logs cron, `jobCreated` / `jobId`                                              |
 
 Les seuils numériques sont **internes** ; les ajuster après mesure réelle.
 

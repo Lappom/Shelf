@@ -26,8 +26,8 @@ export function ShelfRuleSelect({
       data-testid={dataTestId}
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        "eleven-body-airy h-9 rounded-xl border border-(--eleven-border-subtle) bg-background px-2 text-[0.94rem] outline-none",
-        "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+        "eleven-body-airy bg-background h-9 rounded-xl border border-(--eleven-border-subtle) px-2 text-[0.94rem] outline-none",
+        "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-3",
         "disabled:opacity-50",
         className,
       )}

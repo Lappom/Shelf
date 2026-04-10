@@ -12,12 +12,7 @@ import {
   closestCenter,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  arrayMove,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableContext, useSortable, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVerticalIcon, PencilIcon, PlusIcon, SmilePlusIcon, Trash2Icon } from "lucide-react";
 import { Popover as PopoverPrimitive } from "radix-ui";
@@ -91,13 +86,13 @@ function ShelfSectionEmpty({
   onAction?: () => void;
 }) {
   return (
-    <div className="shelf-item-enter col-span-full rounded-2xl border border-dashed border-(--eleven-border-subtle) bg-muted/15 px-4 py-8 text-center">
+    <div className="shelf-item-enter bg-muted/15 col-span-full rounded-2xl border border-dashed border-(--eleven-border-subtle) px-4 py-8 text-center">
       <p className="text-eleven-secondary eleven-body-airy text-sm">{message}</p>
       {actionLabel && onAction ? (
         <Button
           type="button"
           variant="outline"
-          className="mt-3 rounded-eleven-pill"
+          className="rounded-eleven-pill mt-3"
           onClick={onAction}
         >
           {actionLabel}
@@ -113,7 +108,7 @@ function ShelfPlankBooks({ books }: { books: ShelfCoverPreview[] }) {
   const placeholderCount = 6;
 
   return (
-    <div className="from-secondary/40 relative overflow-hidden rounded-t-2xl border-b border-(--eleven-border-subtle) bg-gradient-to-b to-[color-mix(in_oklab,var(--secondary)_65%,var(--muted)))] px-1 pt-3 pb-0 dark:to-secondary/35">
+    <div className="from-secondary/40 dark:to-secondary/35 relative overflow-hidden rounded-t-2xl border-b border-(--eleven-border-subtle) bg-gradient-to-b to-[color-mix(in_oklab,var(--secondary)_65%,var(--muted)))] px-1 pt-3 pb-0">
       <div className="flex min-h-[6.75rem] items-end justify-center sm:min-h-[7.5rem]">
         <div className="flex max-w-full items-end justify-center px-1">
           {slice.map((b, i) => {
@@ -125,7 +120,7 @@ function ShelfPlankBooks({ books }: { books: ShelfCoverPreview[] }) {
                 className="relative z-[2] -ml-2.5 shrink-0 first:ml-0 sm:-ml-3"
                 style={{ transform: `rotate(${rot}deg)` }}
               >
-                <div className="shadow-eleven-button-white relative aspect-[2/3] w-10 overflow-hidden rounded-sm bg-card ring-1 ring-black/10 transition-transform duration-300 ease-out will-change-transform group-hover/plank:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover/plank:translate-y-0 sm:w-11 dark:ring-white/10">
+                <div className="shadow-eleven-button-white bg-card relative aspect-[2/3] w-10 overflow-hidden rounded-sm ring-1 ring-black/10 transition-transform duration-300 ease-out will-change-transform group-hover/plank:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover/plank:translate-y-0 sm:w-11 dark:ring-white/10">
                   {src ? (
                     <Image
                       src={src}
@@ -164,7 +159,7 @@ function ShelfPlankBooks({ books }: { books: ShelfCoverPreview[] }) {
       </div>
       {/* Shelf lip / front edge */}
       <div
-        className="from-foreground/15 to-foreground/30 dark:from-white/12 dark:to-white/6 mx-1 mb-2 h-2 rounded-t-sm bg-gradient-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]"
+        className="from-foreground/15 to-foreground/30 mx-1 mb-2 h-2 rounded-t-sm bg-gradient-to-b shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] dark:from-white/12 dark:to-white/6"
         aria-hidden
       />
     </div>
@@ -204,7 +199,7 @@ function SortableShelfCard({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "shelf-item-enter h-full overflow-hidden transition-shadow duration-200 ease-out hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-card",
+        "shelf-item-enter hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-card h-full overflow-hidden transition-shadow duration-200 ease-out",
         isDragging && "shadow-eleven-warm",
       )}
     >
@@ -229,7 +224,7 @@ function SortableShelfCard({
           </div>
         </Link>
 
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-full bg-background/90 p-0.5 shadow-eleven-button-white backdrop-blur-sm dark:bg-background/80">
+        <div className="bg-background/90 shadow-eleven-button-white dark:bg-background/80 absolute top-2 right-2 z-10 flex items-center gap-0.5 rounded-full p-0.5 backdrop-blur-sm">
           {!disabled && (
             <Button
               variant="ghost"
@@ -266,7 +261,7 @@ function SortableShelfCard({
         </div>
       </div>
 
-      <CardContent className="pb-4 pt-2">
+      <CardContent className="pt-2 pb-4">
         <div className="text-eleven-muted eleven-body-airy flex items-center gap-2 text-xs">
           <span>{shelfTypeLabel(shelf.type)}</span>
           <span aria-hidden="true">•</span>
@@ -347,7 +342,7 @@ function ShelfNameWithEmojiField({
 }) {
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const trimmed = icon.trim();
-  const preview = trimmed ? [...trimmed][0] ?? trimmed.slice(0, 2) : null;
+  const preview = trimmed ? ([...trimmed][0] ?? trimmed.slice(0, 2)) : null;
   const selectedEmoji = preview ?? "";
 
   return (
@@ -355,7 +350,7 @@ function ShelfNameWithEmojiField({
       <div className="text-muted-foreground text-xs">Nom</div>
       <div
         className={cn(
-          "focus-within:border-ring focus-within:ring-ring/50 flex h-9 min-w-0 rounded-xl border border-input bg-transparent transition-colors focus-within:ring-3",
+          "focus-within:border-ring focus-within:ring-ring/50 border-input flex h-9 min-w-0 rounded-xl border bg-transparent transition-colors focus-within:ring-3",
           disabled && "pointer-events-none opacity-50",
         )}
       >
@@ -364,7 +359,7 @@ function ShelfNameWithEmojiField({
             <button
               type="button"
               disabled={disabled}
-              className="text-muted-foreground hover:bg-muted/50 hover:text-foreground flex w-11 shrink-0 items-center justify-center border-r border-input text-xl leading-none transition-colors outline-none focus-visible:bg-muted/40"
+              className="text-muted-foreground hover:bg-muted/50 hover:text-foreground border-input focus-visible:bg-muted/40 flex w-11 shrink-0 items-center justify-center border-r text-xl leading-none transition-colors outline-none"
               aria-label="Choisir un emoji pour l’étagère"
               aria-expanded={pickerOpen}
             >
@@ -400,7 +395,7 @@ function ShelfNameWithEmojiField({
                     type="button"
                     role="option"
                     aria-selected={selectedEmoji === emoji}
-                    className="hover:bg-accent/80 flex size-9 items-center justify-center rounded-lg text-lg transition-transform hover:scale-110 aria-selected:bg-accent/50 active:scale-95"
+                    className="hover:bg-accent/80 aria-selected:bg-accent/50 flex size-9 items-center justify-center rounded-lg text-lg transition-transform hover:scale-110 active:scale-95"
                     onClick={() => {
                       onIconChange(emoji);
                       setPickerOpen(false);
@@ -597,10 +592,7 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
             <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">
               Manuelles
             </div>
-            <SortableContext
-              items={manualShelves.map((s) => s.id)}
-              strategy={rectSortingStrategy}
-            >
+            <SortableContext items={manualShelves.map((s) => s.id)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {manualShelves.length === 0 ? (
                   <ShelfSectionEmpty
@@ -639,10 +631,7 @@ export function ShelvesPageClient({ initialShelves }: { initialShelves: ShelfLis
             <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">
               Dynamiques
             </div>
-            <SortableContext
-              items={dynamicShelves.map((s) => s.id)}
-              strategy={rectSortingStrategy}
-            >
+            <SortableContext items={dynamicShelves.map((s) => s.id)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {dynamicShelves.length === 0 ? (
                   <ShelfSectionEmpty

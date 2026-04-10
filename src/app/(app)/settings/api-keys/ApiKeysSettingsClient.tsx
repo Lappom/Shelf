@@ -138,7 +138,7 @@ export function ApiKeysSettingsClient({
             </Button>
           </div>
 
-          <div className="border-(--eleven-border-subtle) space-y-3 border-t pt-3">
+          <div className="space-y-3 border-t border-(--eleven-border-subtle) pt-3">
             <label className="flex cursor-pointer items-start gap-2 text-sm">
               <input
                 type="checkbox"
@@ -164,7 +164,7 @@ export function ApiKeysSettingsClient({
                         disabled={busy}
                       />
                       <span>
-                        <span className="font-mono text-xs text-eleven-muted">{opt.id}</span>
+                        <span className="text-eleven-muted font-mono text-xs">{opt.id}</span>
                         <br />
                         {opt.label}
                       </span>

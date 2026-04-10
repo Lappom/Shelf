@@ -45,13 +45,13 @@ export function ReaderAnnotationsList({
       {annotations.map((a) => (
         <div
           key={a.id}
-          className="shadow-eleven-card rounded-[20px] border border-(--eleven-border-subtle) bg-background p-3"
+          className="shadow-eleven-card bg-background rounded-[20px] border border-(--eleven-border-subtle) p-3"
         >
           <div className="flex items-center justify-between gap-2">
             <div className="eleven-body-airy text-xs font-medium tracking-wide uppercase">
               {a.type}
               {a.type === "highlight" && a.color ? (
-                <span className="ml-2 rounded-eleven-pill border border-(--eleven-border-subtle) px-2 py-0.5 text-[10px] normal-case">
+                <span className="rounded-eleven-pill ml-2 border border-(--eleven-border-subtle) px-2 py-0.5 text-[10px] normal-case">
                   {a.color}
                 </span>
               ) : null}

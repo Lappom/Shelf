@@ -116,8 +116,8 @@ export async function addBookFromCatalog(
 
   const openLibraryIdForDb =
     input.provider === "openlibrary"
-      ? (olSeed?.openLibraryId ? normalizeOpenLibraryDocKey(olSeed.openLibraryId) : null) ??
-        normalizeOpenLibraryDocKey(providerId)
+      ? ((olSeed?.openLibraryId ? normalizeOpenLibraryDocKey(olSeed.openLibraryId) : null) ??
+        normalizeOpenLibraryDocKey(providerId))
       : null;
 
   const created = await prisma.book.create({

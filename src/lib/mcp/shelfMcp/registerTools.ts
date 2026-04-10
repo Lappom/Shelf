@@ -134,8 +134,7 @@ async function runAuditedTool(
       resultSummary,
       ...(out.isError
         ? {
-            errorMessage:
-              out.content[0]?.type === "text" ? out.content[0].text : "tool_error",
+            errorMessage: out.content[0]?.type === "text" ? out.content[0].text : "tool_error",
           }
         : {}),
     });
@@ -616,7 +615,8 @@ export function registerShelfMcpTools(mcp: McpServer) {
   mcp.registerTool(
     "remove_from_shelf",
     {
-      description: "Remove a book from a shelf (not allowed for system 'reading' / 'read' shelves).",
+      description:
+        "Remove a book from a shelf (not allowed for system 'reading' / 'read' shelves).",
       inputSchema: {
         book_id: z.string().uuid(),
         shelf_id: z.string().uuid(),

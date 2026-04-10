@@ -30,7 +30,7 @@ type Props = {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-3 rounded-[20px] border border-(--eleven-border-subtle) bg-background p-4 shadow-eleven-card">
+    <section className="bg-background shadow-eleven-card space-y-3 rounded-[20px] border border-(--eleven-border-subtle) p-4">
       <h3 className="eleven-display-section text-foreground text-lg tracking-tight">{title}</h3>
       {children}
     </section>
@@ -194,11 +194,7 @@ export function ReaderSettingsDialog({ open, onOpenChange, prefs, onPatch, clamp
           </Section>
         </div>
         <DialogFooter>
-          <Button
-            type="button"
-            className="rounded-eleven-pill"
-            onClick={() => onOpenChange(false)}
-          >
+          <Button type="button" className="rounded-eleven-pill" onClick={() => onOpenChange(false)}>
             Fermer
           </Button>
         </DialogFooter>

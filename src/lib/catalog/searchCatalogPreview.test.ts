@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/metadata/openlibrary", () => ({
   searchOpenLibraryCatalog: mocks.searchOpenLibraryCatalog,
   buildOpenLibraryCoverUrl: (isbn: string) => `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`,
-  buildOpenLibraryCoverUrlByCoverId: (id: number) => `https://covers.openlibrary.org/b/id/${id}-L.jpg`,
+  buildOpenLibraryCoverUrlByCoverId: (id: number) =>
+    `https://covers.openlibrary.org/b/id/${id}-L.jpg`,
 }));
 
 vi.mock("@/lib/metadata/googlebooks", () => ({

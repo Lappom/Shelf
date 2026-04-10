@@ -51,7 +51,7 @@ function authorsLine(authors: unknown): string {
 
 function RecommendationCardSkeleton() {
   return (
-    <Card className="shadow-eleven-card grid grid-cols-[7rem_minmax(0,1fr)] gap-0 py-0 overflow-hidden rounded-2xl border border-[#e5e5e5] bg-card sm:grid-cols-[8rem_minmax(0,1fr)]">
+    <Card className="shadow-eleven-card bg-card grid grid-cols-[7rem_minmax(0,1fr)] gap-0 overflow-hidden rounded-2xl border border-[#e5e5e5] py-0 sm:grid-cols-[8rem_minmax(0,1fr)]">
       <div className="bg-muted min-h-0 min-w-0 animate-pulse" aria-hidden />
       <div className="flex min-h-0 min-w-0 flex-col gap-2 p-4">
         <div className="bg-muted h-4 w-4/5 max-w-[14rem] animate-pulse rounded-md" />
@@ -181,7 +181,7 @@ export function RecommendationsPageClient({
         <Button
           type="button"
           variant="outline"
-          className="rounded-eleven-pill shadow-eleven-button-white h-11 w-fit transition-[box-shadow,transform] duration-200 sm:h-10 motion-safe:hover:-translate-y-px motion-safe:hover:shadow-md"
+          className="rounded-eleven-pill shadow-eleven-button-white h-11 w-fit transition-[box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px motion-safe:hover:shadow-md sm:h-10"
           style={{ transitionTimingFunction: RECO_EASE }}
           disabled={refreshBusy}
           onClick={onRefresh}
@@ -190,10 +190,12 @@ export function RecommendationsPageClient({
         </Button>
       </header>
 
-      <details className="group shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) bg-card open:shadow-eleven-button-white">
+      <details className="group shadow-eleven-card bg-card open:shadow-eleven-button-white rounded-2xl border border-(--eleven-border-subtle)">
         <summary className="eleven-body-airy flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3.5 marker:content-none [&::-webkit-details-marker]:hidden">
           <span className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
-            <span className="font-heading text-base font-light tracking-tight">Confidentialité</span>
+            <span className="font-heading text-base font-light tracking-tight">
+              Confidentialité
+            </span>
             <span className="text-eleven-muted text-xs font-normal">
               Signaux collaboratifs, retours et mesure d’usage
             </span>
@@ -224,7 +226,7 @@ export function RecommendationsPageClient({
       </details>
 
       <div
-        className="border-(--eleven-border-subtle) bg-background/80 sticky top-14 z-30 -mx-6 border-b px-6 py-3 backdrop-blur-md supports-backdrop-filter:bg-background/70"
+        className="bg-background/80 supports-backdrop-filter:bg-background/70 sticky top-14 z-30 -mx-6 border-b border-(--eleven-border-subtle) px-6 py-3 backdrop-blur-md"
         role="toolbar"
         aria-label="Filtrer les suggestions"
       >
@@ -268,7 +270,7 @@ export function RecommendationsPageClient({
         className="space-y-4"
       >
         {items.length === 0 && !loading ? (
-          <Card className="shadow-eleven-card rounded-2xl border border-[#e5e5e5] bg-card p-8 text-center">
+          <Card className="shadow-eleven-card bg-card rounded-2xl border border-[#e5e5e5] p-8 text-center">
             <p className="text-eleven-muted text-sm">Aucun résultat pour ce filtre.</p>
             <Button
               type="button"
@@ -306,10 +308,10 @@ export function RecommendationsPageClient({
                 <Card
                   key={row.bookId}
                   className={cn(
-                    "shadow-eleven-card grid grid-cols-[7rem_minmax(0,1fr)] gap-0 py-0 overflow-hidden rounded-2xl border border-[#e5e5e5] bg-card sm:grid-cols-[8rem_minmax(0,1fr)]",
+                    "shadow-eleven-card bg-card grid grid-cols-[7rem_minmax(0,1fr)] gap-0 overflow-hidden rounded-2xl border border-[#e5e5e5] py-0 sm:grid-cols-[8rem_minmax(0,1fr)]",
                     "shelf-item-enter transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]",
-                    "hover:-translate-y-0.5 hover:shadow-eleven-button-white",
-                    "motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-eleven-card",
+                    "hover:shadow-eleven-button-white hover:-translate-y-0.5",
+                    "motion-reduce:hover:shadow-eleven-card motion-reduce:transition-none motion-reduce:hover:translate-y-0",
                   )}
                   style={{ "--shelf-enter-delay": `${enterDelay}ms` } as React.CSSProperties}
                 >
@@ -343,10 +345,7 @@ export function RecommendationsPageClient({
                     <RecoBookLink
                       bookId={row.bookId}
                       href={`/book/${row.bookId}`}
-                      className={cn(
-                        "line-clamp-2 font-medium hover:underline",
-                        main ? "mt-2" : "",
-                      )}
+                      className={cn("line-clamp-2 font-medium hover:underline", main ? "mt-2" : "")}
                       source="page"
                     >
                       {row.title}
@@ -371,7 +370,7 @@ export function RecommendationsPageClient({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="min-h-10 rounded-xl text-xs transition-[box-shadow,transform] duration-200 sm:h-8 sm:min-h-8 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0"
+                        className="min-h-10 rounded-xl text-xs transition-[box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 sm:h-8 sm:min-h-8"
                         style={{ transitionTimingFunction: RECO_EASE }}
                         disabled={busy}
                         aria-label="J’aime cette suggestion"
@@ -384,7 +383,7 @@ export function RecommendationsPageClient({
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="text-eleven-muted min-h-10 rounded-xl text-xs transition-[box-shadow,transform] duration-200 sm:h-8 sm:min-h-8 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0"
+                        className="text-eleven-muted min-h-10 rounded-xl text-xs transition-[box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 sm:h-8 sm:min-h-8"
                         style={{ transitionTimingFunction: RECO_EASE }}
                         disabled={busy}
                         aria-label="Moins comme ça"
@@ -397,7 +396,7 @@ export function RecommendationsPageClient({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="min-h-10 rounded-xl text-xs transition-[box-shadow,transform] duration-200 sm:h-8 sm:min-h-8 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0"
+                        className="min-h-10 rounded-xl text-xs transition-[box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px motion-safe:active:translate-y-0 sm:h-8 sm:min-h-8"
                         style={{ transitionTimingFunction: RECO_EASE }}
                         disabled={busy}
                         onClick={() => onDismiss(row.bookId)}
@@ -424,7 +423,7 @@ export function RecommendationsPageClient({
           <Button
             type="button"
             variant="outline"
-            className="rounded-eleven-pill min-h-11 transition-[box-shadow,transform] duration-200 sm:min-h-10 motion-safe:hover:-translate-y-px"
+            className="rounded-eleven-pill min-h-11 transition-[box-shadow,transform] duration-200 motion-safe:hover:-translate-y-px sm:min-h-10"
             style={{ transitionTimingFunction: RECO_EASE }}
             disabled={loading}
             onClick={() => void loadPage({ append: true, cursor: nextCursor, code: reasonFilter })}

@@ -22,8 +22,7 @@ export type StorageDashboardProps = {
   mimeBreakdown: StorageMimeBreakdownRow[];
 };
 
-const enter =
-  "animate-in fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none";
+const enter = "animate-in fade-in slide-in-from-bottom-2 duration-500 motion-reduce:animate-none";
 
 function KpiCard({
   className,
@@ -60,7 +59,9 @@ function KpiCard({
           <Icon className="text-foreground size-5 opacity-80" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">{label}</div>
+          <div className="text-eleven-muted text-xs font-medium tracking-wide uppercase">
+            {label}
+          </div>
           <div className="eleven-display-section mt-1 text-2xl tracking-tight">{value}</div>
           <div className="text-eleven-muted eleven-body-airy mt-2 text-sm">{hint}</div>
         </div>
@@ -88,8 +89,8 @@ export function StorageDashboard({
         </h2>
         <p className="text-eleven-secondary eleven-body-airy mt-2 max-w-2xl text-base">
           Statistiques agrégées des fichiers enregistrés dans la table{" "}
-          <code className="font-mono text-sm">book_files</code> (chemins et tailles côté application).
-          L’espace disque réel dépend du backend de stockage configuré.
+          <code className="font-mono text-sm">book_files</code> (chemins et tailles côté
+          application). L’espace disque réel dépend du backend de stockage configuré.
         </p>
       </header>
 
@@ -105,7 +106,8 @@ export function StorageDashboard({
             value={totalBytesLabel}
             hint={
               <>
-                {fileCount} fichier{fileCount === 1 ? "" : "s"} référencé{fileCount === 1 ? "" : "s"}
+                {fileCount} fichier{fileCount === 1 ? "" : "s"} référencé
+                {fileCount === 1 ? "" : "s"}
               </>
             }
           />
@@ -163,7 +165,8 @@ export function StorageDashboard({
               </Link>
             </div>
             <p className="text-eleven-secondary eleven-body-airy mt-2 text-sm">
-              Livres actifs ayant au moins un fichier attaché, par rapport au total des livres actifs.
+              Livres actifs ayant au moins un fichier attaché, par rapport au total des livres
+              actifs.
             </p>
             <div className="mt-4 flex flex-wrap items-baseline gap-2">
               <span className="eleven-display-section text-3xl">{booksWithFilesCount}</span>
@@ -191,7 +194,10 @@ export function StorageDashboard({
           <div className="border-b border-[var(--eleven-border-subtle)] px-4 py-4 sm:px-5">
             <div className="flex items-center gap-2">
               <PieChart className="text-eleven-muted size-5 shrink-0" aria-hidden />
-              <h3 id="admin-storage-mime-heading" className="eleven-display-section text-lg tracking-tight">
+              <h3
+                id="admin-storage-mime-heading"
+                className="eleven-display-section text-lg tracking-tight"
+              >
                 Répartition par type MIME
               </h3>
             </div>
@@ -239,8 +245,9 @@ export function StorageDashboard({
       >
         <strong className="text-foreground font-medium">Note</strong>
         <p className="mt-2">
-          Les couvertures et autres assets utilisent d’autres chemins que <code className="font-mono text-xs">book_files</code>.
-          La mesure affichée reflète les métadonnées en base, pas un inventaire disque ou bucket S3/MinIO.
+          Les couvertures et autres assets utilisent d’autres chemins que{" "}
+          <code className="font-mono text-xs">book_files</code>. La mesure affichée reflète les
+          métadonnées en base, pas un inventaire disque ou bucket S3/MinIO.
         </p>
       </aside>
     </div>

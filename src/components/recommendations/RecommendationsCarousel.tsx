@@ -186,7 +186,7 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
         aria-labelledby="library-reco-heading-empty"
       >
         <div className="relative z-[1] space-y-1.5">
-          <p className="library-reco-kicker-enter text-eleven-muted font-[var(--font-sans)] text-[10px] font-medium tracking-[0.22em] uppercase">
+          <p className="library-reco-kicker-enter text-eleven-muted text-[10px] font-[var(--font-sans)] font-medium tracking-[0.22em] uppercase">
             Sélection
           </p>
           <h2
@@ -196,14 +196,14 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
             Pour vous
           </h2>
         </div>
-        <Card className="library-reco-actions-enter shadow-eleven-card relative z-[1] rounded-2xl border border-border bg-card/80 p-6 backdrop-blur-[2px]">
+        <Card className="library-reco-actions-enter shadow-eleven-card border-border bg-card/80 relative z-[1] rounded-2xl border p-6 backdrop-blur-[2px]">
           <p className="text-eleven-muted eleven-body-airy mb-4 text-sm leading-relaxed">
             Aucune suggestion pour l’instant. Lancez un calcul ou attendez le prochain passage
             automatique.
           </p>
           <Button
             type="button"
-            className="rounded-eleven-pill shadow-eleven-warm transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-eleven-warm"
+            className="rounded-eleven-pill shadow-eleven-warm hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-warm transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
             disabled={refreshBusy}
             onClick={onRefresh}
           >
@@ -215,10 +215,13 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
   }
 
   return (
-    <section className={cn("library-reco-section space-y-4", className)} aria-labelledby="library-reco-heading">
+    <section
+      className={cn("library-reco-section space-y-4", className)}
+      aria-labelledby="library-reco-heading"
+    >
       <div className="relative z-[1] flex flex-wrap items-end justify-between gap-4">
         <div className="max-w-[min(100%,28rem)] space-y-1.5">
-          <p className="library-reco-kicker-enter text-eleven-muted font-[var(--font-sans)] text-[10px] font-medium tracking-[0.22em] uppercase">
+          <p className="library-reco-kicker-enter text-eleven-muted text-[10px] font-[var(--font-sans)] font-medium tracking-[0.22em] uppercase">
             Suggestions personnalisées
           </p>
           <h2
@@ -233,7 +236,7 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
             type="button"
             variant="outline"
             size="icon"
-            className="rounded-eleven-pill shadow-eleven-button-white hidden transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] sm:inline-flex hover:-translate-y-0.5 hover:shadow-eleven-card active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            className="rounded-eleven-pill shadow-eleven-button-white hover:shadow-eleven-card hidden transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:inline-flex"
             aria-label="Faire défiler vers la gauche"
             onClick={() => scrollBy(-1)}
           >
@@ -243,7 +246,7 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
             type="button"
             variant="outline"
             size="icon"
-            className="rounded-eleven-pill shadow-eleven-button-white hidden transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] sm:inline-flex hover:-translate-y-0.5 hover:shadow-eleven-card active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            className="rounded-eleven-pill shadow-eleven-button-white hover:shadow-eleven-card hidden transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:inline-flex"
             aria-label="Faire défiler vers la droite"
             onClick={() => scrollBy(1)}
           >
@@ -252,7 +255,7 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
           <Button
             asChild
             variant="outline"
-            className="rounded-eleven-pill shadow-eleven-button-white transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-eleven-card motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+            className="rounded-eleven-pill shadow-eleven-button-white hover:shadow-eleven-card transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           >
             <Link href="/recommendations">Voir tout</Link>
           </Button>
@@ -261,7 +264,7 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
 
       <div
         ref={scrollRef}
-        className="relative z-[1] grid auto-cols-[min(220px,78vw)] grid-flow-col gap-4 overflow-x-auto scroll-pl-1 pb-1 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative z-[1] grid snap-x snap-mandatory scroll-pl-1 auto-cols-[min(220px,78vw)] grid-flow-col gap-4 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {loopItems.map((item, index) => {
           const reason = primaryReasonText(item.reasons);
@@ -270,7 +273,7 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
           return (
             <Card
               key={dup === 0 ? item.bookId : `${item.bookId}-loop`}
-              className="library-reco-card-enter shadow-eleven-card group flex min-h-0 min-w-0 snap-start flex-col gap-0 overflow-hidden rounded-2xl border border-border bg-card p-0 transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-eleven-card"
+              className="library-reco-card-enter shadow-eleven-card group border-border bg-card hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-card flex min-h-0 min-w-0 snap-start flex-col gap-0 overflow-hidden rounded-2xl border p-0 transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               style={
                 {
                   "--library-reco-delay": `${Math.min(index, 14) * 68}ms`,
@@ -281,7 +284,7 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
               <RecoBookLink
                 bookId={item.bookId}
                 href={`/book/${item.bookId}`}
-                className="flex min-h-0 min-w-0 flex-1 flex-col focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none"
+                className="focus-visible:ring-ring/50 flex min-h-0 min-w-0 flex-1 flex-col focus-visible:ring-2 focus-visible:outline-none"
                 source="carousel"
               >
                 <div className="bg-muted relative aspect-2/3 w-full shrink-0 overflow-hidden">
@@ -306,11 +309,13 @@ export function RecommendationsCarousel({ initialItems, className }: Props) {
                     {authorsLine(item.authors) || "—"}
                   </div>
                   {reason ? (
-                    <p className="text-eleven-muted line-clamp-2 text-[11px] leading-snug">{reason}</p>
+                    <p className="text-eleven-muted line-clamp-2 text-[11px] leading-snug">
+                      {reason}
+                    </p>
                   ) : null}
                 </div>
               </RecoBookLink>
-              <div className="flex shrink-0 flex-col gap-1 px-3 pb-3 pt-0">
+              <div className="flex shrink-0 flex-col gap-1 px-3 pt-0 pb-3">
                 <div className="flex gap-1">
                   <Button
                     type="button"

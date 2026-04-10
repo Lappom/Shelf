@@ -26,7 +26,9 @@ describe("circuitBreaker", () => {
       }),
     ).rejects.toThrow("boom");
 
-    await expect(withCircuitBreaker("test-br", async () => "ok")).rejects.toThrow("Circuit breaker open");
+    await expect(withCircuitBreaker("test-br", async () => "ok")).rejects.toThrow(
+      "Circuit breaker open",
+    );
   });
 
   it("closes again after successful call in half_open", async () => {
@@ -46,7 +48,9 @@ describe("circuitBreaker", () => {
       }),
     ).rejects.toThrow("x");
 
-    await expect(withCircuitBreaker("half", async () => "a")).rejects.toThrow("Circuit breaker open");
+    await expect(withCircuitBreaker("half", async () => "a")).rejects.toThrow(
+      "Circuit breaker open",
+    );
 
     vi.setSystemTime(t0 + 6_000);
 

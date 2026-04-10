@@ -10,10 +10,7 @@ function lockOwnerId(prefix: string) {
  * Claims the next eligible admin import job. Types are ordered lexicographically by enum
  * (pull_books before recommendations_recompute) so user-triggered imports stay ahead of cron.
  */
-export async function claimNextAdminImportJob(
-  types: AdminImportJobType[],
-  lockPrefix: string,
-) {
+export async function claimNextAdminImportJob(types: AdminImportJobType[], lockPrefix: string) {
   const now = new Date();
   const candidate = await prisma.adminImportJob.findFirst({
     where: {

@@ -7,7 +7,7 @@ import { ElevenHeaderMobileMenu } from "./ElevenHeaderMobileMenu";
 
 export function ElevenHeader() {
   return (
-    <header className="bg-background/85 sticky top-0 z-40 border-b border-(--eleven-border-subtle) backdrop-blur-md supports-backdrop-filter:bg-background/70">
+    <header className="bg-background/85 supports-backdrop-filter:bg-background/70 sticky top-0 z-40 border-b border-(--eleven-border-subtle) backdrop-blur-md">
       <a
         href="#content"
         className="focus:bg-background focus:shadow-eleven-button-white sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:px-3 focus:py-2 focus:text-sm"

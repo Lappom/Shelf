@@ -56,7 +56,10 @@ export async function GET(req: Request) {
       },
     },
     async ({ req, user }) => {
-      const userId = z.string().uuid().parse((user as { id?: unknown }).id);
+      const userId = z
+        .string()
+        .uuid()
+        .parse((user as { id?: unknown }).id);
       const url = new URL(req.url);
       const parsed = QuerySchema.safeParse({
         q: url.searchParams.get("q") ?? undefined,

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { BookOpen, CopyIcon, GitMerge, MoreHorizontal, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -182,20 +182,19 @@ export function AdminBooksClient({
     return [...s].sort((x, y) => x.localeCompare(y));
   }, [rows]);
 
-  useEffect(() => {
-    if (formatFilter !== "all" && !formats.includes(formatFilter)) {
-      setFormatFilter("all");
-    }
+  const effectiveFormatFilter = useMemo(() => {
+    if (formatFilter === "all") return "all";
+    return formats.includes(formatFilter) ? formatFilter : "all";
   }, [formatFilter, formats]);
 
   const filteredActive = useMemo(
-    () => active.filter((b) => rowMatchesFilter(b, search, formatFilter)),
-    [active, search, formatFilter],
+    () => active.filter((b) => rowMatchesFilter(b, search, effectiveFormatFilter)),
+    [active, search, effectiveFormatFilter],
   );
 
   const filteredDeleted = useMemo(
-    () => deleted.filter((b) => rowMatchesFilter(b, search, formatFilter)),
-    [deleted, search, formatFilter],
+    () => deleted.filter((b) => rowMatchesFilter(b, search, effectiveFormatFilter)),
+    [deleted, search, effectiveFormatFilter],
   );
 
   const list = tab === "active" ? filteredActive : filteredDeleted;
@@ -293,7 +292,7 @@ export function AdminBooksClient({
         </div>
       ) : null}
 
-      <div className="sticky top-0 z-20 -mx-1 mb-1 flex flex-col gap-3 border-b border-(--eleven-border-subtle) bg-background/90 px-1 py-3 backdrop-blur-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="bg-background/90 sticky top-0 z-20 -mx-1 mb-1 flex flex-col gap-3 border-b border-(--eleven-border-subtle) px-1 py-3 backdrop-blur-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-1 flex-col gap-2 sm:max-w-md">
           <label className="sr-only" htmlFor="admin-books-search">
             Rechercher un livre
@@ -345,13 +344,17 @@ export function AdminBooksClient({
         </div>
 
         {formats.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filtrer par format">
+          <div
+            className="flex flex-wrap items-center gap-1.5"
+            role="group"
+            aria-label="Filtrer par format"
+          >
             <span className="text-eleven-muted eleven-body-airy text-xs font-medium">Format</span>
             <Button
               type="button"
               size="sm"
-              variant={formatFilter === "all" ? "secondary" : "ghost"}
-              className="h-8 rounded-eleven-pill px-3 text-xs"
+              variant={effectiveFormatFilter === "all" ? "secondary" : "ghost"}
+              className="rounded-eleven-pill h-8 px-3 text-xs"
               onClick={() => setFormatFilter("all")}
             >
               Tous
@@ -361,8 +364,8 @@ export function AdminBooksClient({
                 key={f}
                 type="button"
                 size="sm"
-                variant={formatFilter === f ? "secondary" : "ghost"}
-                className="h-8 rounded-eleven-pill px-3 font-mono text-xs"
+                variant={effectiveFormatFilter === f ? "secondary" : "ghost"}
+                className="rounded-eleven-pill h-8 px-3 font-mono text-xs"
                 onClick={() => setFormatFilter(f)}
               >
                 {f}
@@ -374,9 +377,11 @@ export function AdminBooksClient({
 
       <div key={tab} className="admin-books-panel space-y-4">
         {/* Desktop table */}
-        <div className={cn("hidden max-h-[min(70vh,800px)] overflow-auto md:block", tableCardClass)}>
+        <div
+          className={cn("hidden max-h-[min(70vh,800px)] overflow-auto md:block", tableCardClass)}
+        >
           <table className="eleven-body-airy w-full min-w-[640px] text-left text-[0.94rem]">
-            <thead className="bg-muted/50 supports-backdrop-filter:backdrop-blur-xs sticky top-0 z-10 border-b border-(--eleven-border-subtle)">
+            <thead className="bg-muted/50 sticky top-0 z-10 border-b border-(--eleven-border-subtle) supports-backdrop-filter:backdrop-blur-xs">
               <tr>
                 <th className="px-3 py-2.5 font-medium">Titre</th>
                 <th className="px-3 py-2.5 font-medium">Auteurs</th>
@@ -391,13 +396,13 @@ export function AdminBooksClient({
               {list.map((b, i) => (
                 <tr
                   key={b.id}
-                  className="shelf-item-enter border-t border-(--eleven-border-subtle) transition-[box-shadow,transform] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-muted/30 hover:shadow-[var(--eleven-shadow-outline)]"
+                  className="shelf-item-enter hover:bg-muted/30 border-t border-(--eleven-border-subtle) transition-[box-shadow,transform] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:shadow-[var(--eleven-shadow-outline)]"
                   style={staggerStyle(i)}
                 >
                   <td className="px-3 py-2.5">
                     {tab === "active" ? (
                       <Link
-                        className="text-foreground underline decoration-(--eleven-border-subtle) underline-offset-4 transition-colors hover:decoration-foreground"
+                        className="text-foreground hover:decoration-foreground underline decoration-(--eleven-border-subtle) underline-offset-4 transition-colors"
                         href={`/book/${b.id}`}
                       >
                         {b.title}
@@ -454,7 +459,7 @@ export function AdminBooksClient({
                 {tab === "active" ? (
                   <Link
                     href={`/book/${b.id}`}
-                    className="eleven-body-airy text-foreground text-base font-medium underline decoration-transparent underline-offset-2 transition-colors hover:decoration-foreground"
+                    className="eleven-body-airy text-foreground hover:decoration-foreground text-base font-medium underline decoration-transparent underline-offset-2 transition-colors"
                   >
                     {b.title}
                   </Link>
@@ -464,7 +469,7 @@ export function AdminBooksClient({
                 <p className="text-eleven-muted mt-1 text-xs">{formatAuthors(b.authors)}</p>
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded-eleven-pill border border-(--eleven-border-subtle) bg-muted/40 px-2 py-0.5 font-mono">
+                <span className="rounded-eleven-pill bg-muted/40 border border-(--eleven-border-subtle) px-2 py-0.5 font-mono">
                   {b.format}
                 </span>
                 <span className="text-muted-foreground">

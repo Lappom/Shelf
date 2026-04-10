@@ -354,7 +354,9 @@ export type OpenLibrarySearchSeed = {
  * Work + edition details: `editions.json` stubs omit ISBN/language; we fetch full `/books/...` records
  * and prefer `enrichFromOpenLibraryByIsbn` when any edition exposes an ISBN.
  */
-export async function enrichFromOpenLibraryWorkOnly(workKey: string): Promise<OpenLibrarySearchSeed> {
+export async function enrichFromOpenLibraryWorkOnly(
+  workKey: string,
+): Promise<OpenLibrarySearchSeed> {
   const cacheKey = workSeedCacheKey(workKey);
   const cached = await getCachedJson<OpenLibrarySearchSeed>(cacheKey);
   if (cached) return cached;
@@ -389,7 +391,10 @@ export async function enrichFromOpenLibraryWorkOnly(workKey: string): Promise<Op
 
     let full: OpenLibraryEdition;
     try {
-      full = await fetchJson<OpenLibraryEdition>(`https://openlibrary.org${editionKey}.json`, "enrich");
+      full = await fetchJson<OpenLibraryEdition>(
+        `https://openlibrary.org${editionKey}.json`,
+        "enrich",
+      );
     } catch {
       continue;
     }

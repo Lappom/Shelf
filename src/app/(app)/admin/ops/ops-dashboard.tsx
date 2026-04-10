@@ -5,12 +5,7 @@ import type { AdminImportJobType } from "@prisma/client";
 import type { CircuitState } from "@/lib/resilience/circuitBreaker";
 import { Button } from "@/components/ui/button";
 
-import {
-  OPS_STATUS_LABEL_FR,
-  OPS_TYPE_LABEL_FR,
-  type OpsJobRow,
-  type OpsKpis,
-} from "./ops-model";
+import { OPS_STATUS_LABEL_FR, OPS_TYPE_LABEL_FR, type OpsJobRow, type OpsKpis } from "./ops-model";
 import { OpsRefreshButton } from "./ops-refresh-button";
 import { OpsRelativeFinished } from "./ops-relative-finished";
 
@@ -84,12 +79,16 @@ function KpiCard({
 }) {
   return (
     <div
-      className={`admin-ops-kpi-enter rounded-2xl border border-(--eleven-border-subtle) bg-card p-4 shadow-eleven-card transition-[box-shadow,transform] duration-200 motion-reduce:transition-none hover:-translate-y-px hover:shadow-eleven-button-white motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-eleven-card ${className ?? ""}`}
+      className={`admin-ops-kpi-enter bg-card shadow-eleven-card hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) p-4 transition-[box-shadow,transform] duration-200 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${className ?? ""}`}
       style={{ "--admin-ops-kpi-delay": `${delayMs}ms` } as CSSProperties}
     >
       <p className="text-eleven-muted text-[13px] font-medium tracking-wide">{label}</p>
-      <p className="eleven-display-section mt-1 text-3xl font-light tabular-nums text-foreground">{value}</p>
-      {sub ? <p className="text-eleven-muted eleven-body-airy mt-1 text-xs tracking-wide">{sub}</p> : null}
+      <p className="eleven-display-section text-foreground mt-1 text-3xl font-light tabular-nums">
+        {value}
+      </p>
+      {sub ? (
+        <p className="text-eleven-muted eleven-body-airy mt-1 text-xs tracking-wide">{sub}</p>
+      ) : null}
     </div>
   );
 }
@@ -101,10 +100,15 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
     <div className="space-y-8">
       <div className="admin-ops-hero-enter flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h2 className="eleven-display-section text-2xl text-foreground sm:text-3xl">Ops — synthèse</h2>
+          <h2 className="eleven-display-section text-foreground text-2xl sm:text-3xl">
+            Ops — synthèse
+          </h2>
           <p className="text-eleven-muted eleven-body-airy max-w-2xl text-sm tracking-wide">
-            Compteurs des jobs d’import admin et état local des circuit breakers (un seul processus ; voir{" "}
-            <code className="rounded-md bg-muted/80 px-1 py-0.5 font-mono text-[12px]">/api/admin/ops-summary</code>
+            Compteurs des jobs d’import admin et état local des circuit breakers (un seul processus
+            ; voir{" "}
+            <code className="bg-muted/80 rounded-md px-1 py-0.5 font-mono text-[12px]">
+              /api/admin/ops-summary
+            </code>
             ).
           </p>
         </div>
@@ -126,7 +130,9 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
       </div>
 
       <div className="admin-ops-panel-enter space-y-3">
-        <h3 className="text-eleven-muted text-[13px] font-medium tracking-wide uppercase">Vue d’ensemble</h3>
+        <h3 className="text-eleven-muted text-[13px] font-medium tracking-wide uppercase">
+          Vue d’ensemble
+        </h3>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
           <KpiCard label="Total jobs" value={kpis.total} delayMs={0} />
           <KpiCard label="En cours" value={kpis.running} delayMs={45} />
@@ -140,27 +146,29 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
           />
         </div>
         <div
-          className="admin-ops-kpi-enter flex flex-wrap gap-4 rounded-2xl border border-dashed border-(--eleven-border-subtle) bg-muted/15 px-4 py-3"
+          className="admin-ops-kpi-enter bg-muted/15 flex flex-wrap gap-4 rounded-2xl border border-dashed border-(--eleven-border-subtle) px-4 py-3"
           style={{ "--admin-ops-kpi-delay": "220ms" } as CSSProperties}
         >
           <span className="text-eleven-muted text-[13px] font-medium tracking-wide">Par type</span>
           <span className="eleven-body-airy text-sm tracking-wide">
             <span className="font-mono text-xs">{OPS_TYPE_LABEL_FR.pull_books}</span>
             <span className="text-eleven-muted mx-1.5">·</span>
-            <span className="tabular-nums font-medium">{kpis.byType.pull_books}</span>
+            <span className="font-medium tabular-nums">{kpis.byType.pull_books}</span>
           </span>
           <span className="eleven-body-airy text-sm tracking-wide">
             <span className="font-mono text-xs">{OPS_TYPE_LABEL_FR.recommendations_recompute}</span>
             <span className="text-eleven-muted mx-1.5">·</span>
-            <span className="tabular-nums font-medium">{kpis.byType.recommendations_recompute}</span>
+            <span className="font-medium tabular-nums">
+              {kpis.byType.recommendations_recompute}
+            </span>
           </span>
         </div>
       </div>
 
-      <div className="admin-ops-table-panel-enter overflow-hidden rounded-2xl border border-(--eleven-border-subtle) shadow-eleven-card">
+      <div className="admin-ops-table-panel-enter shadow-eleven-card overflow-hidden rounded-2xl border border-(--eleven-border-subtle)">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[28rem] text-sm">
-            <thead className="bg-muted/80 supports-backdrop-filter:backdrop-blur-sm sticky top-0 z-10 border-b border-(--eleven-border-subtle)">
+            <thead className="bg-muted/80 sticky top-0 z-10 border-b border-(--eleven-border-subtle) supports-backdrop-filter:backdrop-blur-sm">
               <tr>
                 <th className="text-eleven-muted px-4 py-3 text-left text-[13px] font-medium tracking-wide">
                   Type
@@ -176,7 +184,10 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td className="text-eleven-muted eleven-body-airy px-4 py-10 text-center" colSpan={3}>
+                  <td
+                    className="text-eleven-muted eleven-body-airy px-4 py-10 text-center"
+                    colSpan={3}
+                  >
                     Aucun job en base.
                   </td>
                 </tr>
@@ -184,7 +195,7 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
                 rows.map((r, i) => (
                   <tr
                     key={`${r.type}-${r.status}`}
-                    className="admin-ops-row-enter border-t border-(--eleven-border-subtle) transition-colors duration-200 motion-reduce:transition-none hover:bg-muted/30"
+                    className="admin-ops-row-enter hover:bg-muted/30 border-t border-(--eleven-border-subtle) transition-colors duration-200 motion-reduce:transition-none"
                     style={{ "--admin-ops-delay": `${i * 42}ms` } as React.CSSProperties}
                   >
                     <td className="px-4 py-3 align-middle">
@@ -194,9 +205,13 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
                       </span>
                     </td>
                     <td className="px-4 py-3 align-middle">
-                      <span className={statusPillClass(r.status)}>{OPS_STATUS_LABEL_FR[r.status]}</span>
+                      <span className={statusPillClass(r.status)}>
+                        {OPS_STATUS_LABEL_FR[r.status]}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 text-right align-middle tabular-nums font-medium">{r.count}</td>
+                    <td className="px-4 py-3 text-right align-middle font-medium tabular-nums">
+                      {r.count}
+                    </td>
                   </tr>
                 ))
               )}
@@ -206,8 +221,10 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
       </div>
 
       <div className="admin-ops-secondary-enter grid gap-6 lg:grid-cols-2">
-        <div className="rounded-2xl border border-(--eleven-border-subtle) bg-card p-5 shadow-eleven-card sm:p-6">
-          <h3 className="eleven-display-section text-lg font-light text-foreground">Dernier job terminé par type</h3>
+        <div className="bg-card shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) p-5 sm:p-6">
+          <h3 className="eleven-display-section text-foreground text-lg font-light">
+            Dernier job terminé par type
+          </h3>
           <p className="text-eleven-muted eleven-body-airy mt-1 text-xs tracking-wide">
             Horodatage relatif (fuseau navigateur) ; survol pour la date complète.
           </p>
@@ -218,9 +235,9 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
               lastFinished.map((r) => (
                 <li
                   key={r.type}
-                  className="flex flex-col gap-1 rounded-xl border border-(--eleven-border-subtle) bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="bg-muted/20 flex flex-col gap-1 rounded-xl border border-(--eleven-border-subtle) px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <span className="font-mono text-xs tracking-wide text-foreground">{r.type}</span>
+                  <span className="text-foreground font-mono text-xs tracking-wide">{r.type}</span>
                   {r.finishedAtIso ? (
                     <OpsRelativeFinished iso={r.finishedAtIso} title={r.finishedAtLabelFr} />
                   ) : (
@@ -232,8 +249,8 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-(--eleven-border-subtle) bg-card p-5 shadow-eleven-card sm:p-6">
-          <h3 className="eleven-display-section text-lg font-light text-foreground">
+        <div className="bg-card shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) p-5 sm:p-6">
+          <h3 className="eleven-display-section text-foreground text-lg font-light">
             Circuit breakers (processus local)
           </h3>
           <p className="text-eleven-muted eleven-body-airy mt-1 text-xs tracking-wide">
@@ -241,14 +258,16 @@ export function OpsDashboard({ rows, kpis, lastFinished, circuits }: OpsDashboar
           </p>
           <ul className="mt-4 space-y-2">
             {circuitEntries.length === 0 ? (
-              <li className="text-eleven-muted eleven-body-airy text-sm">Aucun état en mémoire (normal au cold start).</li>
+              <li className="text-eleven-muted eleven-body-airy text-sm">
+                Aucun état en mémoire (normal au cold start).
+              </li>
             ) : (
               circuitEntries.map(([name, state]) => (
                 <li
                   key={name}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-(--eleven-border-subtle) bg-muted/15 px-4 py-2.5"
+                  className="bg-muted/15 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-(--eleven-border-subtle) px-4 py-2.5"
                 >
-                  <span className="font-mono text-xs tracking-wide text-foreground">{name}</span>
+                  <span className="text-foreground font-mono text-xs tracking-wide">{name}</span>
                   <span className={circuitPillClass(state)}>{CIRCUIT_LABEL_FR[state]}</span>
                 </li>
               ))

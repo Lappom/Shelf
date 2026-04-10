@@ -152,7 +152,7 @@ function SettingsDetails({
   children: React.ReactNode;
 }) {
   return (
-    <details className="group shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) bg-card open:shadow-eleven-button-white">
+    <details className="group shadow-eleven-card bg-card open:shadow-eleven-button-white rounded-2xl border border-(--eleven-border-subtle)">
       <summary className="eleven-body-airy flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3.5 marker:content-none [&::-webkit-details-marker]:hidden">
         <span className="flex min-w-0 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-2">
           <span className="font-heading text-base font-light tracking-tight">{title}</span>
@@ -180,15 +180,15 @@ function ShelfBookCard({
   return (
     <div
       className={cn(
-        "bg-background/80 flex min-h-[4.5rem] items-stretch gap-1 rounded-2xl border border-(--eleven-border-subtle) transition-colors duration-200 ease-out hover:bg-muted/25",
+        "bg-background/80 hover:bg-muted/25 flex min-h-[4.5rem] items-stretch gap-1 rounded-2xl border border-(--eleven-border-subtle) transition-colors duration-200 ease-out",
         className,
       )}
     >
       <Link
         href={`/book/${book.id}`}
-        className="group/shelf-book focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3 py-2 pl-2.5 pr-1 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:gap-3.5 sm:py-2.5 sm:pl-3.5"
+        className="group/shelf-book focus-visible:ring-ring/50 flex min-w-0 flex-1 items-center gap-3 py-2 pr-1 pl-2.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:gap-3.5 sm:py-2.5 sm:pl-3.5"
       >
-        <div className="shadow-eleven-button-white relative h-[4.25rem] w-[2.85rem] shrink-0 overflow-hidden rounded-md bg-muted ring-1 ring-black/8 transition-transform duration-300 ease-out will-change-transform group-hover/shelf-book:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover/shelf-book:scale-100 dark:ring-white/10 sm:h-[4.5rem] sm:w-[3.05rem]">
+        <div className="shadow-eleven-button-white bg-muted relative h-[4.25rem] w-[2.85rem] shrink-0 overflow-hidden rounded-md ring-1 ring-black/8 transition-transform duration-300 ease-out will-change-transform group-hover/shelf-book:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover/shelf-book:scale-100 sm:h-[4.5rem] sm:w-[3.05rem] dark:ring-white/10">
           {src ? (
             <Image
               src={src}
@@ -257,7 +257,7 @@ function SortableBookRow({
       >
         <ShelfBookCard
           book={book}
-          className={cn(isDragging && "shadow-eleven-warm ring-2 ring-ring/40")}
+          className={cn(isDragging && "shadow-eleven-warm ring-ring/40 ring-2")}
           dragHandle={
             !disabled ? (
               <Button
@@ -495,7 +495,7 @@ export function ShelfDetailClient({
               <h1 className="eleven-display-section text-foreground text-3xl md:text-4xl">
                 {shelf.name}
               </h1>
-              <span className="bg-secondary text-foreground eleven-body-airy inline-flex items-center rounded-eleven-pill px-2.5 py-0.5 text-xs font-medium">
+              <span className="bg-secondary text-foreground eleven-body-airy rounded-eleven-pill inline-flex items-center px-2.5 py-0.5 text-xs font-medium">
                 {shelfDetailTypeLabel(shelf.type)}
               </span>
             </div>
@@ -528,7 +528,9 @@ export function ShelfDetailClient({
                 {bookSearchTrim ? (
                   <>
                     {" "}
-                    · <span className="text-foreground font-medium">{filteredBooks.length}</span>{" "}
+                    · <span className="text-foreground font-medium">
+                      {filteredBooks.length}
+                    </span>{" "}
                     affiché{filteredBooks.length > 1 ? "s" : ""}
                   </>
                 ) : null}
@@ -546,14 +548,14 @@ export function ShelfDetailClient({
                 value={bookSearch}
                 onChange={(e) => setBookSearch(e.target.value)}
                 placeholder="Filtrer titre ou auteur…"
-                className="eleven-body-airy h-10 bg-background pl-9"
+                className="eleven-body-airy bg-background h-10 pl-9"
                 aria-label="Filtrer les livres"
               />
             </div>
           </div>
         </div>
 
-        <div className="sticky top-14 z-10 flex flex-col gap-2 border-b border-(--eleven-border-subtle) bg-card/95 px-4 py-2.5 backdrop-blur-md sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
+        <div className="bg-card/95 sticky top-14 z-10 flex flex-col gap-2 border-b border-(--eleven-border-subtle) px-4 py-2.5 backdrop-blur-md sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:px-6">
           {canReorderBooks ? (
             <div
               className="flex flex-wrap items-center gap-1.5"
@@ -598,7 +600,7 @@ export function ShelfDetailClient({
 
         <CardContent className="space-y-3 pt-4 sm:pt-5">
           {reorderBlockedByPagination ? (
-            <div className="rounded-xl border border-(--eleven-border-subtle) bg-secondary/40 px-3 py-2.5 text-sm eleven-body-airy shadow-eleven-button-white dark:bg-secondary/25">
+            <div className="bg-secondary/40 eleven-body-airy shadow-eleven-button-white dark:bg-secondary/25 rounded-xl border border-(--eleven-border-subtle) px-3 py-2.5 text-sm">
               Le réordonnancement nécessite la liste complète.{" "}
               <button
                 type="button"
@@ -612,17 +614,18 @@ export function ShelfDetailClient({
           ) : null}
 
           {canReorderBooks && bookSearchTrim.length > 0 ? (
-            <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-sm eleven-body-airy dark:bg-amber-500/10">
-              Le glisser-déposer est désactivé pendant la recherche. Efface le filtre pour réordonner.
+            <div className="eleven-body-airy rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-sm dark:bg-amber-500/10">
+              Le glisser-déposer est désactivé pendant la recherche. Efface le filtre pour
+              réordonner.
             </div>
           ) : null}
 
           {!books.length ? (
-            <div className="rounded-2xl border border-dashed border-(--eleven-border-subtle) bg-muted/15 px-4 py-12 text-center">
+            <div className="bg-muted/15 rounded-2xl border border-dashed border-(--eleven-border-subtle) px-4 py-12 text-center">
               <p className="text-eleven-secondary eleven-body-airy text-sm">
                 Aucun livre dans cette étagère.
               </p>
-              <Button asChild variant="outline" className="mt-4 rounded-eleven-pill">
+              <Button asChild variant="outline" className="rounded-eleven-pill mt-4">
                 <Link href="/library">Parcourir la bibliothèque</Link>
               </Button>
             </div>
@@ -847,7 +850,7 @@ export function ShelfDetailClient({
             </div>
 
             {preview?.examples?.length ? (
-              <div className="rounded-2xl border border-(--eleven-border-subtle) bg-muted/10 p-3">
+              <div className="bg-muted/10 rounded-2xl border border-(--eleven-border-subtle) p-3">
                 <div className="text-eleven-muted mb-2 text-xs">Exemples</div>
                 <ul className="space-y-1 text-sm">
                   {preview.examples.map((e) => (

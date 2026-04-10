@@ -28,10 +28,13 @@ describe("DELETE /api/admin/pull-books/jobs/:id", () => {
 
     const { DELETE } = await import("./route");
     const res = await DELETE(
-      new Request("http://test.local/api/admin/pull-books/jobs/11111111-1111-4111-8111-111111111111", {
-        method: "DELETE",
-        headers: { Origin: "http://test.local" },
-      }),
+      new Request(
+        "http://test.local/api/admin/pull-books/jobs/11111111-1111-4111-8111-111111111111",
+        {
+          method: "DELETE",
+          headers: { Origin: "http://test.local" },
+        },
+      ),
       { params: Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" }) },
     );
     expect(res.status).toBe(200);
@@ -46,10 +49,13 @@ describe("DELETE /api/admin/pull-books/jobs/:id", () => {
 
     const { DELETE } = await import("./route");
     const res = await DELETE(
-      new Request("http://test.local/api/admin/pull-books/jobs/11111111-1111-4111-8111-111111111111", {
-        method: "DELETE",
-        headers: { Origin: "http://test.local" },
-      }),
+      new Request(
+        "http://test.local/api/admin/pull-books/jobs/11111111-1111-4111-8111-111111111111",
+        {
+          method: "DELETE",
+          headers: { Origin: "http://test.local" },
+        },
+      ),
       { params: Promise.resolve({ id: "11111111-1111-4111-8111-111111111111" }) },
     );
     expect(res.status).toBe(409);

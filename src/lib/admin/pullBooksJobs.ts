@@ -1,8 +1,4 @@
-import {
-  AdminImportJobStatus,
-  AdminImportJobType,
-  type Prisma,
-} from "@prisma/client";
+import { AdminImportJobStatus, AdminImportJobType, type Prisma } from "@prisma/client";
 import { z } from "zod";
 
 import { prisma } from "@/lib/db/prisma";

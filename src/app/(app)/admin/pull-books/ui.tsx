@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   AlertCircleIcon,
   BanIcon,
@@ -85,7 +78,7 @@ function JobStatusDisplay({ status }: { status: string }) {
     case "running":
       return (
         <span className="inline-flex items-center gap-2">
-          <Loader2Icon className={`${iconClass} text-emerald-600 animate-spin`} aria-hidden />
+          <Loader2Icon className={`${iconClass} animate-spin text-emerald-600`} aria-hidden />
           <span>{status}</span>
         </span>
       );
@@ -352,7 +345,7 @@ export function AdminPullBooksClient() {
         className="pull-books-panel-enter space-y-4 lg:sticky lg:top-24"
         style={{ "--pull-books-panel-delay": "40ms" } as CSSProperties}
       >
-        <div className="shadow-eleven-card space-y-5 rounded-2xl border border-(--eleven-border-subtle) bg-card p-6">
+        <div className="shadow-eleven-card bg-card space-y-5 rounded-2xl border border-(--eleven-border-subtle) p-6">
           <div className="space-y-2">
             <label htmlFor="pull-query" className="text-eleven-muted text-xs font-medium uppercase">
               Requête Open Library
@@ -365,16 +358,16 @@ export function AdminPullBooksClient() {
               }}
               placeholder="Ex. bible, science fiction…"
               disabled={busy}
-              className="eleven-body-airy h-11 rounded-xl border-(--eleven-border-subtle) shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 motion-reduce:transition-none"
+              className="eleven-body-airy focus-visible:border-ring focus-visible:ring-ring/40 h-11 rounded-xl border-(--eleven-border-subtle) shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.06)] transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:ring-2 motion-reduce:transition-none"
             />
           </div>
 
-          <details className="group rounded-xl border border-(--eleven-border-subtle) bg-muted/20 open:bg-muted/30">
+          <details className="group bg-muted/20 open:bg-muted/30 rounded-xl border border-(--eleven-border-subtle)">
             <summary className="eleven-body-airy flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-medium marker:content-none [&::-webkit-details-marker]:hidden">
               Options avancées
               <ChevronDownIcon className="text-eleven-muted size-4 shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180 motion-reduce:transition-none" />
             </summary>
-            <div className="border-t border-(--eleven-border-subtle) space-y-4 px-4 py-4">
+            <div className="space-y-4 border-t border-(--eleven-border-subtle) px-4 py-4">
               <div className="flex flex-wrap items-end gap-4">
                 <div className="space-y-2">
                   <label htmlFor="pull-limit" className="text-eleven-muted text-xs">
@@ -429,7 +422,7 @@ export function AdminPullBooksClient() {
             <Button
               type="button"
               disabled={busy || !hasQuery}
-              className="rounded-eleven-pill transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+              className="rounded-eleven-pill hover:shadow-eleven-button-white transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               onClick={() => void runPull()}
             >
               Créer un job de pull
@@ -438,7 +431,7 @@ export function AdminPullBooksClient() {
               type="button"
               variant="secondary"
               disabled={busy}
-              className="rounded-eleven-pill transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+              className="rounded-eleven-pill hover:shadow-eleven-button-white transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               onClick={() => {
                 void (async () => {
                   try {
@@ -469,7 +462,7 @@ export function AdminPullBooksClient() {
         ) : null}
 
         <section
-          className="pull-books-panel-enter shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) bg-card"
+          className="pull-books-panel-enter shadow-eleven-card bg-card rounded-2xl border border-(--eleven-border-subtle)"
           style={{ "--pull-books-panel-delay": "80ms" } as CSSProperties}
           aria-labelledby="pull-books-jobs-heading"
         >
@@ -490,7 +483,7 @@ export function AdminPullBooksClient() {
                 <>
                   <span className="text-eleven-muted inline-flex items-center gap-1.5 text-xs">
                     <span
-                      className="bg-emerald-500/90 size-1.5 animate-pulse rounded-full motion-reduce:animate-none"
+                      className="size-1.5 animate-pulse rounded-full bg-emerald-500/90 motion-reduce:animate-none"
                       aria-hidden
                     />
                     Actualisation automatique
@@ -528,7 +521,7 @@ export function AdminPullBooksClient() {
                       <th className="px-3 py-2.5 font-medium">Statut</th>
                       <th className="px-3 py-2.5 font-medium">Progression</th>
                       <th className="px-3 py-2.5 font-medium">Résultat</th>
-                      <th className="px-3 py-2.5 font-medium text-right">Actions</th>
+                      <th className="px-3 py-2.5 text-right font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -542,7 +535,7 @@ export function AdminPullBooksClient() {
                           aria-current={selected ? "true" : undefined}
                           className={cn(
                             "pull-books-row-enter border-t border-(--eleven-border-subtle) transition-[background-color,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
-                            "cursor-pointer hover:bg-muted/35",
+                            "hover:bg-muted/35 cursor-pointer",
                             selected && "bg-muted/45 shadow-[inset_3px_0_0_0_var(--ring)]",
                           )}
                           style={{ "--pull-books-row-delay": rowDelay } as CSSProperties}
@@ -636,7 +629,7 @@ export function AdminPullBooksClient() {
                 </table>
               </div>
             ) : (
-              <div className="rounded-xl border border-dashed border-(--eleven-border-subtle) bg-muted/15 px-4 py-12 text-center">
+              <div className="bg-muted/15 rounded-xl border border-dashed border-(--eleven-border-subtle) px-4 py-12 text-center">
                 <p className="text-eleven-secondary eleven-body-airy text-sm">
                   Aucun job pull-books pour le moment.
                 </p>
@@ -651,7 +644,7 @@ export function AdminPullBooksClient() {
 
         {selectedJob ? (
           <section
-            className="pull-books-detail-enter shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) bg-card"
+            className="pull-books-detail-enter shadow-eleven-card bg-card rounded-2xl border border-(--eleven-border-subtle)"
             aria-labelledby="pull-books-detail-heading"
           >
             <div className="flex flex-col gap-4 border-b border-(--eleven-border-subtle) px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-5">
@@ -662,7 +655,9 @@ export function AdminPullBooksClient() {
                 >
                   Détail du job
                 </h3>
-                <p className="text-eleven-muted font-mono text-xs break-all">{selectedJob.job.id}</p>
+                <p className="text-eleven-muted font-mono text-xs break-all">
+                  {selectedJob.job.id}
+                </p>
                 <div className="text-sm">
                   <JobStatusDisplay status={selectedJob.job.status} />
                 </div>
@@ -698,7 +693,7 @@ export function AdminPullBooksClient() {
               <Button
                 type="button"
                 variant="secondary"
-                className="rounded-eleven-pill shrink-0 transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                className="rounded-eleven-pill hover:shadow-eleven-button-white shrink-0 transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
                 onClick={exportSelectedCsv}
               >
                 Export CSV
@@ -719,7 +714,7 @@ export function AdminPullBooksClient() {
                   {selectedJob.job.items.map((it, i) => (
                     <tr
                       key={`${it.open_library_id ?? it.title}-${i}`}
-                      className="border-t border-(--eleven-border-subtle) transition-colors duration-150 hover:bg-muted/25 motion-reduce:transition-none"
+                      className="hover:bg-muted/25 border-t border-(--eleven-border-subtle) transition-colors duration-150 motion-reduce:transition-none"
                     >
                       <td className="px-3 py-2">{it.status}</td>
                       <td className="eleven-body-airy px-3 py-2">{it.title}</td>

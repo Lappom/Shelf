@@ -456,7 +456,7 @@ export function LibraryPageClient({
               placeholder="Rechercher un livre…"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              className="eleven-body-airy transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+              className="eleven-body-airy focus-visible:border-ring focus-visible:ring-ring/40 transition-[box-shadow,border-color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:ring-2"
             />
             <Button asChild variant="outline" className="rounded-eleven-pill">
               <Link href="/search">Catalogue</Link>
@@ -482,7 +482,7 @@ export function LibraryPageClient({
                     } as React.CSSProperties
                   }
                 >
-                  <Card className="shadow-eleven-card flex h-full min-h-0 flex-col gap-0 overflow-hidden p-0 transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:group-hover:translate-y-0 motion-reduce:group-hover:shadow-eleven-card">
+                  <Card className="shadow-eleven-card group-hover:shadow-eleven-button-white motion-reduce:group-hover:shadow-eleven-card flex h-full min-h-0 flex-col gap-0 overflow-hidden p-0 transition-[transform,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
                     <div className="bg-muted relative aspect-2/3 w-full shrink-0 overflow-hidden">
                       {b.coverUrl ? (
                         <Image
@@ -541,7 +541,7 @@ export function LibraryPageClient({
                     {items.map((b, index) => (
                       <tr
                         key={b.id}
-                        className="library-row-enter border-t transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-muted/30"
+                        className="library-row-enter hover:bg-muted/30 border-t transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
                         style={
                           {
                             "--library-enter-delay": `${Math.min(index, 23) * 35}ms`,

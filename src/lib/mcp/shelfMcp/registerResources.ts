@@ -39,10 +39,9 @@ async function auditResourceRead(
     toolName: `resource:${uriStr}`,
     ok,
     durationMs,
-    resultSummary: extra?.resultSummary ?? (ok ? { resultKind: "resource" } : { resultKind: "resource_error" }),
-    ...(extra?.errorMessage
-      ? { errorMessage: truncateMcpAuditMessage(extra.errorMessage) }
-      : {}),
+    resultSummary:
+      extra?.resultSummary ?? (ok ? { resultKind: "resource" } : { resultKind: "resource_error" }),
+    ...(extra?.errorMessage ? { errorMessage: truncateMcpAuditMessage(extra.errorMessage) } : {}),
   });
 }
 
@@ -50,7 +49,8 @@ function parseCatalogCursor(raw: string | null): { createdAt: Date; id: string }
   if (!raw) return null;
   try {
     const j = base64UrlDecodeJson(raw) as { kind?: string; createdAt?: string; id?: string };
-    if (j.kind !== "catalog" || typeof j.id !== "string" || typeof j.createdAt !== "string") return null;
+    if (j.kind !== "catalog" || typeof j.id !== "string" || typeof j.createdAt !== "string")
+      return null;
     const createdAt = new Date(j.createdAt);
     if (!Number.isFinite(createdAt.getTime())) return null;
     return { createdAt, id: j.id };
@@ -118,7 +118,10 @@ export function registerShelfMcpResources(mcp: McpServer) {
       try {
         await mcpGuardResource("library_catalog");
         const limitRaw = uri.searchParams.get("limit");
-        const limit = Math.min(100, Math.max(1, limitRaw ? Number.parseInt(limitRaw, 10) || 50 : 50));
+        const limit = Math.min(
+          100,
+          Math.max(1, limitRaw ? Number.parseInt(limitRaw, 10) || 50 : 50),
+        );
         const after = parseCatalogCursor(uri.searchParams.get("cursor"));
 
         const books = await prisma.book.findMany({

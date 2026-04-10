@@ -50,14 +50,16 @@ type PanelProps = {
 function Panel({ title, description, panelDelayMs, children, className }: PanelProps) {
   return (
     <section
-      className={`admin-settings-panel-enter shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) bg-card p-5 transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:p-6 ${className ?? ""} hover:-translate-y-px motion-reduce:hover:translate-y-0 hover:shadow-eleven-warm`}
+      className={`admin-settings-panel-enter shadow-eleven-card bg-card rounded-2xl border border-(--eleven-border-subtle) p-5 transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:p-6 ${className ?? ""} hover:shadow-eleven-warm hover:-translate-y-px motion-reduce:hover:translate-y-0`}
       style={{ "--admin-settings-panel-delay": `${panelDelayMs}ms` } as CSSProperties}
     >
       <h3 className="eleven-display-section text-foreground mb-1 text-lg font-light tracking-tight">
         {title}
       </h3>
       {description ? (
-        <p className="text-eleven-muted eleven-body-airy mb-4 text-sm tracking-wide">{description}</p>
+        <p className="text-eleven-muted eleven-body-airy mb-4 text-sm tracking-wide">
+          {description}
+        </p>
       ) : (
         <div className="mb-4" />
       )}
@@ -97,9 +99,9 @@ export function AdminMcpOverview({ mcpEndpointUrl, rateLimitPerMinute }: AdminMc
             Serveur MCP
           </h2>
           <p className="text-eleven-secondary eleven-body-airy max-w-2xl text-sm leading-relaxed sm:text-base">
-            Point d&apos;accès Model Context Protocol pour les clients IA : tools, ressources et prompts
-            autour de la bibliothèque. L&apos;authentification se fait par clé API utilisateur (
-            <span className="font-mono text-xs">Authorization: Bearer</span>
+            Point d&apos;accès Model Context Protocol pour les clients IA : tools, ressources et
+            prompts autour de la bibliothèque. L&apos;authentification se fait par clé API
+            utilisateur (<span className="font-mono text-xs">Authorization: Bearer</span>
             ).
           </p>
         </div>
@@ -134,11 +136,15 @@ export function AdminMcpOverview({ mcpEndpointUrl, rateLimitPerMinute }: AdminMc
               Streamable HTTP
             </span>
             <div className="flex min-w-0 items-start gap-1">
-              <code className="font-mono text-xs leading-relaxed break-all text-foreground sm:text-sm">
+              <code className="text-foreground font-mono text-xs leading-relaxed break-all sm:text-sm">
                 {endpointDisplay}
               </code>
               {mcpEndpointUrl ? (
-                <AdminSettingsCopyValue value={mcpEndpointUrl} label="URL MCP" className="shrink-0" />
+                <AdminSettingsCopyValue
+                  value={mcpEndpointUrl}
+                  label="URL MCP"
+                  className="shrink-0"
+                />
               ) : null}
             </div>
             {!mcpEndpointUrl ? (
@@ -164,7 +170,9 @@ export function AdminMcpOverview({ mcpEndpointUrl, rateLimitPerMinute }: AdminMc
                 } as CSSProperties
               }
             >
-              <dt className="text-eleven-muted eleven-body-airy text-sm">Requêtes HTTP / minute / clé</dt>
+              <dt className="text-eleven-muted eleven-body-airy text-sm">
+                Requêtes HTTP / minute / clé
+              </dt>
               <dd className="font-mono text-sm font-medium md:text-right">{rateLimitPerMinute}</dd>
             </div>
             <div
@@ -176,7 +184,9 @@ export function AdminMcpOverview({ mcpEndpointUrl, rateLimitPerMinute }: AdminMc
               }
             >
               <dt className="text-eleven-muted eleven-body-airy text-sm">Variable</dt>
-              <dd className="font-mono text-xs break-all md:text-right">MCP_RATE_LIMIT_PER_MINUTE</dd>
+              <dd className="font-mono text-xs break-all md:text-right">
+                MCP_RATE_LIMIT_PER_MINUTE
+              </dd>
             </div>
           </dl>
         </Panel>
@@ -191,14 +201,14 @@ export function AdminMcpOverview({ mcpEndpointUrl, rateLimitPerMinute }: AdminMc
             {ALL_MCP_SCOPES.map((scope, i) => (
               <li
                 key={scope}
-                className="admin-settings-row-enter rounded-xl border border-(--eleven-border-subtle) bg-background/60 px-3 py-2.5"
+                className="admin-settings-row-enter bg-background/60 rounded-xl border border-(--eleven-border-subtle) px-3 py-2.5"
                 style={
                   {
                     "--admin-settings-row-delay": rowDelayMs(panelScopes, i),
                   } as CSSProperties
                 }
               >
-                <code className="font-mono text-[11px] text-foreground/90">{scope}</code>
+                <code className="text-foreground/90 font-mono text-[11px]">{scope}</code>
                 <p className="text-eleven-secondary eleven-body-airy mt-1 text-xs leading-snug tracking-wide">
                   {MCP_SCOPE_LABELS_FR[scope]}
                 </p>
@@ -222,16 +232,18 @@ export function AdminMcpOverview({ mcpEndpointUrl, rateLimitPerMinute }: AdminMc
             }
           >
             {cursorConfigSnippet ? (
-              <div className="relative rounded-xl border border-(--eleven-border-subtle) bg-muted/30 p-4 pr-12">
-                <pre className="font-mono text-[11px] leading-relaxed overflow-x-auto whitespace-pre text-foreground/90 sm:text-xs">
+              <div className="bg-muted/30 relative rounded-xl border border-(--eleven-border-subtle) p-4 pr-12">
+                <pre className="text-foreground/90 overflow-x-auto font-mono text-[11px] leading-relaxed whitespace-pre sm:text-xs">
                   {cursorConfigSnippet}
                 </pre>
-                <div className="absolute right-2 top-2">
+                <div className="absolute top-2 right-2">
                   <AdminSettingsCopyValue value={cursorConfigSnippet} label="Exemple JSON MCP" />
                 </div>
               </div>
             ) : (
-              <p className="text-eleven-muted text-sm">Configurez NEXTAUTH_URL pour générer l’exemple.</p>
+              <p className="text-eleven-muted text-sm">
+                Configurez NEXTAUTH_URL pour générer l’exemple.
+              </p>
             )}
             <div className="flex flex-wrap items-center gap-3">
               <Button asChild className="rounded-eleven-pill" size="sm">

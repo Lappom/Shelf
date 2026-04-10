@@ -30,7 +30,7 @@ export function AdminSettingsCopyValue({ value, label, className }: AdminSetting
       variant="ghost"
       size="icon-sm"
       className={cn(
-        "shrink-0 rounded-lg text-eleven-muted hover:text-foreground",
+        "text-eleven-muted hover:text-foreground shrink-0 rounded-lg",
         "motion-reduce:transition-none",
         className,
       )}

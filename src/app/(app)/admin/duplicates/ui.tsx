@@ -127,9 +127,7 @@ function KindBadge({ kind }: { kind: AdminDuplicateRow["kind"] }) {
     <span
       className={cn(
         "inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ring-(--eleven-border-subtle)",
-        kind === "hash"
-          ? "bg-secondary text-secondary-foreground"
-          : "bg-muted/80 text-foreground",
+        kind === "hash" ? "bg-secondary text-secondary-foreground" : "bg-muted/80 text-foreground",
       )}
     >
       {kindLabel(kind)}
@@ -169,7 +167,7 @@ function FilterPill({ active, disabled, onClick, children }: PillProps) {
         "rounded-eleven-pill border px-3 py-1.5 text-xs transition-[box-shadow,background-color,color] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
         active
           ? "bg-secondary text-secondary-foreground shadow-eleven-card border-transparent"
-          : "text-eleven-muted hover:text-foreground border-(--eleven-border-subtle) hover:bg-muted/50",
+          : "text-eleven-muted hover:text-foreground hover:bg-muted/50 border-(--eleven-border-subtle)",
         disabled && "pointer-events-none opacity-50",
       )}
     >
@@ -207,7 +205,8 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
     const q = search.trim().toLowerCase();
     if (!q) return criteriaFiltered;
     return criteriaFiltered.filter((r) => {
-      const hay = `${r.bookA.title} ${r.bookB.title} ${r.bookA.authors.join(" ")} ${r.bookB.authors.join(" ")}`.toLowerCase();
+      const hay =
+        `${r.bookA.title} ${r.bookB.title} ${r.bookA.authors.join(" ")} ${r.bookB.authors.join(" ")}`.toLowerCase();
       return hay.includes(q);
     });
   }, [criteriaFiltered, search]);
@@ -317,10 +316,7 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
         if (local.type === "merge") await mergePair(local.pair, local.primary);
         if (local.type === "merge-all") {
           const fd = new FormData();
-          fd.set(
-            "payload",
-            JSON.stringify({ pairIds: local.pairIds, primarySide: local.primary }),
-          );
+          fd.set("payload", JSON.stringify({ pairIds: local.pairIds, primarySide: local.primary }));
           const res = await mergeDuplicatePairsBatchAction(fd);
           const primarySide = local.primary;
           setRows((prev) =>
@@ -363,7 +359,7 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
     <div className="space-y-6">
       {error && (
         <div
-          className="shadow-eleven-card flex gap-3 rounded-eleven-card border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
+          className="shadow-eleven-card rounded-eleven-card flex gap-3 border border-red-200/80 bg-red-50/90 px-4 py-3 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
           role="alert"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
@@ -371,13 +367,13 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
         </div>
       )}
       {batchInfo && !error && (
-        <div className="shadow-eleven-card flex gap-3 rounded-eleven-card border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+        <div className="shadow-eleven-card rounded-eleven-card flex gap-3 border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-950 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <p className="eleven-body-airy leading-relaxed">{batchInfo}</p>
         </div>
       )}
 
-      <Card className="rounded-eleven-card border-(--eleven-border-subtle) admin-dup-panel-enter">
+      <Card className="rounded-eleven-card admin-dup-panel-enter border-(--eleven-border-subtle)">
         <CardHeader className="border-b border-(--eleven-border-subtle) pb-4">
           <CardTitle>Scan des doublons</CardTitle>
           <CardDescription className="text-eleven-secondary eleven-body-airy">
@@ -451,7 +447,11 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
               Statut
             </div>
             <div className="flex flex-wrap gap-2">
-              <FilterPill active={status === "open"} disabled={busy} onClick={() => setStatus("open")}>
+              <FilterPill
+                active={status === "open"}
+                disabled={busy}
+                onClick={() => setStatus("open")}
+              >
                 Ouverts
               </FilterPill>
               <FilterPill
@@ -468,7 +468,11 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
               >
                 Fusionnés
               </FilterPill>
-              <FilterPill active={status === "all"} disabled={busy} onClick={() => setStatus("all")}>
+              <FilterPill
+                active={status === "all"}
+                disabled={busy}
+                onClick={() => setStatus("all")}
+              >
                 Tous
               </FilterPill>
             </div>
@@ -484,7 +488,11 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
               <FilterPill active={mode === "hash"} disabled={busy} onClick={() => setMode("hash")}>
                 Hash
               </FilterPill>
-              <FilterPill active={mode === "fuzzy"} disabled={busy} onClick={() => setMode("fuzzy")}>
+              <FilterPill
+                active={mode === "fuzzy"}
+                disabled={busy}
+                onClick={() => setMode("fuzzy")}
+              >
                 Fuzzy
               </FilterPill>
               <span className="bg-border hidden h-6 w-px sm:inline-block" aria-hidden />
@@ -506,12 +514,9 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
           </div>
         </div>
 
-        <Card className="rounded-eleven-card border-(--eleven-border-subtle) admin-dup-panel-enter overflow-hidden p-0">
+        <Card className="rounded-eleven-card admin-dup-panel-enter overflow-hidden border-(--eleven-border-subtle) p-0">
           {/* Desktop table */}
-          <div
-            key={listAnimKey}
-            className="admin-dup-list-fade hidden overflow-x-auto md:block"
-          >
+          <div key={listAnimKey} className="admin-dup-list-fade hidden overflow-x-auto md:block">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-muted/80 text-eleven-muted sticky top-0 z-10 backdrop-blur-sm">
                 <tr className="border-b border-(--eleven-border-subtle)">
@@ -531,7 +536,7 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
                     style={{
                       ["--admin-dup-delay" as string]: `${Math.min(i, STAGGER_CAP) * STAGGER_MS}ms`,
                     }}
-                    className="admin-dup-row-enter border-b border-(--eleven-border-subtle) transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] last:border-b-0 hover:-translate-y-px hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-none"
+                    className="admin-dup-row-enter hover:shadow-eleven-button-white border-b border-(--eleven-border-subtle) transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] last:border-b-0 hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-none"
                   >
                     <td className="px-3 py-3 align-middle">
                       <KindBadge kind={p.kind} />
@@ -543,7 +548,7 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
                       <div className="flex gap-2">
                         <BookThumb book={p.bookA} />
                         <div className="min-w-0 space-y-0.5">
-                          <div className="font-medium leading-snug">{p.bookA.title}</div>
+                          <div className="leading-snug font-medium">{p.bookA.title}</div>
                           <div className="text-eleven-muted text-xs leading-relaxed">
                             {formatAuthors(p.bookA.authors)}
                           </div>
@@ -555,7 +560,7 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
                       <div className="flex gap-2">
                         <BookThumb book={p.bookB} />
                         <div className="min-w-0 space-y-0.5">
-                          <div className="font-medium leading-snug">{p.bookB.title}</div>
+                          <div className="leading-snug font-medium">{p.bookB.title}</div>
                           <div className="text-eleven-muted text-xs leading-relaxed">
                             {formatAuthors(p.bookB.authors)}
                           </div>
@@ -594,7 +599,7 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
                 style={{
                   ["--admin-dup-delay" as string]: `${Math.min(i, STAGGER_CAP) * STAGGER_MS}ms`,
                 }}
-                className="admin-dup-card-enter rounded-xl border-(--eleven-border-subtle) shadow-eleven-card transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px hover:shadow-eleven-button-white motion-reduce:transition-none motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-eleven-card"
+                className="admin-dup-card-enter shadow-eleven-card hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-card rounded-xl border-(--eleven-border-subtle) transition-[transform,box-shadow] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-px motion-reduce:transition-none motion-reduce:hover:translate-y-0"
               >
                 <CardHeader className="flex-row items-start justify-between gap-2 border-b border-(--eleven-border-subtle) pb-3">
                   <div className="flex flex-wrap items-center gap-2">
@@ -613,8 +618,10 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
                       <div className="text-eleven-muted text-[10px] font-medium tracking-wide uppercase">
                         A
                       </div>
-                      <div className="font-medium leading-snug">{p.bookA.title}</div>
-                      <div className="text-eleven-muted text-xs">{formatAuthors(p.bookA.authors)}</div>
+                      <div className="leading-snug font-medium">{p.bookA.title}</div>
+                      <div className="text-eleven-muted text-xs">
+                        {formatAuthors(p.bookA.authors)}
+                      </div>
                     </div>
                   </div>
                   <div className="flex gap-3">
@@ -623,8 +630,10 @@ export function AdminDuplicatesClient({ initialRows }: { initialRows: AdminDupli
                       <div className="text-eleven-muted text-[10px] font-medium tracking-wide uppercase">
                         B
                       </div>
-                      <div className="font-medium leading-snug">{p.bookB.title}</div>
-                      <div className="text-eleven-muted text-xs">{formatAuthors(p.bookB.authors)}</div>
+                      <div className="leading-snug font-medium">{p.bookB.title}</div>
+                      <div className="text-eleven-muted text-xs">
+                        {formatAuthors(p.bookB.authors)}
+                      </div>
                     </div>
                   </div>
                   <p className="text-eleven-muted text-xs">

@@ -123,7 +123,10 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
           );
         }
         if (parsedBody.data.status === undefined) {
-          return NextResponse.json({ error: "status is required for non-EPUB books" }, { status: 400 });
+          return NextResponse.json(
+            { error: "status is required for non-EPUB books" },
+            { status: 400 },
+          );
         }
         const p = parsedBody.data.progress;
         if (typeof p === "number" && p !== 0 && p !== 1) {
@@ -136,13 +139,12 @@ export async function PUT(req: Request, ctx: { params: Promise<{ bookId: string 
 
       let nextProgress = parsedBody.data.progress;
       const nextStatus: "not_started" | "reading" | "finished" | "abandoned" | undefined = isEpub
-        ? parsedBody.data.status ??
-          (typeof nextProgress === "number" && nextProgress > 0 ? "reading" : undefined)
+        ? (parsedBody.data.status ??
+          (typeof nextProgress === "number" && nextProgress > 0 ? "reading" : undefined))
         : parsedBody.data.status;
 
       if (!isEpub && typeof nextProgress !== "number") {
-        nextProgress =
-          nextStatus === "finished" ? 1 : nextStatus === "abandoned" ? 0 : 0;
+        nextProgress = nextStatus === "finished" ? 1 : nextStatus === "abandoned" ? 0 : 0;
       }
 
       let refTime = new Date();

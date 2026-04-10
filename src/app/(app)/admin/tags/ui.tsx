@@ -57,7 +57,7 @@ function TagPill({ name, color }: { name: string; color: string }) {
   const fg = contrastLabelColor(color);
   return (
     <span
-      className="inline-flex max-w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-[13px] font-medium leading-snug tracking-wide ring-1 ring-black/10 dark:ring-white/15"
+      className="inline-flex max-w-full items-center gap-1.5 rounded-md px-2 py-0.5 text-[13px] leading-snug font-medium tracking-wide ring-1 ring-black/10 dark:ring-white/15"
       style={{ backgroundColor: color, color: fg }}
     >
       <span className="truncate">{name}</span>
@@ -111,7 +111,7 @@ function ColorFields({
             value={pickerValue}
             onChange={(e) => onHexChange(e.target.value)}
             disabled={disabled}
-            className="size-9 cursor-pointer overflow-hidden rounded-lg border border-(--eleven-border-subtle) bg-background p-0 shadow-eleven-button-white motion-reduce:transition-none [&::-webkit-color-swatch-wrapper]:p-0 [&::-webkit-color-swatch]:border-0"
+            className="bg-background shadow-eleven-button-white size-9 cursor-pointer overflow-hidden rounded-lg border border-(--eleven-border-subtle) p-0 motion-reduce:transition-none [&::-webkit-color-swatch]:border-0 [&::-webkit-color-swatch-wrapper]:p-0"
           />
         </div>
       </div>
@@ -143,18 +143,20 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
 
   const filteredSorted = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("fr");
-    const list = q
-      ? rows.filter((r) => r.name.toLocaleLowerCase("fr").includes(q))
-      : [...rows];
+    const list = q ? rows.filter((r) => r.name.toLocaleLowerCase("fr").includes(q)) : [...rows];
 
     list.sort((a, b) => {
       switch (sortMode) {
         case "name-desc":
           return b.name.localeCompare(a.name, "fr", { sensitivity: "base" });
         case "books-asc":
-          return a.bookCount - b.bookCount || a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
+          return (
+            a.bookCount - b.bookCount || a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
+          );
         case "books-desc":
-          return b.bookCount - a.bookCount || a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
+          return (
+            b.bookCount - a.bookCount || a.name.localeCompare(b.name, "fr", { sensitivity: "base" })
+          );
         case "name-asc":
         default:
           return a.name.localeCompare(b.name, "fr", { sensitivity: "base" });
@@ -261,7 +263,7 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
       {error && (
         <div
           role="alert"
-          className="animate-in fade-in slide-in-from-top-1 rounded-2xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-900 duration-200 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100 motion-reduce:animate-none"
+          className="animate-in fade-in slide-in-from-top-1 rounded-2xl border border-red-200/80 bg-red-50 px-4 py-3 text-sm text-red-900 duration-200 motion-reduce:animate-none dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
         >
           {error}
         </div>
@@ -269,18 +271,21 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
 
       <section
         className={cn(
-          "admin-tags-panel space-y-4 rounded-2xl border border-(--eleven-border-subtle) bg-card p-5 shadow-eleven-card sm:p-6",
+          "admin-tags-panel bg-card shadow-eleven-card space-y-4 rounded-2xl border border-(--eleven-border-subtle) p-5 sm:p-6",
         )}
       >
         <div>
-          <h3 className="eleven-display-section text-lg text-foreground">Nouveau tag</h3>
+          <h3 className="eleven-display-section text-foreground text-lg">Nouveau tag</h3>
           <p className="text-eleven-muted eleven-body-airy mt-1 text-sm">
             Nom unique insensible à la casse. Couleur au format #RRGGBB.
           </p>
         </div>
         <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
           <div className="min-w-[min(100%,220px)] flex-1 space-y-1 sm:max-w-sm">
-            <label htmlFor="tag-create-name" className="text-eleven-muted text-[13px] font-medium tracking-wide">
+            <label
+              htmlFor="tag-create-name"
+              className="text-eleven-muted text-[13px] font-medium tracking-wide"
+            >
               Nom
             </label>
             <Input
@@ -322,9 +327,7 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
             <span className="text-eleven-muted eleven-body-airy tracking-wide">
               {filteredSorted.length} / {rows.length} tag{rows.length === 1 ? "" : "s"}
             </span>
-            {query.trim() ? (
-              <span className="text-muted-foreground text-xs">(filtrés)</span>
-            ) : null}
+            {query.trim() ? <span className="text-muted-foreground text-xs">(filtrés)</span> : null}
           </div>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative min-w-[min(100%,240px)] sm:w-64">
@@ -341,14 +344,17 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
               />
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="tag-sort" className="text-eleven-muted sr-only sm:not-sr-only sm:text-[13px]">
+              <label
+                htmlFor="tag-sort"
+                className="text-eleven-muted sr-only sm:not-sr-only sm:text-[13px]"
+              >
                 Trier
               </label>
               <select
                 id="tag-sort"
                 value={sortMode}
                 onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="border-input bg-background eleven-body-airy h-9 min-w-[10.5rem] rounded-xl border px-3 text-sm shadow-xs outline-none transition-[box-shadow] focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none"
+                className="border-input bg-background eleven-body-airy focus-visible:border-ring focus-visible:ring-ring/50 h-9 min-w-[10.5rem] rounded-xl border px-3 text-sm shadow-xs transition-[box-shadow] outline-none focus-visible:ring-3 motion-reduce:transition-none"
               >
                 <option value="name-asc">Nom A → Z</option>
                 <option value="name-desc">Nom Z → A</option>
@@ -360,13 +366,17 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
         </div>
 
         {/* Desktop table */}
-        <div className="hidden overflow-hidden rounded-2xl border border-(--eleven-border-subtle) shadow-eleven-card md:block">
+        <div className="shadow-eleven-card hidden overflow-hidden rounded-2xl border border-(--eleven-border-subtle) md:block">
           <div className="max-h-[min(70vh,720px)] overflow-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-muted/80 supports-backdrop-filter:backdrop-blur-sm sticky top-0 z-10 border-b border-(--eleven-border-subtle)">
+              <thead className="bg-muted/80 sticky top-0 z-10 border-b border-(--eleven-border-subtle) supports-backdrop-filter:backdrop-blur-sm">
                 <tr>
-                  <th className="text-foreground px-4 py-3 text-[13px] font-medium tracking-wide">Nom</th>
-                  <th className="text-foreground px-4 py-3 text-[13px] font-medium tracking-wide">Couleur</th>
+                  <th className="text-foreground px-4 py-3 text-[13px] font-medium tracking-wide">
+                    Nom
+                  </th>
+                  <th className="text-foreground px-4 py-3 text-[13px] font-medium tracking-wide">
+                    Couleur
+                  </th>
                   <th className="text-foreground px-4 py-3 text-[13px] font-medium tracking-wide">
                     <span className="inline-flex items-center gap-1">
                       <BookOpen className="size-3.5 opacity-70" aria-hidden />
@@ -394,7 +404,9 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
                     <td className="text-eleven-muted px-4 py-3 align-middle">
                       <span className="font-mono text-[13px] tracking-wide">{t.color}</span>
                     </td>
-                    <td className="text-muted-foreground px-4 py-3 align-middle tabular-nums">{t.bookCount}</td>
+                    <td className="text-muted-foreground px-4 py-3 align-middle tabular-nums">
+                      {t.bookCount}
+                    </td>
                     <td className="px-4 py-3 text-right align-middle whitespace-nowrap">
                       <div className="inline-flex items-center gap-2">
                         <Button
@@ -412,7 +424,9 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
                           disabled={actionBusy || t.bookCount > 0}
                           className="motion-reduce:transition-none"
                           onClick={() => setConfirmDelete({ id: t.id, name: t.name })}
-                          title={t.bookCount > 0 ? "Retire d’abord ce tag des livres." : "Supprimer"}
+                          title={
+                            t.bookCount > 0 ? "Retire d’abord ce tag des livres." : "Supprimer"
+                          }
                         >
                           Supprimer
                         </Button>
@@ -423,14 +437,20 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
 
                 {emptyLibrary && (
                   <tr>
-                    <td className="text-eleven-muted eleven-body-airy px-4 py-10 text-center" colSpan={4}>
+                    <td
+                      className="text-eleven-muted eleven-body-airy px-4 py-10 text-center"
+                      colSpan={4}
+                    >
                       Aucun tag pour l’instant. Crée-en un ci-dessus.
                     </td>
                   </tr>
                 )}
                 {emptyFilter && (
                   <tr>
-                    <td className="text-eleven-muted eleven-body-airy px-4 py-10 text-center" colSpan={4}>
+                    <td
+                      className="text-eleven-muted eleven-body-airy px-4 py-10 text-center"
+                      colSpan={4}
+                    >
                       Aucun tag ne correspond à « {query.trim()} ».
                     </td>
                   </tr>
@@ -447,9 +467,9 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
               key={t.id}
               style={enterDelayStyle(index)}
               className={cn(
-                "shelf-item-enter rounded-2xl border border-(--eleven-border-subtle) bg-card p-4 shadow-eleven-card",
+                "shelf-item-enter bg-card shadow-eleven-card rounded-2xl border border-(--eleven-border-subtle) p-4",
                 "transition-[transform,box-shadow] duration-200 motion-reduce:transition-none",
-                "hover:-translate-y-px hover:shadow-eleven-button-white motion-reduce:hover:translate-y-0 motion-reduce:hover:shadow-eleven-card",
+                "hover:shadow-eleven-button-white motion-reduce:hover:shadow-eleven-card hover:-translate-y-px motion-reduce:hover:translate-y-0",
               )}
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -458,7 +478,8 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
                   <p className="text-eleven-muted font-mono text-[13px] tracking-wide">{t.color}</p>
                   <p className="text-muted-foreground eleven-body-airy flex items-center gap-1.5 text-sm">
                     <BookOpen className="size-3.5 shrink-0 opacity-70" aria-hidden />
-                    <span className="tabular-nums">{t.bookCount}</span> livre{t.bookCount === 1 ? "" : "s"}
+                    <span className="tabular-nums">{t.bookCount}</span> livre
+                    {t.bookCount === 1 ? "" : "s"}
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-row flex-wrap gap-2">
@@ -484,12 +505,12 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
             </li>
           ))}
           {emptyLibrary && (
-            <li className="text-eleven-muted eleven-body-airy rounded-2xl border border-dashed border-(--eleven-border-subtle) bg-muted/20 px-4 py-10 text-center text-sm">
+            <li className="text-eleven-muted eleven-body-airy bg-muted/20 rounded-2xl border border-dashed border-(--eleven-border-subtle) px-4 py-10 text-center text-sm">
               Aucun tag pour l’instant. Crée-en un ci-dessus.
             </li>
           )}
           {emptyFilter && (
-            <li className="text-eleven-muted eleven-body-airy rounded-2xl border border-dashed border-(--eleven-border-subtle) bg-muted/20 px-4 py-10 text-center text-sm">
+            <li className="text-eleven-muted eleven-body-airy bg-muted/20 rounded-2xl border border-dashed border-(--eleven-border-subtle) px-4 py-10 text-center text-sm">
               Aucun tag ne correspond à « {query.trim()} ».
             </li>
           )}
@@ -499,13 +520,18 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
       <Dialog open={Boolean(editDraft)} onOpenChange={(v) => (!v ? setEditDraft(null) : undefined)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="eleven-display-section text-xl font-light">Éditer un tag</DialogTitle>
+            <DialogTitle className="eleven-display-section text-xl font-light">
+              Éditer un tag
+            </DialogTitle>
             <DialogDescription>Nom unique + couleur hex.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="space-y-1">
-              <label htmlFor="tag-edit-name" className="text-eleven-muted text-[13px] font-medium tracking-wide">
+              <label
+                htmlFor="tag-edit-name"
+                className="text-eleven-muted text-[13px] font-medium tracking-wide"
+              >
                 Nom
               </label>
               <Input
@@ -548,11 +574,14 @@ export function AdminTagsClient({ initialRows }: { initialRows: AdminTagRow[] })
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="eleven-display-section text-xl font-light">Supprimer ?</DialogTitle>
+            <DialogTitle className="eleven-display-section text-xl font-light">
+              Supprimer ?
+            </DialogTitle>
             <DialogDescription>
               {confirmDelete ? (
                 <>
-                  Le tag <span className="text-foreground font-medium">{confirmDelete.name}</span> sera supprimé.
+                  Le tag <span className="text-foreground font-medium">{confirmDelete.name}</span>{" "}
+                  sera supprimé.
                 </>
               ) : null}
             </DialogDescription>

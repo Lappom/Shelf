@@ -29,11 +29,13 @@ export default async function AdminOpsPage() {
     })),
   );
 
-  const kpis = buildOpsKpis(byStatusType.map((r) => ({
-    type: r.type,
-    status: r.status,
-    count: r._count._all,
-  })));
+  const kpis = buildOpsKpis(
+    byStatusType.map((r) => ({
+      type: r.type,
+      status: r.status,
+      count: r._count._all,
+    })),
+  );
 
   const lastFinished = lastFinishedRaw
     .map((r) => {

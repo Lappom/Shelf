@@ -46,17 +46,17 @@ const EpubReaderClient = dynamic(
         aria-label="Chargement du lecteur"
       >
         <div className="flex items-center gap-3">
-          <div className="bg-muted/80 h-10 w-10 shrink-0 rounded-eleven-pill shadow-eleven-button-white" />
+          <div className="bg-muted/80 rounded-eleven-pill shadow-eleven-button-white h-10 w-10 shrink-0" />
           <div className="min-w-0 flex-1 space-y-2">
-            <div className="bg-muted/80 h-4 max-w-[14rem] rounded-eleven-pill" />
-            <div className="bg-muted/60 h-3 max-w-[10rem] rounded-eleven-pill" />
+            <div className="bg-muted/80 rounded-eleven-pill h-4 max-w-[14rem]" />
+            <div className="bg-muted/60 rounded-eleven-pill h-3 max-w-[10rem]" />
           </div>
         </div>
-        <div className="bg-muted/50 h-1.5 w-full max-w-md overflow-hidden rounded-eleven-pill">
-          <div className="bg-foreground/25 h-full w-1/3 animate-pulse rounded-eleven-pill" />
+        <div className="bg-muted/50 rounded-eleven-pill h-1.5 w-full max-w-md overflow-hidden">
+          <div className="bg-foreground/25 rounded-eleven-pill h-full w-1/3 animate-pulse" />
         </div>
-        <div className="flex min-h-0 flex-1 flex-col gap-3 rounded-[20px] border border-(--eleven-border-subtle) bg-background/80 p-4 shadow-eleven-card">
-          <div className="bg-muted/70 h-8 w-40 rounded-eleven-pill" />
+        <div className="bg-background/80 shadow-eleven-card flex min-h-0 flex-1 flex-col gap-3 rounded-[20px] border border-(--eleven-border-subtle) p-4">
+          <div className="bg-muted/70 rounded-eleven-pill h-8 w-40" />
           <div className="bg-muted/50 mt-2 min-h-[200px] flex-1 rounded-[16px]" />
         </div>
         <p className="text-eleven-muted eleven-body-airy text-sm">Préparation du lecteur…</p>

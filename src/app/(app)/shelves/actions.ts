@@ -77,7 +77,8 @@ async function getOwnedShelfOrThrow(userId: string, shelfId: string) {
 }
 
 function assertNotSystemShelf(type: string) {
-  if (type === "favorites" || type === "reading" || type === "read") throw new Error("SYSTEM_SHELF");
+  if (type === "favorites" || type === "reading" || type === "read")
+    throw new Error("SYSTEM_SHELF");
 }
 
 export async function createShelfAction(input: unknown) {

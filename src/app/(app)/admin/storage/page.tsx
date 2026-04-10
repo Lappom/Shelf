@@ -34,9 +34,7 @@ function buildMimeBreakdown(
       fileCount: r.fileCount,
       bytesLabel: formatBytes(r.bytes),
       percentOfVolume:
-        totalBytes > BigInt(0)
-          ? Math.round((Number(r.bytes) / Number(totalBytes)) * 1000) / 10
-          : 0,
+        totalBytes > BigInt(0) ? Math.round((Number(r.bytes) / Number(totalBytes)) * 1000) / 10 : 0,
     }));
   }
 
@@ -50,9 +48,7 @@ function buildMimeBreakdown(
     fileCount: r.fileCount,
     bytesLabel: formatBytes(r.bytes),
     percentOfVolume:
-      totalBytes > BigInt(0)
-        ? Math.round((Number(r.bytes) / Number(totalBytes)) * 1000) / 10
-        : 0,
+      totalBytes > BigInt(0) ? Math.round((Number(r.bytes) / Number(totalBytes)) * 1000) / 10 : 0,
   }));
 
   const otherRow: StorageMimeBreakdownRow = {
@@ -98,8 +94,7 @@ export default async function AdminStoragePage() {
 
   const mimeBreakdown = buildMimeBreakdown(mimeRows, totalBytes);
 
-  const avgBytes =
-    fileCount > 0 ? totalBytes / BigInt(fileCount) : BigInt(0);
+  const avgBytes = fileCount > 0 ? totalBytes / BigInt(fileCount) : BigInt(0);
   const avgBytesLabel = fileCount > 0 ? formatBytes(avgBytes) : "—";
 
   return (

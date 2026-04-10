@@ -72,7 +72,7 @@ export default async function ProfilePage() {
               alt=""
               width={120}
               height={120}
-              className="ring-(--eleven-border-subtle) h-[120px] w-[120px] rounded-full object-cover shadow-eleven-card ring-1"
+              className="shadow-eleven-card h-[120px] w-[120px] rounded-full object-cover ring-1 ring-(--eleven-border-subtle)"
             />
           ) : (
             <div
@@ -103,7 +103,7 @@ export default async function ProfilePage() {
               </div>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
                 <span className="text-eleven-muted w-32 shrink-0">Email</span>
-                <span className="text-foreground break-all font-medium">{user.email}</span>
+                <span className="text-foreground font-medium break-all">{user.email}</span>
               </div>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
                 <span className="text-eleven-muted w-32 shrink-0">Rôle</span>
@@ -127,7 +127,9 @@ export default async function ProfilePage() {
             style={{ "--profile-enter-delay": "0.2s" } as CSSProperties}
           >
             <CardHeader>
-              <CardTitle className="eleven-display-section text-xl font-light">Raccourcis</CardTitle>
+              <CardTitle className="eleven-display-section text-xl font-light">
+                Raccourcis
+              </CardTitle>
               <CardDescription className="eleven-body-airy">
                 Recommandations et intégrations.
               </CardDescription>

@@ -5,11 +5,7 @@ import { z } from "zod";
 
 import { requireUser } from "@/lib/auth/rbac";
 import { generateApiKeyMaterial } from "@/lib/apiKeys/crypto";
-import {
-  ALL_MCP_SCOPES,
-  parseMcpScopesFromJson,
-  type McpScopeValue,
-} from "@/lib/mcp/scopes";
+import { ALL_MCP_SCOPES, parseMcpScopesFromJson, type McpScopeValue } from "@/lib/mcp/scopes";
 import { prisma } from "@/lib/db/prisma";
 import { assertSameOriginFromHeaders } from "@/lib/security/origin";
 import { logShelfEvent } from "@/lib/observability/structuredLog";

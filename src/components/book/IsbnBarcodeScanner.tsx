@@ -197,7 +197,9 @@ export function IsbnBarcodeScanner({
       setPanelOpen(false);
     };
 
-    const runNative = async (video: HTMLVideoElement): Promise<"started" | "failed" | "try-zxing"> => {
+    const runNative = async (
+      video: HTMLVideoElement,
+    ): Promise<"started" | "failed" | "try-zxing"> => {
       const Ctor = window.BarcodeDetector;
       if (!Ctor) return "try-zxing";
 
@@ -377,8 +379,7 @@ export function IsbnBarcodeScanner({
         /* ignore */
       }
       zxingControlsRef.current = null;
-      const v = mountTarget ?? videoRef.current;
-      if (v) v.srcObject = null;
+      if (mountTarget) mountTarget.srcObject = null;
     };
   }, [panelOpen, clearAnimation]);
 
@@ -433,7 +434,7 @@ export function IsbnBarcodeScanner({
             }
           }}
         >
-          <DialogContent className="gap-3 motion-reduce:data-closed:animate-none motion-reduce:animate-none sm:max-w-lg">
+          <DialogContent className="gap-3 motion-reduce:animate-none motion-reduce:data-closed:animate-none sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Scanner un ISBN</DialogTitle>
               <DialogDescription>
@@ -451,7 +452,13 @@ export function IsbnBarcodeScanner({
   return (
     <div className="space-y-2">
       {!panelOpen ? (
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={handleOpenScan}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          onClick={handleOpenScan}
+        >
           Scanner la caméra
         </Button>
       ) : (

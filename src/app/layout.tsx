@@ -62,7 +62,7 @@ export default function RootLayout({
       }
       suppressHydrationWarning
     >
-      <body className="font-sans flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col font-sans">
         <ServiceWorkerRegister />
         {children}
       </body>
