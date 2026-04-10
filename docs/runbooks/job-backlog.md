@@ -15,8 +15,8 @@
 
 ## Remédiation
 
-- **Annulation** : `POST /api/admin/pull-books/jobs/:id/cancel` (jobs pull-books `queued|running`).
-- **Retry** : `POST /api/admin/pull-books/jobs/:id/retry` pour statuts terminaux éligibles.
+- **Annulation** : `POST /api/admin/pull-books/jobs/:id` avec `{ "action": "cancel" }` (jobs pull-books `queued|running`).
+- **Retry** : `POST /api/admin/pull-books/jobs/:id` avec `{ "action": "retry" }` pour statuts terminaux éligibles.
 - Jobs `recommendations_recompute` : pas d’API dédiée cancel/retry dans cette version — mise à jour manuelle en base réservée aux opérateurs (annulation = `cancel_requested_at` ou statut, selon politique interne).
 
 ## Prévention

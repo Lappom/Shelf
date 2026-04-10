@@ -876,8 +876,7 @@ Nouveaux endpoints admin (V2) :
 |---------|-------|-------------|
 | GET | `/api/admin/pull-books/jobs` | Liste des jobs pull-books (pagination simple, tri desc). |
 | GET | `/api/admin/pull-books/jobs/:id` | Détail d'un job + rapport d'exécution. |
-| POST | `/api/admin/pull-books/jobs/:id/cancel` | Demande d'annulation d'un job `queued|running`. |
-| POST | `/api/admin/pull-books/jobs/:id/retry` | Requeue d'un job terminal `failed|dead_letter|cancelled`. |
+| POST | `/api/admin/pull-books/jobs/:id` | Corps JSON `{ "action": "cancel" }` (job `queued|running`) ou `{ "action": "retry" }` (job terminal `failed|dead_letter|cancelled`). Same-origin, admin. |
 | DELETE | `/api/admin/pull-books/jobs/:id` | Suppression du job et de ses items (`admin_import_job_items` en cascade). Interdit si statut `running` (annuler d'abord). |
 
 Entrée V2 `POST /api/admin/pull-books` (JSON) :

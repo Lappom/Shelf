@@ -222,10 +222,14 @@ export function AdminPullBooksClient() {
       setError(null);
       setBusy(true);
       try {
-        const res = await fetch(`/api/admin/pull-books/jobs/${jobId}/${action}`, {
+        const res = await fetch(`/api/admin/pull-books/jobs/${jobId}`, {
           method: "POST",
-          headers: { Accept: "application/json" },
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
           credentials: "same-origin",
+          body: JSON.stringify({ action }),
         });
         const json = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) {

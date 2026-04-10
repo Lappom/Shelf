@@ -2,17 +2,84 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { runApiRoute } from "@/lib/api/route";
-import { corsPreflight, getClientIp } from "@/lib/api/http";
+import { corsPreflight, getClientIp, parseJsonBody } from "@/lib/api/http";
 import { asUuidOrThrow } from "@/lib/api/errors";
 import { logAdminAudit } from "@/lib/admin/auditLog";
-import { deletePullBooksJob, getPullBooksJob } from "@/lib/admin/pullBooksJobs";
+import {
+  deletePullBooksJob,
+  getPullBooksJob,
+  requestCancelPullBooksJob,
+  retryPullBooksJob,
+} from "@/lib/admin/pullBooksJobs";
 import { requireAdmin } from "@/lib/auth/rbac";
 import { rateLimitOrThrow } from "@/lib/security/rateLimit";
 
 const ParamsSchema = z.object({ id: z.string().uuid() });
 
+const PostBodySchema = z
+  .object({
+    action: z.enum(["cancel", "retry"]),
+  })
+  .strict();
+
 export async function OPTIONS(req: Request) {
   return corsPreflight(req);
+}
+
+export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  return runApiRoute(
+    req,
+    {
+      sameOrigin: true,
+      auth: requireAdmin,
+      rateLimit: async ({ req, user }) => {
+        const ip = getClientIp(req);
+        const adminId = String((user as { id?: unknown }).id ?? "unknown");
+        await rateLimitOrThrow({
+          key: `admin:pull_books_job_post:${adminId}:${ip}`,
+          limit: 120,
+          windowMs: 60_000,
+        });
+      },
+    },
+    async ({ req, user }) => {
+      const parsedParams = ParamsSchema.safeParse(await ctx.params);
+      if (!parsedParams.success) {
+        return NextResponse.json({ error: "Invalid id" }, { status: 400 });
+      }
+      const body = await parseJsonBody(req);
+      const parsedBody = PostBodySchema.safeParse(body);
+      if (!parsedBody.success) {
+        return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+      }
+      const adminId = asUuidOrThrow((user as { id?: unknown }).id);
+      const jobId = parsedParams.data.id;
+
+      if (parsedBody.data.action === "cancel") {
+        const cancelled = await requestCancelPullBooksJob(jobId);
+        if (!cancelled) {
+          return NextResponse.json({ error: "Job cannot be cancelled" }, { status: 409 });
+        }
+        await logAdminAudit({
+          action: "pull_books_job_cancel",
+          actorId: adminId,
+          meta: { jobId },
+        });
+        return NextResponse.json({ status: "cancel_requested" }, { status: 200 });
+      }
+
+      const retried = await retryPullBooksJob(jobId);
+      if (!retried) {
+        return NextResponse.json({ error: "Job cannot be retried" }, { status: 409 });
+      }
+      await logAdminAudit({
+        action: "pull_books_job_retry",
+        actorId: adminId,
+        meta: { jobId },
+      });
+      return NextResponse.json({ status: "queued" }, { status: 200 });
+    },
+  );
 }
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
